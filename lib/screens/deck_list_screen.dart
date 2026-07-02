@@ -1,7 +1,9 @@
-import 'package:deck_tracker_app/screens/deck_detail_screen.dart';
+import 'package:deck_tracker_app/screens/create_deck_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
+import '../services/stats_service.dart';
+import 'deck_detail_screen.dart';
 
 class DeckListScreen extends StatefulWidget {
   const DeckListScreen({super.key});
@@ -12,8 +14,10 @@ class DeckListScreen extends StatefulWidget {
 
 class _DeckListScreenState extends State<DeckListScreen> {
   final _deckService = DeckService();
+  final _statsService = StatsService();
 
   List<Deck> _decks = [];
+  Map<String, int> _matchCounts = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -31,8 +35,20 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
     try {
       final decks = await _deckService.getDecks();
+
+      // Trae el numero real de partidas de cada mazo en paralelo
+      final overviews = await Future.wait(
+        decks.map((deck) => _statsService.getDeckOverview(deck.id)),
+      );
+
+      final counts = <String, int>{};
+      for (var i = 0; i < decks.length; i++) {
+        counts[decks[i].id] = overviews[i]['totalMatches'] ?? 0;
+      }
+
       setState(() {
         _decks = decks;
+        _matchCounts = counts;
         _isLoading = false;
       });
     } catch (e) {
@@ -56,14 +72,17 @@ class _DeckListScreenState extends State<DeckListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Error al cargar mazos: $_errorMessage',
-                textAlign: TextAlign.center,
-              ),
+              Text('Error al cargar mazos: $_errorMessage', textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _loadDecks,
-                child: const Text('Reintentar'),
+              FilledButton.icon(
+                onPressed: () async {
+                  final created = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
+                  );
+                  if (created == true) _loadDecks();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Crear mazo'),
               ),
             ],
           ),
@@ -90,14 +109,6 @@ class _DeckListScreenState extends State<DeckListScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () {
-                  // Próximo paso: pantalla de creación de mazo
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Crear mazo'),
-              ),
             ],
           ),
         ),
@@ -111,7 +122,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
         itemCount: _decks.length,
         itemBuilder: (context, index) {
           final deck = _decks[index];
-          final totalMatches = deck.wins + deck.losses;
+          final totalMatches = _matchCounts[deck.id] ?? 0;
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -126,10 +137,11 @@ class _DeckListScreenState extends State<DeckListScreen> {
                 child: Text('${deck.format} · $totalMatches partidas'),
               ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
+              onTap: () async {
+                await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
                 );
+                _loadDecks(); // refresca contadores al volver, por si se añadieron partidas
               },
             ),
           );

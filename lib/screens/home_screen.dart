@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'deck_list_screen.dart';
 import 'stats_screen.dart';
 import 'tournaments_screen.dart';
+import 'create_deck_screen.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -15,12 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final _authService = AuthService();
-
-  final _screens = const [
-    DeckListScreen(),
-    StatsScreen(),
-    TournamentsScreen(),
-  ];
+  Key _deckListKey = UniqueKey();
 
   Future<void> _handleLogout() async {
     await _authService.logout();
@@ -31,9 +27,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _handleCreateDeck() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
+    );
+    if (created == true) {
+      setState(() => _deckListKey = UniqueKey()); // fuerza recarga del listado
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final titles = ['Mis Mazos', 'Estadísticas', 'Torneos'];
+
+    final screens = [
+      DeckListScreen(key: _deckListKey),
+      const StatsScreen(),
+      const TournamentsScreen(),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -47,13 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
-              onPressed: () {
-                // Próximo paso: pantalla de creación de mazo
-              },
+              onPressed: _handleCreateDeck,
               child: const Icon(Icons.add),
             )
           : null,
