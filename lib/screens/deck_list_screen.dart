@@ -1,3 +1,4 @@
+import 'package:deck_tracker_app/screens/deck_detail_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
@@ -126,7 +127,9 @@ class _DeckListScreenState extends State<DeckListScreen> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // Próximo paso: pantalla de detalle del mazo
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
+                );
               },
             ),
           );
