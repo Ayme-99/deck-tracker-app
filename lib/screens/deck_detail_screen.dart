@@ -6,6 +6,7 @@ import '../models/match.dart';
 import '../services/stats_service.dart';
 import '../services/match_service.dart';
 import 'register_match_screen.dart';
+import 'edit_match_screen.dart';
 
 class DeckDetailScreen extends StatefulWidget {
   final Deck deck;
@@ -33,38 +34,104 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     _loadData();
   }
 
-  Future<void> _confirmDelete() async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Eliminar mazo'),
-      content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"? Esta acción no se puede deshacer.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+  Future<void> _showMatchOptions(Match match) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar partida'),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+              title: const Text('Eliminar partida'),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
         ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ),
-      ],
-    ),
-  );
-
-  if (confirmed != true) return;
-
-  try {
-    await _deckService.deleteDeck(widget.deck.id);
-    if (!mounted) return;
-    Navigator.of(context).pop(true); // vuelve al listado para que se refresque
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      ),
     );
+
+    if (!mounted) return;
+
+    if (action == 'edit') {
+      final updated = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => EditMatchScreen(match: match)),
+      );
+      if (updated == true) _loadData();
+    } else if (action == 'delete') {
+      _confirmDeleteMatch(match);
+    }
   }
-}
+
+  Future<void> _confirmDeleteMatch(Match match) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar partida'),
+        content: Text('¿Eliminar la partida contra "${match.opponentDeck}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _matchService.deleteMatch(match.id);
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar mazo'),
+        content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _deckService.deleteDeck(widget.deck.id);
+      if (!mounted) return;
+      Navigator.of(context).pop(true); // vuelve al listado para que se refresque
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
 
   Future<void> _loadData() async {
     setState(() {
@@ -125,10 +192,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
             onSelected: (value) async {
               if (value == 'edit') {
                 final updated = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(builder: (_) => EditDeckScreen(deck: widget.deck)),
+                  MaterialPageRoute(builder: (_) => EditDeckScreen(deck: widget.deck)),
                 );
                 if (updated == true && mounted) {
-                  Navigator.of(context).pop(true); // vuelve al listado para que se refresque con los datos nuevos
+                  Navigator.of(context).pop(true);
                 }
               } else if (value == 'delete') {
                 _confirmDelete();
@@ -175,10 +242,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           final registered = await Navigator.of(context).push<bool>(
             MaterialPageRoute(builder: (_) => RegisterMatchScreen(deck: widget.deck)),
           );
-          if (registered == true) _loadData(); // refresca stats tras registrar
+          if (registered == true) _loadData();
         },
-      icon: const Icon(Icons.add),
-      label: const Text('Partida'),
+        icon: const Icon(Icons.add),
+        label: const Text('Partida'),
       ),
     );
   }
@@ -273,8 +340,9 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           ..._recentMatches.map((match) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
+                  onTap: () => _showMatchOptions(match),
                   leading: CircleAvatar(
-                    backgroundColor: _resultColor(match.result).withOpacity(0.15),
+                    backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
                     child: Icon(
                       match.result == 'win'
                           ? Icons.check

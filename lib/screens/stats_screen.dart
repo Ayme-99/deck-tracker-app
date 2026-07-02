@@ -159,8 +159,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: index < 3
-                        ? medalColors[index].withOpacity(0.2)
-                        : Colors.grey.withOpacity(0.1),
+                      ? medalColors[index].withValues(alpha: 0.2)
+                      : Colors.grey.withValues(alpha: 0.1),
                     child: Text(
                       '${index + 1}',
                       style: TextStyle(

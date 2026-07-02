@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import '../models/match.dart';
+import '../services/match_service.dart';
+
+class EditMatchScreen extends StatefulWidget {
+  final Match match;
+
+  const EditMatchScreen({super.key, required this.match});
+
+  @override
+  State<EditMatchScreen> createState() => _EditMatchScreenState();
+}
+
+class _EditMatchScreenState extends State<EditMatchScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _opponentController;
+  late final TextEditingController _notesController;
+  final _matchService = MatchService();
+
+  late int _userPrizes;
+  late int _opponentPrizes;
+  late String _endReason;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  final _endReasonLabels = const {
+    'normal': 'Normal (premios completos)',
+    'concession': 'Rendición',
+    'no_pokemon': 'Sin Pokémon en banca',
+    'time': 'Tiempo agotado',
+    'deck_out': 'Mazo agotado',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _opponentController = TextEditingController(text: widget.match.opponentDeck);
+    _notesController = TextEditingController(text: widget.match.notes ?? '');
+    _userPrizes = widget.match.userPrizes;
+    _opponentPrizes = widget.match.opponentPrizes;
+    _endReason = widget.match.endReason;
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _matchService.updateMatch(widget.match.id, {
+        'opponentDeck': _opponentController.text.trim(),
+        'userPrizes': _userPrizes,
+        'opponentPrizes': _opponentPrizes,
+        'endReason': _endReason,
+        'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      });
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _opponentController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Widget _prizeCounter(String label, int value, ValueChanged<int> onChanged) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: value > 0 ? () => onChanged(value - 1) : null,
+            ),
+            SizedBox(
+              width: 40,
+              child: Text(
+                '$value',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: value < 6 ? () => onChanged(value + 1) : null,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Editar partida')),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextFormField(
+                controller: _opponentController,
+                decoration: const InputDecoration(
+                  labelText: 'Mazo rival',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Introduce el mazo rival';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _prizeCounter('Tus premios', _userPrizes, (v) => setState(() => _userPrizes = v)),
+                  _prizeCounter('Premios rival', _opponentPrizes, (v) => setState(() => _opponentPrizes = v)),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              Center(
+                child: Text(
+                  _userPrizes > _opponentPrizes
+                      ? '🏆 Victoria'
+                      : _userPrizes < _opponentPrizes
+                          ? '❌ Derrota'
+                          : '🤝 Empate',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              DropdownButtonFormField<String>(
+                initialValue: _endReason,
+                decoration: const InputDecoration(
+                  labelText: 'Motivo de fin de partida',
+                  border: OutlineInputBorder(),
+                ),
+                items: _endReasonLabels.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .toList(),
+                onChanged: (value) => setState(() => _endReason = value!),
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notas (opcional)',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+
+              if (_errorMessage != null) ...[
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              FilledButton(
+                onPressed: _isLoading ? null : _handleSave,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Guardar cambios'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
