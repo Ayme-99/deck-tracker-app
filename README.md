@@ -48,6 +48,7 @@ lib/
 - Editar y eliminar partidas ya registradas
 - Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos
 - Estadísticas globales y ranking de mazos por win-rate
+- Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado)
 
 ## Configuración
 
