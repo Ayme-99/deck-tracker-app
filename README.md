@@ -1,4 +1,4 @@
-markdown# Deck Tracker – App
+# Deck Tracker – App
 
 Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar el resultado de las partidas jugadas, con estadísticas por mazo y globales.
 
