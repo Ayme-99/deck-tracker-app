@@ -1,0 +1,36 @@
+import 'package:deck_tracker_app/services/api_service.dart';
+
+import '../models/deck.dart';
+
+class DeckService {
+  final _api = ApiService();
+
+  Future<List<Deck>> getDecks({int page = 1, int limit = 10}) async {
+    final response = await _api.get('/decks?page=$page&limit=$limit');
+    final decksJson = response['data'] as List;
+    return decksJson.map((d) => Deck.fromJson(d)).toList();
+  }
+
+  Future<Deck> getDeckById(String id) async {
+    final response = await _api.get('/decks/$id');
+    return Deck.fromJson(response);
+  }
+
+  Future<Deck> createDeck(String name, String format, List<Map<String, dynamic>> cards) async {
+    final response = await _api.post('/decks', {
+      'name': name,
+      'format': format,
+      'cards': cards,
+    });
+    return Deck.fromJson(response);
+  }
+
+  Future<Deck> updateDeck(String id, Map<String, dynamic> updates) async {
+    final response = await _api.put('/decks/$id', updates);
+    return Deck.fromJson(response);
+  }
+
+  Future<void> deleteDeck(String id) async {
+    await _api.delete('/decks/$id');
+  }
+}
