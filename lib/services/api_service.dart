@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/material.dart';
 import '../config/api_config.dart';
+import '../config/navigation_service.dart';
+import '../screens/login_screen.dart';
 
 class ApiService {
   final _storage = const FlutterSecureStorage();
@@ -57,13 +60,30 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  dynamic _handleResponse(http.Response response) {
+  Future<dynamic> _handleResponse(http.Response response) async {
     final data = jsonDecode(response.body);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
-    } else {
-      throw Exception(data['error'] ?? 'Error en la petición (${response.statusCode})');
     }
+
+    if (response.statusCode == 401) {
+      await _handleSessionExpired();
+    }
+
+    throw Exception(data['error'] ?? 'Error en la petición (${response.statusCode})');
+  }
+
+  Future<void> _handleSessionExpired() async {
+    await _storage.delete(key: 'token');
+
+    final navigator = NavigationService.navigatorKey.currentState;
+    if (navigator == null) return;
+
+    // Evita navegar si ya estamos en Login (por ejemplo, tras un intento fallido normal)
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 }

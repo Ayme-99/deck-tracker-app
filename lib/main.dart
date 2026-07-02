@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
+import 'config/navigation_service.dart';
 
 void main() {
   runApp(const DeckTrackerApp());
@@ -11,6 +12,7 @@ class DeckTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NavigationService.navigatorKey,
       title: 'Deck Tracker',
       theme: ThemeData(
         colorSchemeSeed: Colors.deepPurple,

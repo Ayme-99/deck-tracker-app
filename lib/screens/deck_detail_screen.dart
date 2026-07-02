@@ -194,7 +194,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 final updated = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => EditDeckScreen(deck: widget.deck)),
                 );
-                if (updated == true && mounted) {
+                if (updated == true && context.mounted) {
                   Navigator.of(context).pop(true);
                 }
               } else if (value == 'delete') {
