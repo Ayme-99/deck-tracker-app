@@ -1,3 +1,5 @@
+import 'package:deck_tracker_app/screens/edit_deck_screen.dart';
+import 'package:deck_tracker_app/services/deck_service.dart';
 import 'package:flutter/material.dart';
 import '../models/deck.dart';
 import '../models/match.dart';
@@ -17,6 +19,7 @@ class DeckDetailScreen extends StatefulWidget {
 class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _statsService = StatsService();
   final _matchService = MatchService();
+  final _deckService = DeckService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
@@ -29,6 +32,39 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     super.initState();
     _loadData();
   }
+
+  Future<void> _confirmDelete() async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Eliminar mazo'),
+      content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"? Esta acción no se puede deshacer.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true) return;
+
+  try {
+    await _deckService.deleteDeck(widget.deck.id);
+    if (!mounted) return;
+    Navigator.of(context).pop(true); // vuelve al listado para que se refresque
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+    );
+  }
+}
 
   Future<void> _loadData() async {
     setState(() {
@@ -82,7 +118,29 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.deck.name)),
+      appBar: AppBar(
+        title: Text(widget.deck.name),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'edit') {
+                final updated = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => EditDeckScreen(deck: widget.deck)),
+                );
+                if (updated == true && mounted) {
+                  Navigator.of(context).pop(true); // vuelve al listado para que se refresque con los datos nuevos
+                }
+              } else if (value == 'delete') {
+                _confirmDelete();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'edit', child: Text('Editar mazo')),
+              PopupMenuItem(value: 'delete', child: Text('Eliminar mazo')),
+            ],
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
