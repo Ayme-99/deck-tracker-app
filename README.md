@@ -26,17 +26,18 @@ lib/
 │   ├── match_service.dart
 │   └── stats_service.dart
 └── screens/
-├── splash_screen.dart      # comprueba sesion guardada al abrir la app
-├── login_screen.dart
-├── register_screen.dart
-├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
-├── deck_list_screen.dart
-├── deck_detail_screen.dart
-├── create_deck_screen.dart
-├── edit_deck_screen.dart
-├── register_match_screen.dart
-├── stats_screen.dart
-└── tournaments_screen.dart # placeholder, pendiente backend
+    ├── splash_screen.dart      # comprueba sesion guardada al abrir la app
+    ├── login_screen.dart
+    ├── register_screen.dart
+    ├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
+    ├── deck_list_screen.dart
+    ├── deck_detail_screen.dart
+    ├── create_deck_screen.dart
+    ├── edit_deck_screen.dart
+    ├── register_match_screen.dart
+    ├── edit_match_screen.dart
+    ├── stats_screen.dart
+    └── tournaments_screen.dart # placeholder, pendiente backend
 ```
 
 ## Funcionalidades
@@ -44,6 +45,7 @@ lib/
 - Registro / login con persistencia de sesión (auto-login al reabrir la app)
 - CRUD completo de mazos (crear, listar, ver detalle, editar, eliminar)
 - Registro de partidas con autocompletado de rivales ya jugados
+- Editar y eliminar partidas ya registradas
 - Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos
 - Estadísticas globales y ranking de mazos por win-rate
 
@@ -71,6 +73,5 @@ flutter run -d edge      # o -d windows, -d chrome, un emulador Android, etc.
 
 ## TODO futuro
 
-- Editar/eliminar partidas ya registradas
 - Pantalla de Torneos (pendiente de modelo en backend)
 - Catálogo real de cartas (actualmente el `cardId` se genera a partir del nombre escrito manualmente)
