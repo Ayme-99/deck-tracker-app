@@ -20,6 +20,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
   late int _userPrizes;
   late int _opponentPrizes;
   late String _endReason;
+  String? _manualResult;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -31,6 +32,8 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     'deck_out': 'Mazo agotado',
   };
 
+  bool get _needsManualResult => _userPrizes == _opponentPrizes && _endReason != 'normal';
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +42,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     _userPrizes = widget.match.userPrizes;
     _opponentPrizes = widget.match.opponentPrizes;
     _endReason = widget.match.endReason;
+    _manualResult = widget.match.result; // parte del resultado ya guardado
   }
 
   Future<void> _handleSave() async {
@@ -56,6 +60,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
         'opponentPrizes': _opponentPrizes,
         'endReason': _endReason,
         'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        if (_needsManualResult) 'result': _manualResult ?? 'tie',
       });
 
       if (!mounted) return;
@@ -140,16 +145,33 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
               ),
               const SizedBox(height: 8),
 
-              Center(
-                child: Text(
-                  _userPrizes > _opponentPrizes
-                      ? '🏆 Victoria'
-                      : _userPrizes < _opponentPrizes
-                          ? '❌ Derrota'
-                          : '🤝 Empate',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              if (_needsManualResult) ...[
+                const Text(
+                  'Premios empatados con fin de partida especial: indica quién ganó',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.orange),
                 ),
-              ),
+                const SizedBox(height: 8),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'win', label: Text('Gané')),
+                    ButtonSegment(value: 'tie', label: Text('Empate')),
+                    ButtonSegment(value: 'loss', label: Text('Perdí')),
+                  ],
+                  selected: {_manualResult ?? 'tie'},
+                  onSelectionChanged: (selection) => setState(() => _manualResult = selection.first),
+                ),
+              ] else
+                Center(
+                  child: Text(
+                    _userPrizes > _opponentPrizes
+                        ? '🏆 Victoria'
+                        : _userPrizes < _opponentPrizes
+                            ? '❌ Derrota'
+                            : '🤝 Empate',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
               const SizedBox(height: 24),
 
               DropdownButtonFormField<String>(

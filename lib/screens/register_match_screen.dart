@@ -20,6 +20,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   int _userPrizes = 6;
   int _opponentPrizes = 0;
   String _endReason = 'normal';
+  String? _manualResult; // 'win', 'loss', 'tie' - solo se usa cuando hace falta
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -30,6 +31,8 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     'time': 'Tiempo agotado',
     'deck_out': 'Mazo agotado',
   };
+
+  bool get _needsManualResult => _userPrizes == _opponentPrizes && _endReason != 'normal';
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -47,6 +50,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         opponentPrizes: _opponentPrizes,
         endReason: _endReason,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        result: _needsManualResult ? (_manualResult ?? 'tie') : null,
       );
 
       if (!mounted) return;
@@ -150,16 +154,33 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               ),
               const SizedBox(height: 8),
 
-              Center(
-                child: Text(
-                  _userPrizes > _opponentPrizes
-                      ? '🏆 Victoria'
-                      : _userPrizes < _opponentPrizes
-                          ? '❌ Derrota'
-                          : '🤝 Empate',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              if (_needsManualResult) ...[
+                const Text(
+                  'Premios empatados con fin de partida especial: indica quién ganó',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.orange),
                 ),
-              ),
+                const SizedBox(height: 8),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'win', label: Text('Gané')),
+                    ButtonSegment(value: 'tie', label: Text('Empate')),
+                    ButtonSegment(value: 'loss', label: Text('Perdí')),
+                  ],
+                  selected: {_manualResult ?? 'tie'},
+                  onSelectionChanged: (selection) => setState(() => _manualResult = selection.first),
+                ),
+              ] else
+                Center(
+                  child: Text(
+                    _userPrizes > _opponentPrizes
+                        ? '🏆 Victoria'
+                        : _userPrizes < _opponentPrizes
+                            ? '❌ Derrota'
+                            : '🤝 Empate',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
               const SizedBox(height: 24),
 
               DropdownButtonFormField<String>(

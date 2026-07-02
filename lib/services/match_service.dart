@@ -25,6 +25,7 @@ class MatchService {
     required int opponentPrizes,
     String endReason = 'normal',
     String? notes,
+    String? result,
   }) async {
     final response = await _api.post('/matches', {
       'deckId': deckId,
@@ -33,6 +34,7 @@ class MatchService {
       'opponentPrizes': opponentPrizes,
       'endReason': endReason,
       'notes': ?notes,
+      'result': ?result,
     });
     return Match.fromJson(response);
   }
