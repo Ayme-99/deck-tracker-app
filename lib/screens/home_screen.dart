@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final _authService = AuthService();
   Key _deckListKey = UniqueKey();
+  Key _statsKey = UniqueKey();
 
   Future<void> _handleLogout() async {
     await _authService.logout();
@@ -32,8 +33,17 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
     );
     if (created == true) {
-      setState(() => _deckListKey = UniqueKey()); // fuerza recarga del listado
+      setState(() => _deckListKey = UniqueKey());
     }
+  }
+
+  void _onTabSelected(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (index == 1) {
+        _statsKey = UniqueKey(); // fuerza recarga de stats cada vez que se visita la pestaña
+      }
+    });
   }
 
   @override
@@ -42,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final screens = [
       DeckListScreen(key: _deckListKey),
-      const StatsScreen(),
+      StatsScreen(key: _statsKey),
       const TournamentsScreen(),
     ];
 
@@ -68,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        onDestinationSelected: _onTabSelected,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.style), label: 'Mazos'),
           NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),

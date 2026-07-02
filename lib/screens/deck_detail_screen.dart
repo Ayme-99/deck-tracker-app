@@ -3,6 +3,7 @@ import '../models/deck.dart';
 import '../models/match.dart';
 import '../services/stats_service.dart';
 import '../services/match_service.dart';
+import 'register_match_screen.dart';
 
 class DeckDetailScreen extends StatefulWidget {
   final Deck deck;
@@ -111,6 +112,16 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                     ],
                   ),
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final registered = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => RegisterMatchScreen(deck: widget.deck)),
+          );
+          if (registered == true) _loadData(); // refresca stats tras registrar
+        },
+      icon: const Icon(Icons.add),
+      label: const Text('Partida'),
+      ),
     );
   }
 
