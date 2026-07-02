@@ -50,4 +50,4 @@ class MatchService {
     final response = await _api.get('/matches/opponent-suggestions?q=$query');
     return List<String>.from(response);
   }
-}
+} 
