@@ -16,6 +16,11 @@ lib/
 ├── main.dart
 ├── config/
 │   └── api_config.dart
+├── styles/
+│   ├── colors.dart
+│   ├── sizes.dart
+│   ├── text_styles.dart
+│   └── theme.dart
 ├── models/
 │   ├── deck.dart
 │   └── match.dart
@@ -26,18 +31,18 @@ lib/
 │   ├── match_service.dart
 │   └── stats_service.dart
 └── screens/
-    ├── splash_screen.dart      # comprueba sesion guardada al abrir la app
-    ├── login_screen.dart
-    ├── register_screen.dart
-    ├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
-    ├── deck_list_screen.dart
-    ├── deck_detail_screen.dart
-    ├── create_deck_screen.dart
-    ├── edit_deck_screen.dart
-    ├── register_match_screen.dart
-    ├── edit_match_screen.dart
-    ├── stats_screen.dart
-    └── tournaments_screen.dart # placeholder, pendiente backend
+├── splash_screen.dart      # comprueba sesion guardada al abrir la app
+├── login_screen.dart
+├── register_screen.dart
+├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
+├── deck_list_screen.dart
+├── deck_detail_screen.dart
+├── create_deck_screen.dart
+├── edit_deck_screen.dart
+├── register_match_screen.dart
+├── edit_match_screen.dart
+├── stats_screen.dart
+└── tournaments_screen.dart # placeholder, pendiente backend
 ```
 
 ## Funcionalidades
@@ -50,6 +55,7 @@ lib/
 - Estadísticas globales y ranking de mazos por win-rate
 - Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado)
 - Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
+- Modo oscuro/claro automático según el ajuste del sistema
 
 ## Configuración
 
@@ -72,6 +78,7 @@ flutter run -d edge      # o -d windows, -d chrome, un emulador Android, etc.
 
 - El plugin `flutter_secure_storage` en target **Windows Desktop** requiere el componente "ATL de C++ (x86 & x64)" instalado desde Visual Studio Installer (Componentes individuales).
 - El backend está en Render (plan gratuito), por lo que la primera petición tras un periodo de inactividad puede tardar 30-50s en responder mientras el servidor "despierta".
+- Los colores deben aplicarse vía `Theme.of(context).colorScheme` o los tokens de `AppColors`/`AppSizes`/`AppTextStyles` (`lib/styles/`), nunca como literales fijos (`Colors.black87`, etc.) — de lo contrario no se adaptan al modo oscuro.
 
 ## TODO futuro
 
