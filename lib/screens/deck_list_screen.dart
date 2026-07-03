@@ -1,5 +1,6 @@
 import 'package:deck_tracker_app/screens/create_deck_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
 import '../services/stats_service.dart';
@@ -68,12 +69,12 @@ class _DeckListScreenState extends State<DeckListScreen> {
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSizes.spacingL),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('Error al cargar mazos: $_errorMessage', textAlign: TextAlign.center),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
               FilledButton.icon(
                 onPressed: () async {
                   final created = await Navigator.of(context).push<bool>(
@@ -93,21 +94,21 @@ class _DeckListScreenState extends State<DeckListScreen> {
     if (_decks.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSizes.spacingL),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.style_outlined, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
+              const Icon(Icons.style_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
+              const SizedBox(height: AppSizes.spacingM),
               const Text(
                 'Todavía no tienes mazos',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spacingS),
               const Text(
                 'Crea tu primer mazo para empezar a registrar partidas',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.muted),
               ),
             ],
           ),
@@ -118,19 +119,19 @@ class _DeckListScreenState extends State<DeckListScreen> {
     return RefreshIndicator(
       onRefresh: _loadDecks,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSizes.spacingM),
         itemCount: _decks.length,
         itemBuilder: (context, index) {
           final deck = _decks[index];
           final totalMatches = _matchCounts[deck.id] ?? 0;
 
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
             child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
+              contentPadding: const EdgeInsets.all(AppSizes.spacingM),
               title: Text(
                 deck.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 4),

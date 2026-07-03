@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../models/match.dart';
 import '../services/match_service.dart';
 
@@ -85,7 +86,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     return Column(
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.spacingS),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -94,11 +95,11 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
               onPressed: value > 0 ? () => onChanged(value - 1) : null,
             ),
             SizedBox(
-              width: 40,
+              width: AppSizes.badgeWidth,
               child: Text(
                 '$value',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(
@@ -119,7 +120,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               TextFormField(
                 controller: _opponentController,
@@ -134,7 +135,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: AppSizes.spacingL),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -143,15 +144,15 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   _prizeCounter('Premios rival', _opponentPrizes, (v) => setState(() => _opponentPrizes = v)),
                 ],
               ),
-              const SizedBox(height: 8),
+                  const SizedBox(height: AppSizes.spacingS),
 
               if (_needsManualResult) ...[
-                const Text(
-                  'Premios empatados con fin de partida especial: indica quién ganó',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: Colors.orange),
-                ),
-                const SizedBox(height: 8),
+                    const Text(
+                      'Premios empatados con fin de partida especial: indica quién ganó',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
+                    ),
+                const SizedBox(height: AppSizes.spacingS),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'win', label: Text('Gané')),
@@ -169,10 +170,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                         : _userPrizes < _opponentPrizes
                             ? '❌ Derrota'
                             : '🤝 Empate',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
                   ),
                 ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: AppSizes.spacingL),
 
               DropdownButtonFormField<String>(
                 initialValue: _endReason,
@@ -185,7 +186,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                     .toList(),
                 onChanged: (value) => setState(() => _endReason = value!),
               ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: AppSizes.spacingM),
 
               TextFormField(
                 controller: _notesController,
@@ -196,7 +197,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: AppSizes.spacingM),
 
               if (_errorMessage != null) ...[
                 Text(
@@ -204,15 +205,15 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spacingM),
               ],
 
               FilledButton(
                 onPressed: _isLoading ? null : _handleSave,
                 child: _isLoading
                     ? const SizedBox(
-                        height: 20,
-                        width: 20,
+                        height: AppSizes.spinnerSmall,
+                        width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Guardar cambios'),

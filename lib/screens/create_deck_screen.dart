@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../services/deck_service.dart';
 
 class CreateDeckScreen extends StatefulWidget {
@@ -82,7 +83,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               TextFormField(
                 controller: _nameController,
@@ -97,7 +98,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               DropdownButtonFormField<String>(
                 initialValue: _format,
@@ -111,12 +112,12 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                 ],
                 onChanged: (value) => setState(() => _format = value!),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.spacingL),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Cartas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Cartas', style: TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold)),
                   TextButton.icon(
                     onPressed: _addCard,
                     icon: const Icon(Icons.add),
@@ -124,14 +125,14 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spacingS),
 
               if (_cards.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingM),
                   child: Text(
                     'Puedes añadir cartas ahora o más tarde',
-                    style: TextStyle(color: Colors.grey),
+                    style: const TextStyle(color: AppColors.muted),
                   ),
                 ),
 
@@ -140,7 +141,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                 final card = entry.value;
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Row(
@@ -191,7 +192,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                 );
               }),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               if (_errorMessage != null) ...[
                 Text(
@@ -199,15 +200,15 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spacingM),
               ],
 
               FilledButton(
                 onPressed: _isLoading ? null : _handleCreate,
                 child: _isLoading
                     ? const SizedBox(
-                        height: 20,
-                        width: 20,
+                        height: AppSizes.spinnerSmall,
+                        width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Crear mazo'),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
 
@@ -99,7 +100,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               TextFormField(
                 controller: _nameController,
@@ -114,7 +115,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               DropdownButtonFormField<String>(
                 initialValue: _format,
@@ -128,12 +129,12 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                 ],
                 onChanged: (value) => setState(() => _format = value!),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.spacingL),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Cartas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Cartas', style: TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold)),
                   TextButton.icon(
                     onPressed: _addCard,
                     icon: const Icon(Icons.add),
@@ -141,12 +142,12 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spacingS),
 
               if (_cards.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('No hay cartas añadidas', style: TextStyle(color: Colors.grey)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingM),
+                  child: const Text('No hay cartas añadidas', style: TextStyle(color: AppColors.muted)),
                 ),
 
               ..._cards.asMap().entries.map((entry) {
@@ -154,9 +155,9 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                 final card = entry.value;
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSizes.spacingSM),
                     child: Row(
                       children: [
                         Expanded(
@@ -172,7 +173,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSizes.spacingS),
                         Expanded(
                           flex: 1,
                           child: TextFormField(
@@ -181,7 +182,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                             keyboardType: TextInputType.number,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSizes.spacingS),
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<String>(
@@ -196,7 +197,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline),
+                          icon: const Icon(Icons.delete_outline, size: AppSizes.iconNormal),
                           onPressed: () => _removeCard(index),
                         ),
                       ],
@@ -205,7 +206,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                 );
               }),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               if (_errorMessage != null) ...[
                 Text(
@@ -213,7 +214,7 @@ class _EditDeckScreenState extends State<EditDeckScreen> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spacingM),
               ],
 
               FilledButton(

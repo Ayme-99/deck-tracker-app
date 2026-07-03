@@ -16,8 +16,15 @@ class DeckTrackerApp extends StatelessWidget {
       title: 'Deck Tracker',
       theme: ThemeData(
         colorSchemeSeed: Colors.deepPurple,
+        brightness: Brightness.light,
         useMaterial3: true,
       ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        brightness: Brightness.dark,
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system, // sigue el ajuste del movil automaticamente
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
     );

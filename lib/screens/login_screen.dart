@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
@@ -59,21 +60,21 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.style, size: 64),
-                  const SizedBox(height: 16),
+                  const Icon(Icons.style, size: AppSizes.iconHuge),
+                  const SizedBox(height: AppSizes.spacingM),
                   Text(
                     'Deck Tracker',
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSizes.spacingXL),
 
                   TextFormField(
                     controller: _usernameController,
@@ -88,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSizes.spacingM),
 
                   TextFormField(
                     controller: _passwordController,
@@ -104,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSizes.spacingL),
 
                   if (_errorMessage != null) ...[
                     Text(
@@ -125,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const Text('Entrar'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSizes.spacingSM),
 
                   TextButton(
                     onPressed: () {

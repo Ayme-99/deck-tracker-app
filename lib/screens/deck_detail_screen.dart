@@ -1,6 +1,7 @@
 import 'package:deck_tracker_app/screens/edit_deck_screen.dart';
 import 'package:deck_tracker_app/services/deck_service.dart';
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../models/match.dart';
 import '../services/stats_service.dart';
@@ -163,11 +164,11 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   Color _resultColor(String result) {
     switch (result) {
       case 'win':
-        return Colors.green;
+        return AppColors.success;
       case 'loss':
-        return Colors.red;
+        return AppColors.error;
       default:
-        return Colors.grey;
+        return AppColors.muted;
     }
   }
 
@@ -213,12 +214,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           : _errorMessage != null
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(AppSizes.spacingL),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text('Error: $_errorMessage', textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSizes.spacingM),
                         FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
                       ],
                     ),
@@ -227,12 +228,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSizes.spacingM),
                     children: [
                       _buildOverviewCard(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSizes.spacingL),
                       _buildMatchupsSection(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSizes.spacingL),
                       _buildRecentMatchesSection(),
                     ],
                   ),
@@ -257,22 +258,22 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSizes.spacing20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '${widget.deck.format} · $totalMatches partidas',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSizes.spacingM),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _statColumn('$winRate%', 'Win rate', Colors.deepPurple),
-                _statColumn('${overview['wins']}', 'Victorias', Colors.green),
-                _statColumn('${overview['losses']}', 'Derrotas', Colors.red),
-                _statColumn('${overview['ties']}', 'Empates', Colors.grey),
+                _statColumn('$winRate%', 'Win rate', AppColors.primaryVariant),
+                _statColumn('${overview['wins']}', 'Victorias', AppColors.success),
+                _statColumn('${overview['losses']}', 'Derrotas', AppColors.error),
+                _statColumn('${overview['ties']}', 'Empates', AppColors.muted),
               ],
             ),
             if (totalMatches > 0) ...[
@@ -280,8 +281,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', Colors.black87),
-                  _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', Colors.black54),
+                  _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', AppColors.textPrimary),
+                  _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', AppColors.textSecondary),
                 ],
               ),
             ],
@@ -296,22 +297,22 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       children: [
         Text(
           value,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold, color: color),
         ),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        const SizedBox(height: AppSizes.spacingXS),
+        Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
       ],
     );
   }
 
   Widget _buildMatchupsSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Matchups', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+          const Text('Matchups', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        const SizedBox(height: AppSizes.spacingM),
         if (_matchups.isEmpty)
-          const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
+          const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
         else
           ..._matchups.map((m) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -330,10 +331,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
   Widget _buildRecentMatchesSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Partidas recientes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+          const Text('Partidas recientes', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        const SizedBox(height: AppSizes.spacingSM),
         if (_recentMatches.isEmpty)
           const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
         else
@@ -341,15 +342,15 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   onTap: () => _showMatchOptions(match),
-                  leading: CircleAvatar(
-                    backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
+                    leading: CircleAvatar(
+                      backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
                     child: Icon(
                       match.result == 'win'
                           ? Icons.check
                           : match.result == 'loss'
                               ? Icons.close
                               : Icons.remove,
-                      color: _resultColor(match.result),
+                        color: _resultColor(match.result),
                     ),
                   ),
                   title: Text('vs ${match.opponentDeck}'),
@@ -358,7 +359,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                   ),
                   trailing: Text(
                     '${match.playedAt.day}/${match.playedAt.month}',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
                   ),
                 ),
               )),

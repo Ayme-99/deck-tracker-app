@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 
@@ -59,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
             child: Form(
               key: _formKey,
               child: Column(
@@ -79,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSizes.spacingM),
 
                   TextFormField(
                     controller: _passwordController,
@@ -95,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSizes.spacingL),
 
                   if (_errorMessage != null) ...[
                     Text(
@@ -103,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSizes.spacingM),
                   ],
 
                   FilledButton(

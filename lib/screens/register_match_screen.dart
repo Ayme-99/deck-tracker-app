@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/match_service.dart';
 
@@ -75,7 +76,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     return Column(
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.spacingS),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -84,11 +85,11 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               onPressed: value > 0 ? () => onChanged(value - 1) : null,
             ),
             SizedBox(
-              width: 40,
+              width: AppSizes.badgeWidth,
               child: Text(
                 '$value',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(
@@ -109,7 +110,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               Autocomplete<String>(
                 optionsBuilder: (textEditingValue) async {
@@ -143,7 +144,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.spacingL),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -152,15 +153,15 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                   _prizeCounter('Premios rival', _opponentPrizes, (v) => setState(() => _opponentPrizes = v)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spacingS),
 
               if (_needsManualResult) ...[
                 const Text(
                   'Este motivo de fin de partida puede no coincidir con el marcador de premios: indica el resultado real',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: Colors.orange),
+                  style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.spacingS),
                 SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'win', label: Text('Gané')),
@@ -178,10 +179,10 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                         : _userPrizes < _opponentPrizes
                             ? '❌ Derrota'
                             : '🤝 Empate',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
                   ),
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.spacingL),
 
               DropdownButtonFormField<String>(
                 initialValue: _endReason,
@@ -194,7 +195,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                     .toList(),
                 onChanged: (value) => setState(() => _endReason = value!),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               TextFormField(
                 controller: _notesController,
@@ -205,7 +206,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
 
               if (_errorMessage != null) ...[
                 Text(
@@ -213,15 +214,15 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spacingM),
               ],
 
               FilledButton(
                 onPressed: _isLoading ? null : _handleSubmit,
                 child: _isLoading
                     ? const SizedBox(
-                        height: 20,
-                        width: 20,
+                        height: AppSizes.spinnerSmall,
+                        width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Registrar partida'),
