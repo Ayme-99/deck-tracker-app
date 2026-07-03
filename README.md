@@ -49,6 +49,7 @@ lib/
 - Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos
 - Estadísticas globales y ranking de mazos por win-rate
 - Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado)
+- Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
 
 ## Configuración
 
