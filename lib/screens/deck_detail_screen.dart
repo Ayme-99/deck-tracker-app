@@ -228,7 +228,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: ListView(
-                    padding: const EdgeInsets.all(AppSizes.spacingM),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.spacingM, 
+                      AppSizes.spacingM, 
+                      AppSizes.spacingM, 
+                      AppSizes.fabBottomPadding
+                    ),
                     children: [
                       _buildOverviewCard(),
                       const SizedBox(height: AppSizes.spacingL),
@@ -281,8 +286,16 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', AppColors.textPrimary),
-                  _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', AppColors.textSecondary),
+                  _statColumn(
+                    '${overview['totalUserPrizes']}',
+                    'Premios cogidos',
+                    Theme.of(context).colorScheme.onSurface,
+                  ),
+                  _statColumn(
+                    '${overview['totalOpponentPrizes']}',
+                    'Premios cedidos',
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ],
               ),
             ],

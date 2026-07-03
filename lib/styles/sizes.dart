@@ -10,6 +10,9 @@ class AppSizes {
   static const double spacingXL = 32.0;
   static const double spacingSM = 12.0;
 
+  // Espacio inferior extra para listas con FloatingActionButton, evita que el FAB tape el ultimo item
+  static const double fabBottomPadding = 96.0;
+
   // Radii
   static const double radiusS = 4.0;
   static const double radiusM = 8.0;

@@ -2,30 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles/colors.dart';
 import 'package:deck_tracker_app/styles/text_styles.dart';
 
-ThemeData buildAppTheme() {
-  final base = ThemeData.light();
+ThemeData buildAppTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  final base = isDark ? ThemeData.dark() : ThemeData.light();
+
+  final background = isDark ? AppColors.backgroundDark : AppColors.background;
+  final surface = isDark ? AppColors.surfaceDark : AppColors.surface;
+  final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+
   return base.copyWith(
+    brightness: brightness,
     primaryColor: AppColors.primary,
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: background,
     colorScheme: base.colorScheme.copyWith(
+      brightness: brightness,
       primary: AppColors.primary,
       secondary: AppColors.secondary,
-      surface: AppColors.surface,
+      surface: surface,
       error: AppColors.error,
-      onPrimary: AppColors.surface,
-      onSecondary: AppColors.textPrimary,
-      onSurface: AppColors.textPrimary,
+      onPrimary: isDark ? textPrimary : AppColors.surface,
+      onSecondary: textPrimary,
+      onSurface: textPrimary,
       onError: AppColors.surface,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.surface,
+      backgroundColor: isDark ? surface : AppColors.primary,
+      foregroundColor: isDark ? textPrimary : AppColors.surface,
       elevation: 0,
     ),
     textTheme: base.textTheme.copyWith(
-      titleLarge: AppTextStyles.title,
-      bodyLarge: AppTextStyles.body,
-      bodyMedium: AppTextStyles.caption,
+      titleLarge: AppTextStyles.title.copyWith(color: textPrimary),
+      bodyLarge: AppTextStyles.body.copyWith(color: textPrimary),
+      bodyMedium: AppTextStyles.caption.copyWith(color: textPrimary),
       labelLarge: AppTextStyles.button,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
