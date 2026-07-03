@@ -32,7 +32,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     'deck_out': 'Mazo agotado',
   };
 
-  bool get _needsManualResult => _userPrizes == _opponentPrizes && _endReason != 'normal';
+  bool get _needsManualResult => _endReason != 'normal';
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -156,7 +156,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
               if (_needsManualResult) ...[
                 const Text(
-                  'Premios empatados con fin de partida especial: indica quién ganó',
+                  'Este motivo de fin de partida puede no coincidir con el marcador de premios: indica el resultado real',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: Colors.orange),
                 ),
