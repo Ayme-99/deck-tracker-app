@@ -74,6 +74,22 @@ flutter pub get
 flutter run -d edge      # o -d windows, -d chrome, un emulador Android, etc.
 ```
 
+## Deploy web
+
+La app está desplegada como Static Site en Render:
+- https://deck-tracker-web.onrender.com
+
+Proceso de despliegue (manual, build local):
+
+```bash
+flutter build web --release
+git add build/web -f
+git commit -m "Build web de produccion"
+git push
+```
+
+Render sirve directamente el contenido de `build/web` (sin build command propio, ya que el build se genera localmente antes del commit).
+
 ## Notas de desarrollo
 
 - El plugin `flutter_secure_storage` en target **Windows Desktop** requiere el componente "ATL de C++ (x86 & x64)" instalado desde Visual Studio Installer (Componentes individuales).
