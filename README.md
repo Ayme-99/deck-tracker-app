@@ -23,13 +23,19 @@ lib/
 │   └── theme.dart
 ├── models/
 │   ├── deck.dart
-│   └── match.dart
+│   ├── match.dart
+│   └── opponent_archetype.dart
 ├── services/
 │   ├── api_service.dart       # cliente HTTP base, inyecta el token JWT
 │   ├── auth_service.dart
 │   ├── deck_service.dart
 │   ├── match_service.dart
-│   └── stats_service.dart
+│   ├── stats_service.dart
+│   ├── pokemon_service.dart
+│   └── opponent_archetype_service.dart
+├── widgets/
+│   ├── sprite_picker.dart      # seleccion de 1-2 sprites con autocompletado de especies
+│   └── sprite_avatar_group.dart # visualizacion de sprites, con ancho fijo para alineacion en listas
 └── screens/
 ├── splash_screen.dart      # comprueba sesion guardada al abrir la app
 ├── login_screen.dart
@@ -37,8 +43,8 @@ lib/
 ├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
 ├── deck_list_screen.dart
 ├── deck_detail_screen.dart
-├── deck_form_screen.dart      # crear y editar mazos (parametrizado con Deck?)
-├── register_match_screen.dart
+├── deck_form_screen.dart   # crear y editar mazos (parametrizado con Deck?)
+   ├── register_match_screen.dart
 ├── edit_match_screen.dart
 ├── stats_screen.dart
 └── tournaments_screen.dart # placeholder, pendiente backend
@@ -55,6 +61,7 @@ lib/
 - Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado)
 - Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
 - Modo oscuro/claro automático según el ajuste del sistema
+- Iconos de Pokémon (sprites) para mazos propios y rivales, con autocompletado de especies vía PokeAPI. Los sprites de rivales se recuerdan automáticamente por nombre.
 
 ## Configuración
 
