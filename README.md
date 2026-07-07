@@ -26,7 +26,7 @@ lib/
 │   ├── match.dart
 │   └── opponent_archetype.dart
 ├── services/
-│   ├── api_service.dart       # cliente HTTP base, inyecta el token JWT
+│   ├── api_service.dart                 # cliente HTTP base, inyecta el token JWT
 │   ├── auth_service.dart
 │   ├── deck_service.dart
 │   ├── match_service.dart
@@ -34,20 +34,20 @@ lib/
 │   ├── pokemon_service.dart
 │   └── opponent_archetype_service.dart
 ├── widgets/
-│   ├── sprite_picker.dart      # seleccion de 1-2 sprites con autocompletado de especies
-│   └── sprite_avatar_group.dart # visualizacion de sprites, con ancho fijo para alineacion en listas
-├── screens/
-├── splash_screen.dart      # comprueba sesion guardada al abrir la app
-├── login_screen.dart
-├── register_screen.dart
-├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
-├── deck_list_screen.dart
-├── deck_detail_screen.dart
-├── deck_form_screen.dart   # crear y editar mazos (parametrizado con Deck?)
-   ├── register_match_screen.dart
-├── edit_match_screen.dart
-├── stats_screen.dart
-└── tournaments_screen.dart # placeholder, pendiente backend
+│   ├── sprite_picker.dart               # seleccion de 1-2 sprites con autocompletado de especies
+│   └── sprite_avatar_group.dart         # visualizacion de sprites, con ancho fijo para alineacion en listas
+└── screens/
+    ├── splash_screen.dart               # comprueba sesion guardada al abrir la app
+    ├── login_screen.dart
+    ├── register_screen.dart
+    ├── home_screen.dart                 # navegacion: Mazos / Stats / Torneos
+    ├── deck_list_screen.dart
+    ├── deck_detail_screen.dart
+    ├── deck_form_screen.dart            # crear y editar mazos (parametrizado con Deck?)
+    ├── register_match_screen.dart
+    ├── edit_match_screen.dart
+    ├── stats_screen.dart
+    └── tournaments_screen.dart          # placeholder, pendiente backend
 ```
 
 ## Funcionalidades
