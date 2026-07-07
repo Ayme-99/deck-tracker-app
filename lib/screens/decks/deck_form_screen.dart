@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
-import '../models/deck.dart';
-import '../services/deck_service.dart';
-import '../widgets/sprite_picker.dart';
+import '../../models/deck.dart';
+import '../../services/deck_service.dart';
+import '../../widgets/sprite_picker.dart';
 
 /// Pantalla unificada para crear y editar mazos.
 /// Si [deck] es null, funciona en modo "crear". Si viene informado, modo "editar".

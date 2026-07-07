@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
-import '../models/match.dart';
-import '../services/match_service.dart';
-import '../services/opponent_archetype_service.dart';
-import '../widgets/sprite_picker.dart';
+import '../../models/match.dart';
+import '../../services/match_service.dart';
+import '../../services/opponent_archetype_service.dart';
+import '../../widgets/sprite_picker.dart';
 
 class EditMatchScreen extends StatefulWidget {
   final Match match;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
-import '../services/stats_service.dart';
-import '../widgets/sprite_avatar_group.dart';
+import '../../services/stats_service.dart';
+import '../../widgets/sprite_avatar_group.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});

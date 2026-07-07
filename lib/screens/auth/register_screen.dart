@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
