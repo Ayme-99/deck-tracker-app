@@ -37,8 +37,7 @@ lib/
 ├── home_screen.dart        # navegacion: Mazos / Stats / Torneos
 ├── deck_list_screen.dart
 ├── deck_detail_screen.dart
-├── create_deck_screen.dart
-├── edit_deck_screen.dart
+├── deck_form_screen.dart      # crear y editar mazos (parametrizado con Deck?)
 ├── register_match_screen.dart
 ├── edit_match_screen.dart
 ├── stats_screen.dart
