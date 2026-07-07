@@ -1,8 +1,8 @@
+import 'package:deck_tracker_app/screens/deck_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'deck_list_screen.dart';
 import 'stats_screen.dart';
 import 'tournaments_screen.dart';
-import 'create_deck_screen.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleCreateDeck() async {
     final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
+      MaterialPageRoute(builder: (_) => const DeckFormScreen()),
     );
     if (created == true) {
       setState(() => _deckListKey = UniqueKey());
