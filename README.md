@@ -85,16 +85,7 @@ flutter run -d edge      # o -d windows, -d chrome, un emulador Android, etc.
 La app está desplegada como Static Site en Render:
 - https://deck-tracker-web.onrender.com
 
-Proceso de despliegue (manual, build local):
-
-```bash
-flutter build web --release
-git add build/web -f
-git commit -m "Build web de produccion"
-git push
-```
-
-Render sirve directamente el contenido de `build/web` (sin build command propio, ya que el build se genera localmente antes del commit).
+Despliegue automatizado con GitHub Actions (`.github/workflows/deploy-web.yml`): en cada push a `main`, el workflow instala Flutter, compila (`flutter build web --release`), y publica el contenido de `build/web` en la rama `web-build`. Render sirve directamente desde esa rama (Branch: `web-build`, Publish directory: `.`), sin necesidad de build local ni commits manuales del build.
 
 ## Notas de desarrollo
 
