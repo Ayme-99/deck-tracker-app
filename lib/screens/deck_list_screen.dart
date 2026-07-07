@@ -1,4 +1,4 @@
-import 'package:deck_tracker_app/screens/create_deck_screen.dart';
+import 'package:deck_tracker_app/screens/deck_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
@@ -78,7 +78,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
               FilledButton.icon(
                 onPressed: () async {
                   final created = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute(builder: (_) => const CreateDeckScreen()),
+                    MaterialPageRoute(builder: (_) => const DeckFormScreen()),
                   );
                   if (created == true) _loadDecks();
                 },

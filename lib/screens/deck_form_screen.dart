@@ -1,24 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../models/deck.dart';
 import '../services/deck_service.dart';
 
-class CreateDeckScreen extends StatefulWidget {
-  const CreateDeckScreen({super.key});
+/// Pantalla unificada para crear y editar mazos.
+/// Si [deck] es null, funciona en modo "crear". Si viene informado, modo "editar".
+class DeckFormScreen extends StatefulWidget {
+  final Deck? deck;
+
+  const DeckFormScreen({super.key, this.deck});
 
   @override
-  State<CreateDeckScreen> createState() => _CreateDeckScreenState();
+  State<DeckFormScreen> createState() => _DeckFormScreenState();
 }
 
-class _CreateDeckScreenState extends State<CreateDeckScreen> {
+class _DeckFormScreenState extends State<DeckFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  late final TextEditingController _nameController;
   final _deckService = DeckService();
 
-  String _format = 'Standard';
+  bool get _isEditing => widget.deck != null;
+
+  late String _format;
   bool _isLoading = false;
   String? _errorMessage;
 
-  final List<_CardEntry> _cards = [];
+  late final List<_CardEntry> _cards;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.deck?.name ?? '');
+    _format = widget.deck?.format ?? 'Standard';
+    _cards = widget.deck?.cards
+            .map((c) => _CardEntry(
+                  name: c.name,
+                  quantity: c.quantity,
+                  category: c.category,
+                ))
+            .toList() ??
+        [];
+  }
 
   void _addCard() {
     setState(() {
@@ -32,7 +54,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
     });
   }
 
-  Future<void> _handleCreate() async {
+  Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -41,21 +63,31 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
     });
 
     try {
-      final cardsData = _cards.map((c) => {
-            'cardId': c.nameController.text.trim().toLowerCase().replaceAll(' ', '-'),
-            'name': c.nameController.text.trim(),
-            'quantity': int.tryParse(c.quantityController.text) ?? 1,
-            'category': c.category,
-          }).toList();
+      final cardsData = _cards
+          .map((c) => {
+                'cardId': c.nameController.text.trim().toLowerCase().replaceAll(' ', '-'),
+                'name': c.nameController.text.trim(),
+                'quantity': int.tryParse(c.quantityController.text) ?? 1,
+                'category': c.category,
+              })
+          .toList();
 
-      await _deckService.createDeck(
-        _nameController.text.trim(),
-        _format,
-        cardsData,
-      );
+      if (_isEditing) {
+        await _deckService.updateDeck(widget.deck!.id, {
+          'name': _nameController.text.trim(),
+          'format': _format,
+          'cards': cardsData,
+        });
+      } else {
+        await _deckService.createDeck(
+          _nameController.text.trim(),
+          _format,
+          cardsData,
+        );
+      }
 
       if (!mounted) return;
-      Navigator.of(context).pop(true); // true indica que se creo con exito
+      Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -78,7 +110,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo Mazo')),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar Mazo' : 'Nuevo Mazo')),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -131,7 +163,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingM),
                   child: Text(
-                    'Puedes añadir cartas ahora o más tarde',
+                    _isEditing ? 'No hay cartas añadidas' : 'Puedes añadir cartas ahora o más tarde',
                     style: const TextStyle(color: AppColors.muted),
                   ),
                 ),
@@ -143,7 +175,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSizes.spacingSM),
                     child: Row(
                       children: [
                         Expanded(
@@ -159,7 +191,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSizes.spacingS),
                         Expanded(
                           flex: 1,
                           child: TextFormField(
@@ -168,7 +200,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                             keyboardType: TextInputType.number,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSizes.spacingS),
                         Expanded(
                           flex: 2,
                           child: DropdownButtonFormField<String>(
@@ -183,7 +215,7 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline),
+                          icon: const Icon(Icons.delete_outline, size: AppSizes.iconNormal),
                           onPressed: () => _removeCard(index),
                         ),
                       ],
@@ -204,14 +236,14 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
               ],
 
               FilledButton(
-                onPressed: _isLoading ? null : _handleCreate,
+                onPressed: _isLoading ? null : _handleSubmit,
                 child: _isLoading
                     ? const SizedBox(
                         height: AppSizes.spinnerSmall,
                         width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Crear mazo'),
+                    : Text(_isEditing ? 'Guardar cambios' : 'Crear mazo'),
               ),
             ],
           ),
@@ -222,7 +254,11 @@ class _CreateDeckScreenState extends State<CreateDeckScreen> {
 }
 
 class _CardEntry {
-  final nameController = TextEditingController();
-  final quantityController = TextEditingController(text: '1');
-  String category = 'pokemon';
+  final TextEditingController nameController;
+  final TextEditingController quantityController;
+  String category;
+
+  _CardEntry({String name = '', int quantity = 1, this.category = 'pokemon'})
+      : nameController = TextEditingController(text: name),
+        quantityController = TextEditingController(text: quantity.toString());
 }

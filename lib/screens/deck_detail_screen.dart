@@ -1,4 +1,4 @@
-import 'package:deck_tracker_app/screens/edit_deck_screen.dart';
+import 'package:deck_tracker_app/screens/deck_form_screen.dart';
 import 'package:deck_tracker_app/services/deck_service.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
@@ -193,7 +193,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
             onSelected: (value) async {
               if (value == 'edit') {
                 final updated = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(builder: (_) => EditDeckScreen(deck: widget.deck)),
+                  MaterialPageRoute(builder: (_) => DeckFormScreen(deck: widget.deck)),
                 );
                 if (updated == true && context.mounted) {
                   Navigator.of(context).pop(true);
