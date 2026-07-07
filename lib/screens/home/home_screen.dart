@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
-import '../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
