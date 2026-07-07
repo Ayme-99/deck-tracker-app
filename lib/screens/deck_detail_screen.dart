@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../models/match.dart';
+import '../models/opponent_archetype.dart';
 import '../services/stats_service.dart';
 import '../services/match_service.dart';
+import '../services/opponent_archetype_service.dart';
+import '../widgets/sprite_avatar_group.dart';
 import 'register_match_screen.dart';
 import 'edit_match_screen.dart';
 
@@ -22,10 +25,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _statsService = StatsService();
   final _matchService = MatchService();
   final _deckService = DeckService();
+  final _archetypeService = OpponentArchetypeService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
   List<Match> _recentMatches = [];
+  Map<String, OpponentArchetype> _archetypesByName = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -145,12 +150,16 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         _statsService.getDeckOverview(widget.deck.id),
         _statsService.getDeckMatchups(widget.deck.id),
         _matchService.getMatches(deckId: widget.deck.id, limit: 5),
+        _archetypeService.getAll(),
       ]);
+
+      final archetypes = results[3] as List<OpponentArchetype>;
 
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
         _matchups = results[1] as List<dynamic>;
         _recentMatches = results[2] as List<Match>;
+        _archetypesByName = {for (final a in archetypes) a.name: a};
         _isLoading = false;
       });
     } catch (e) {
@@ -229,10 +238,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                   onRefresh: _loadData,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSizes.spacingM, 
-                      AppSizes.spacingM, 
-                      AppSizes.spacingM, 
-                      AppSizes.fabBottomPadding
+                      AppSizes.spacingM,
+                      AppSizes.spacingM,
+                      AppSizes.spacingM,
+                      AppSizes.fabBottomPadding,
                     ),
                     children: [
                       _buildOverviewCard(),
@@ -320,62 +329,83 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
   Widget _buildMatchupsSection() {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          const Text('Matchups', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        const Text('Matchups', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSizes.spacingM),
         if (_matchups.isEmpty)
           const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
         else
-          ..._matchups.map((m) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(m['opponentDeck']),
-                  subtitle: Text('${m['wins']}V - ${m['losses']}D - ${m['ties']}E'),
-                  trailing: Text(
-                    '${m['winRate']}%',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+          ..._matchups.map((m) {
+            final archetype = _archetypesByName[m['opponentDeck']];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                minLeadingWidth: 0,
+                horizontalTitleGap: AppSizes.spacingS,
+                leading: SpriteAvatarGroup(
+                  sprite1: archetype?.sprite1,
+                  sprite2: archetype?.sprite2,
+                  size: AppSizes.iconNormal,
                 ),
-              )),
+                title: Text(m['opponentDeck']),
+                subtitle: Text('${m['wins']}V - ${m['losses']}D - ${m['ties']}E'),
+                trailing: Text(
+                  '${m['winRate']}%',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }),
       ],
     );
   }
 
   Widget _buildRecentMatchesSection() {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          const Text('Partidas recientes', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        const Text('Partidas recientes', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSizes.spacingSM),
         if (_recentMatches.isEmpty)
           const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
         else
-          ..._recentMatches.map((match) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  onTap: () => _showMatchOptions(match),
-                    leading: CircleAvatar(
-                      backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
-                    child: Icon(
-                      match.result == 'win'
-                          ? Icons.check
-                          : match.result == 'loss'
-                              ? Icons.close
-                              : Icons.remove,
-                        color: _resultColor(match.result),
-                    ),
-                  ),
-                  title: Text('vs ${match.opponentDeck}'),
-                  subtitle: Text(
-                    '${_resultLabel(match.result)} · ${match.userPrizes}-${match.opponentPrizes}',
-                  ),
-                  trailing: Text(
-                    '${match.playedAt.day}/${match.playedAt.month}',
-                    style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
-                  ),
+          ..._recentMatches.map((match) {
+            final archetype = _archetypesByName[match.opponentDeck];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                onTap: () => _showMatchOptions(match),
+                minLeadingWidth: 0,
+                horizontalTitleGap: AppSizes.spacingS,
+                leading: archetype?.sprite1 != null
+                    ? SpriteAvatarGroup(
+                        sprite1: archetype!.sprite1,
+                        sprite2: archetype.sprite2,
+                        size: AppSizes.iconNormal,
+                      )
+                    : CircleAvatar(
+                        backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
+                        child: Icon(
+                          match.result == 'win'
+                              ? Icons.check
+                              : match.result == 'loss'
+                                  ? Icons.close
+                                  : Icons.remove,
+                          color: _resultColor(match.result),
+                        ),
+                      ),
+                title: Text('vs ${match.opponentDeck}'),
+                subtitle: Text(
+                  '${_resultLabel(match.result)} · ${match.userPrizes}-${match.opponentPrizes}',
                 ),
-              )),
+                trailing: Text(
+                  '${match.playedAt.day}/${match.playedAt.month}',
+                  style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
+                ),
+              ),
+            );
+          }),
       ],
     );
   }

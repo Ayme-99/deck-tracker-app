@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/match_service.dart';
+import '../services/opponent_archetype_service.dart';
+import '../widgets/sprite_picker.dart';
 
 class RegisterMatchScreen extends StatefulWidget {
   final Deck deck;
@@ -17,6 +19,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   final _opponentController = TextEditingController();
   final _notesController = TextEditingController();
   final _matchService = MatchService();
+  final _archetypeService = OpponentArchetypeService();
 
   int _userPrizes = 6;
   int _opponentPrizes = 0;
@@ -24,6 +27,11 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   String? _manualResult; // 'win', 'loss', 'tie' - solo se usa cuando hace falta
   bool _isLoading = false;
   String? _errorMessage;
+
+  String? _sprite1;
+  String? _sprite2;
+  String? _lastLookedUpName; // evita repetir la consulta si el nombre no cambio
+  FocusNode? _attachedFocusNode; // evita añadir el listener mas de una vez en rebuilds
 
   final _endReasonLabels = const {
     'normal': 'Normal (premios completos)',
@@ -35,6 +43,22 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
   bool get _needsManualResult => _endReason != 'normal';
 
+  Future<void> _lookupArchetype(String name) async {
+    if (name.isEmpty || name == _lastLookedUpName) return;
+    _lastLookedUpName = name;
+
+    try {
+      final archetype = await _archetypeService.getByName(name);
+      if (!mounted) return;
+      setState(() {
+        _sprite1 = archetype.sprite1;
+        _sprite2 = archetype.sprite2;
+      });
+    } catch (_) {
+      // Sin archetype guardado aun, no pasa nada: se queda vacio para elegir
+    }
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -44,15 +68,22 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     });
 
     try {
+      final opponentName = _opponentController.text.trim();
+
       await _matchService.createMatch(
         deckId: widget.deck.id,
-        opponentDeck: _opponentController.text.trim(),
+        opponentDeck: opponentName,
         userPrizes: _userPrizes,
         opponentPrizes: _opponentPrizes,
         endReason: _endReason,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         result: _needsManualResult ? (_manualResult ?? 'tie') : null,
       );
+
+      // Guarda/actualiza los sprites asociados a este nombre de rival, si se eligio alguno
+      if (_sprite1 != null) {
+        await _archetypeService.upsert(opponentName, sprite1: _sprite1, sprite2: _sprite2);
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -121,12 +152,26 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                     return const [];
                   }
                 },
-                onSelected: (selection) => _opponentController.text = selection,
+                onSelected: (selection) {
+                  _opponentController.text = selection;
+                  _lookupArchetype(selection);
+                },
                 fieldViewBuilder: (context, controller, focusNode, onSubmit) {
                   // Sincroniza el controller interno de Autocomplete con el nuestro
                   controller.addListener(() {
                     _opponentController.text = controller.text;
                   });
+
+                  // Engancha el listener de perdida de foco solo una vez, sobre el focusNode real de Autocomplete
+                  if (_attachedFocusNode != focusNode) {
+                    _attachedFocusNode = focusNode;
+                    focusNode.addListener(() {
+                      if (!focusNode.hasFocus) {
+                        _lookupArchetype(_opponentController.text.trim());
+                      }
+                    });
+                  }
+
                   return TextFormField(
                     controller: controller,
                     focusNode: focusNode,
@@ -142,6 +187,18 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                       return null;
                     },
                   );
+                },
+              ),
+              const SizedBox(height: AppSizes.spacingM),
+
+              SpritePicker(
+                sprite1: _sprite1,
+                sprite2: _sprite2,
+                onChanged: (sprites) {
+                  setState(() {
+                    _sprite1 = sprites[0];
+                    _sprite2 = sprites[1];
+                  });
                 },
               ),
               const SizedBox(height: AppSizes.spacingL),

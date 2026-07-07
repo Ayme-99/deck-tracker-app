@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/match.dart';
 import '../services/match_service.dart';
+import '../services/opponent_archetype_service.dart';
+import '../widgets/sprite_picker.dart';
 
 class EditMatchScreen extends StatefulWidget {
   final Match match;
@@ -17,6 +19,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
   late final TextEditingController _opponentController;
   late final TextEditingController _notesController;
   final _matchService = MatchService();
+  final _archetypeService = OpponentArchetypeService();
 
   late int _userPrizes;
   late int _opponentPrizes;
@@ -24,6 +27,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
   String? _manualResult;
   bool _isLoading = false;
   String? _errorMessage;
+
+  String? _sprite1;
+  String? _sprite2;
+  bool _loadingSprites = true;
 
   final _endReasonLabels = const {
     'normal': 'Normal (premios completos)',
@@ -44,6 +51,22 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     _opponentPrizes = widget.match.opponentPrizes;
     _endReason = widget.match.endReason;
     _manualResult = widget.match.result; // parte del resultado ya guardado
+    _loadExistingSprites();
+  }
+
+  Future<void> _loadExistingSprites() async {
+    try {
+      final archetype = await _archetypeService.getByName(widget.match.opponentDeck);
+      if (!mounted) return;
+      setState(() {
+        _sprite1 = archetype.sprite1;
+        _sprite2 = archetype.sprite2;
+        _loadingSprites = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingSprites = false);
+    }
   }
 
   Future<void> _handleSave() async {
@@ -55,14 +78,20 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     });
 
     try {
+      final opponentName = _opponentController.text.trim();
+
       await _matchService.updateMatch(widget.match.id, {
-        'opponentDeck': _opponentController.text.trim(),
+        'opponentDeck': opponentName,
         'userPrizes': _userPrizes,
         'opponentPrizes': _opponentPrizes,
         'endReason': _endReason,
         'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         if (_needsManualResult) 'result': _manualResult ?? 'tie',
       });
+
+      if (_sprite1 != null) {
+        await _archetypeService.upsert(opponentName, sprite1: _sprite1, sprite2: _sprite2);
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -120,7 +149,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-                padding: const EdgeInsets.all(AppSizes.spacingM),
+            padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               TextFormField(
                 controller: _opponentController,
@@ -135,7 +164,28 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   return null;
                 },
               ),
-                  const SizedBox(height: AppSizes.spacingL),
+              const SizedBox(height: AppSizes.spacingM),
+
+              if (_loadingSprites)
+                const Center(
+                  child: SizedBox(
+                    height: AppSizes.spinnerSmall,
+                    width: AppSizes.spinnerSmall,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                SpritePicker(
+                  sprite1: _sprite1,
+                  sprite2: _sprite2,
+                  onChanged: (sprites) {
+                    setState(() {
+                      _sprite1 = sprites[0];
+                      _sprite2 = sprites[1];
+                    });
+                  },
+                ),
+              const SizedBox(height: AppSizes.spacingL),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -144,14 +194,14 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   _prizeCounter('Premios rival', _opponentPrizes, (v) => setState(() => _opponentPrizes = v)),
                 ],
               ),
-                  const SizedBox(height: AppSizes.spacingS),
+              const SizedBox(height: AppSizes.spacingS),
 
               if (_needsManualResult) ...[
-                    const Text(
-                      'Premios empatados con fin de partida especial: indica quién ganó',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
-                    ),
+                const Text(
+                  'Premios empatados con fin de partida especial: indica quién ganó',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
+                ),
                 const SizedBox(height: AppSizes.spacingS),
                 SegmentedButton<String>(
                   segments: const [
@@ -170,10 +220,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                         : _userPrizes < _opponentPrizes
                             ? '❌ Derrota'
                             : '🤝 Empate',
-                        style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
                   ),
                 ),
-                  const SizedBox(height: AppSizes.spacingL),
+              const SizedBox(height: AppSizes.spacingL),
 
               DropdownButtonFormField<String>(
                 initialValue: _endReason,
@@ -186,7 +236,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                     .toList(),
                 onChanged: (value) => setState(() => _endReason = value!),
               ),
-                  const SizedBox(height: AppSizes.spacingM),
+              const SizedBox(height: AppSizes.spacingM),
 
               TextFormField(
                 controller: _notesController,
@@ -197,7 +247,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                 ),
                 maxLines: 3,
               ),
-                  const SizedBox(height: AppSizes.spacingM),
+              const SizedBox(height: AppSizes.spacingM),
 
               if (_errorMessage != null) ...[
                 Text(

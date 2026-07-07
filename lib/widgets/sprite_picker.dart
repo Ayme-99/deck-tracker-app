@@ -3,16 +3,17 @@ import 'package:deck_tracker_app/styles.dart';
 import '../services/pokemon_service.dart';
 
 /// Selector de hasta 2 sprites de Pokemon, con autocompletado de especies.
-/// Devuelve los cambios via [onChanged] con una lista de 0, 1 o 2 URLs.
+/// Componente totalmente controlado: el padre es la fuente de verdad via
+/// [sprite1]/[sprite2], y este widget solo notifica cambios via [onChanged].
 class SpritePicker extends StatefulWidget {
-  final String? initialSprite1;
-  final String? initialSprite2;
+  final String? sprite1;
+  final String? sprite2;
   final ValueChanged<List<String?>> onChanged;
 
   const SpritePicker({
     super.key,
-    this.initialSprite1,
-    this.initialSprite2,
+    required this.sprite1,
+    required this.sprite2,
     required this.onChanged,
   });
 
@@ -22,22 +23,7 @@ class SpritePicker extends StatefulWidget {
 
 class _SpritePickerState extends State<SpritePicker> {
   final _pokemonService = PokemonService();
-  final _searchController = TextEditingController();
-
-  String? _sprite1;
-  String? _sprite2;
   bool _isSearching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _sprite1 = widget.initialSprite1;
-    _sprite2 = widget.initialSprite2;
-  }
-
-  void _notifyChange() {
-    widget.onChanged([_sprite1, _sprite2]);
-  }
 
   Future<void> _selectSpecies(String speciesName) async {
     setState(() => _isSearching = true);
@@ -52,38 +38,27 @@ class _SpritePickerState extends State<SpritePicker> {
       return;
     }
 
-    setState(() {
-      if (_sprite1 == null) {
-        _sprite1 = sprite;
-      } else {
-        _sprite2 = sprite;
-      }
-      _searchController.clear();
-    });
-    _notifyChange();
+    if (widget.sprite1 == null) {
+      widget.onChanged([sprite, widget.sprite2]);
+    } else {
+      widget.onChanged([widget.sprite1, sprite]);
+    }
   }
 
   void _removeSprite(int index) {
-    setState(() {
-      if (index == 0) {
-        _sprite1 = _sprite2; // el segundo pasa a ser el primero
-        _sprite2 = null;
-      } else {
-        _sprite2 = null;
-      }
-    });
-    _notifyChange();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+    if (index == 0) {
+      // el segundo pasa a ocupar el primer puesto
+      widget.onChanged([widget.sprite2, null]);
+    } else {
+      widget.onChanged([widget.sprite1, null]);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final canAddMore = _sprite2 == null;
+    final sprite1 = widget.sprite1;
+    final sprite2 = widget.sprite2;
+    final canAddMore = sprite2 == null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,12 +68,12 @@ class _SpritePickerState extends State<SpritePicker> {
 
         Row(
           children: [
-            if (_sprite1 != null) _spriteChip(_sprite1!, 0),
-            if (_sprite1 != null) const SizedBox(width: AppSizes.spacingS),
-            if (_sprite2 != null) _spriteChip(_sprite2!, 1),
+            if (sprite1 != null) _spriteChip(sprite1, 0),
+            if (sprite1 != null) const SizedBox(width: AppSizes.spacingS),
+            if (sprite2 != null) _spriteChip(sprite2, 1),
           ],
         ),
-        if (_sprite1 != null) const SizedBox(height: AppSizes.spacingS),
+        if (sprite1 != null) const SizedBox(height: AppSizes.spacingS),
 
         if (canAddMore)
           Autocomplete<String>(
@@ -112,7 +87,7 @@ class _SpritePickerState extends State<SpritePicker> {
                 controller: controller,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  labelText: _sprite1 == null ? 'Buscar Pokémon' : 'Añadir segundo icono (opcional)',
+                  labelText: sprite1 == null ? 'Buscar Pokémon' : 'Añadir segundo icono (opcional)',
                   border: const OutlineInputBorder(),
                   suffixIcon: _isSearching
                       ? const Padding(

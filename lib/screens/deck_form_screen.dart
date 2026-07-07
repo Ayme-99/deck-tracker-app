@@ -156,8 +156,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
               const SizedBox(height: AppSizes.spacingL),
 
               SpritePicker(
-                initialSprite1: _sprite1,
-                initialSprite2: _sprite2,
+                sprite1: _sprite1,
+                sprite2: _sprite2,
                 onChanged: (sprites) {
                   setState(() {
                     _sprite1 = sprites[0];
