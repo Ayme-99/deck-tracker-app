@@ -36,7 +36,7 @@ lib/
 ├── widgets/
 │   ├── sprite_picker.dart      # seleccion de 1-2 sprites con autocompletado de especies
 │   └── sprite_avatar_group.dart # visualizacion de sprites, con ancho fijo para alineacion en listas
-└── screens/
+├── screens/
 ├── splash_screen.dart      # comprueba sesion guardada al abrir la app
 ├── login_screen.dart
 ├── register_screen.dart
