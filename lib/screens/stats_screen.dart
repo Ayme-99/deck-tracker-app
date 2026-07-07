@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../services/stats_service.dart';
+import '../widgets/sprite_avatar_group.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -158,17 +159,31 @@ class _StatsScreenState extends State<StatsScreen> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: index < 3
-                      ? medalColors[index].withValues(alpha: 0.2)
-                      : AppColors.muted.withValues(alpha: 0.1),
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: index < 3 ? medalColors[index] : AppColors.textSecondary,
+                  minLeadingWidth: 0,
+                  horizontalTitleGap: AppSizes.spacingS,
+                  leading: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: AppSizes.iconNormal / 2,
+                        backgroundColor: index < 3
+                          ? medalColors[index].withValues(alpha: 0.2)
+                          : AppColors.muted.withValues(alpha: 0.1),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: index < 3 ? medalColors[index] : AppColors.textSecondary,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: AppSizes.spacingM),
+                      SpriteAvatarGroup(
+                        sprite1: deck['sprite1'],
+                        sprite2: deck['sprite2'],
+                        size: AppSizes.iconNormal,
+                      ),
+                    ],
                   ),
                   title: Text(deck['deckName'], style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${deck['totalMatches']} partidas · ${deck['wins']}V-${deck['losses']}D-${deck['ties']}E'),
