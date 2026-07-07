@@ -38,6 +38,8 @@ class Deck {
   final int wins;
   final int losses;
   final DateTime createdAt;
+  final String? sprite1;
+  final String? sprite2;
 
   Deck({
     required this.id,
@@ -47,6 +49,8 @@ class Deck {
     required this.wins,
     required this.losses,
     required this.createdAt,
+    this.sprite1,
+    this.sprite2,
   });
 
   factory Deck.fromJson(Map<String, dynamic> json) {
@@ -60,6 +64,8 @@ class Deck {
       wins: json['wins'],
       losses: json['losses'],
       createdAt: DateTime.parse(json['createdAt']),
+      sprite1: json['sprite1'],
+      sprite2: json['sprite2'],
     );
   }
 }
