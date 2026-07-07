@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import '../config/api_config.dart';
 import '../config/navigation_service.dart';
-import '../screens/login_screen.dart';
+import '../screens/auth/login_screen.dart';
 
 class ApiService {
   final _storage = const FlutterSecureStorage();

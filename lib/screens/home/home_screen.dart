@@ -1,10 +1,10 @@
-import 'package:deck_tracker_app/screens/deck_form_screen.dart';
+import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:flutter/material.dart';
-import 'deck_list_screen.dart';
-import 'stats_screen.dart';
-import 'tournaments_screen.dart';
+import '../decks/deck_list_screen.dart';
+import '../stats/stats_screen.dart';
+import '../tournaments/tournaments_screen.dart';
 import '../services/auth_service.dart';
-import 'login_screen.dart';
+import '../auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

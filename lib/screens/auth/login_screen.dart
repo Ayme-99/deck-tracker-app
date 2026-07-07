@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
+import 'register_screen.dart';
+import '../home/home_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -19,7 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  Future<void> _handleRegister() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -28,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await _authService.register(
+      await _authService.login(
         _usernameController.text.trim(),
         _passwordController.text,
       );
@@ -56,7 +57,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -67,6 +67,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const Icon(Icons.style, size: AppSizes.iconHuge),
+                  const SizedBox(height: AppSizes.spacingM),
+                  Text(
+                    'Deck Tracker',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSizes.spacingXL),
+
                   TextFormField(
                     controller: _usernameController,
                     decoration: const InputDecoration(
@@ -75,7 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Introduce un usuario';
+                        return 'Introduce tu usuario';
                       }
                       return null;
                     },
@@ -90,8 +99,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.length < 6) {
-                        return 'Mínimo 6 caracteres';
+                      if (value == null || value.isEmpty) {
+                        return 'Introduce tu contraseña';
                       }
                       return null;
                     },
@@ -104,18 +113,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: TextStyle(color: Theme.of(context).colorScheme.error),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: AppSizes.spacingM),
+                    const SizedBox(height: 16),
                   ],
 
                   FilledButton(
-                    onPressed: _isLoading ? null : _handleRegister,
+                    onPressed: _isLoading ? null : _handleLogin,
                     child: _isLoading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Crear cuenta'),
+                        : const Text('Entrar'),
+                  ),
+                  const SizedBox(height: AppSizes.spacingSM),
+
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                      );
+                    },
+                    child: const Text('¿No tienes cuenta? Regístrate'),
                   ),
                 ],
               ),
