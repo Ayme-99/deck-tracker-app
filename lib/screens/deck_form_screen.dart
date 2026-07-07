@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
+import '../widgets/sprite_picker.dart';
 
 /// Pantalla unificada para crear y editar mazos.
 /// Si [deck] es null, funciona en modo "crear". Si viene informado, modo "editar".
@@ -22,6 +23,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   bool get _isEditing => widget.deck != null;
 
   late String _format;
+  String? _sprite1;
+  String? _sprite2;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -32,6 +35,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.deck?.name ?? '');
     _format = widget.deck?.format ?? 'Standard';
+    _sprite1 = widget.deck?.sprite1;
+    _sprite2 = widget.deck?.sprite2;
     _cards = widget.deck?.cards
             .map((c) => _CardEntry(
                   name: c.name,
@@ -77,12 +82,16 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
           'name': _nameController.text.trim(),
           'format': _format,
           'cards': cardsData,
+          'sprite1': _sprite1,
+          'sprite2': _sprite2,
         });
       } else {
         await _deckService.createDeck(
           _nameController.text.trim(),
           _format,
           cardsData,
+          sprite1: _sprite1,
+          sprite2: _sprite2,
         );
       }
 
@@ -143,6 +152,18 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                   DropdownMenuItem(value: 'Expanded', child: Text('Expanded')),
                 ],
                 onChanged: (value) => setState(() => _format = value!),
+              ),
+              const SizedBox(height: AppSizes.spacingL),
+
+              SpritePicker(
+                sprite1: _sprite1,
+                sprite2: _sprite2,
+                onChanged: (sprites) {
+                  setState(() {
+                    _sprite1 = sprites[0];
+                    _sprite2 = sprites[1];
+                  });
+                },
               ),
               const SizedBox(height: AppSizes.spacingL),
 

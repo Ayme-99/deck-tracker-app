@@ -13,6 +13,9 @@ class AppSizes {
   // Espacio inferior extra para listas con FloatingActionButton, evita que el FAB tape el ultimo item
   static const double fabBottomPadding = 96.0;
 
+  // Ancho fijo reservado para el grupo de sprites (1 o 2), evita desalineado de titulos en listas
+  static const double avatarGroupWidth = iconLarge * 2 + spacingXS;
+
   // Radii
   static const double radiusS = 4.0;
   static const double radiusM = 8.0;

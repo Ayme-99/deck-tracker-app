@@ -16,11 +16,19 @@ class DeckService {
     return Deck.fromJson(response);
   }
 
-  Future<Deck> createDeck(String name, String format, List<Map<String, dynamic>> cards) async {
+  Future<Deck> createDeck(
+    String name,
+    String format,
+    List<Map<String, dynamic>> cards, {
+    String? sprite1,
+    String? sprite2,
+  }) async {
     final response = await _api.post('/decks', {
       'name': name,
       'format': format,
       'cards': cards,
+      'sprite1': sprite1,
+      'sprite2': sprite2,
     });
     return Deck.fromJson(response);
   }

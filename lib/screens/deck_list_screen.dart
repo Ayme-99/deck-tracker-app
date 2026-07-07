@@ -1,10 +1,12 @@
 import 'package:deck_tracker_app/screens/deck_form_screen.dart';
+import 'package:deck_tracker_app/widgets/sprite_avatar_group.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../models/deck.dart';
 import '../services/deck_service.dart';
 import '../services/stats_service.dart';
 import 'deck_detail_screen.dart';
+
 
 class DeckListScreen extends StatefulWidget {
   const DeckListScreen({super.key});
@@ -126,12 +128,15 @@ class _DeckListScreenState extends State<DeckListScreen> {
           final totalMatches = _matchCounts[deck.id] ?? 0;
 
           return Card(
-            margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
+            margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
-              contentPadding: const EdgeInsets.all(AppSizes.spacingM),
+              contentPadding: const EdgeInsets.all(16),
+              minLeadingWidth: 0,
+              horizontalTitleGap: AppSizes.spacingS,
+              leading: SpriteAvatarGroup(sprite1: deck.sprite1, sprite2: deck.sprite2),
               title: Text(
                 deck.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 4),
