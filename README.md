@@ -155,5 +155,3 @@ Icon(Icons.star, size: AppSizes.iconNormal, color: AppColors.primary);
 
 5. Verificación
 - Ejecuta `flutter analyze` después de cambios y revisa visualmente con `flutter run`.
-
-Si quieres, puedo añadir al README ejemplos de commit/PR para este tipo de cambios o generar una entrada breve con las convenciones de nombrado.
