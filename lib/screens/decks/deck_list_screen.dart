@@ -1,4 +1,4 @@
-import 'package:deck_tracker_app/screens/deck_form_screen.dart';
+import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:deck_tracker_app/widgets/sprite_avatar_group.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
