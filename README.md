@@ -69,6 +69,7 @@ lib/
 - Modo oscuro/claro automático según el ajuste del sistema
 - Iconos de Pokémon (sprites) para mazos propios y rivales, con autocompletado de especies vía PokeAPI. Los sprites de rivales se recuerdan automáticamente por nombre.
 - Ranking de mazos ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable desde la UI
+- Vista de mazos en grid adaptable (más columnas en pantallas anchas), con récord de partidas visible, buscador por nombre, y orden por actividad reciente
 
 ## Configuración
 

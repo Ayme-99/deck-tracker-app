@@ -3,14 +3,12 @@ class DeckCard {
   final String name;
   final int quantity;
   final String category;
-
   DeckCard({
     required this.cardId,
     required this.name,
     required this.quantity,
     required this.category,
   });
-
   factory DeckCard.fromJson(Map<String, dynamic> json) {
     return DeckCard(
       cardId: json['cardId'],
@@ -19,7 +17,6 @@ class DeckCard {
       category: json['category'],
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'cardId': cardId,
@@ -38,9 +35,9 @@ class Deck {
   final int wins;
   final int losses;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final String? sprite1;
   final String? sprite2;
-
   Deck({
     required this.id,
     required this.name,
@@ -49,9 +46,14 @@ class Deck {
     required this.wins,
     required this.losses,
     required this.createdAt,
+    this.updatedAt,
     this.sprite1,
     this.sprite2,
   });
+
+  /// Fecha a usar para ordenar por "ultima actividad": updatedAt si existe,
+  /// o createdAt como fallback (mazos antiguos creados antes de añadir timestamps).
+  DateTime get lastActivityAt => updatedAt ?? createdAt;
 
   factory Deck.fromJson(Map<String, dynamic> json) {
     return Deck(
@@ -64,6 +66,7 @@ class Deck {
       wins: json['wins'],
       losses: json['losses'],
       createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       sprite1: json['sprite1'],
       sprite2: json['sprite2'],
     );

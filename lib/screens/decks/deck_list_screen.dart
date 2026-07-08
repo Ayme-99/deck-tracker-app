@@ -7,7 +7,6 @@ import '../../services/deck_service.dart';
 import '../../services/stats_service.dart';
 import 'deck_detail_screen.dart';
 
-
 class DeckListScreen extends StatefulWidget {
   const DeckListScreen({super.key});
 
@@ -18,16 +17,27 @@ class DeckListScreen extends StatefulWidget {
 class _DeckListScreenState extends State<DeckListScreen> {
   final _deckService = DeckService();
   final _statsService = StatsService();
+  final _searchController = TextEditingController();
 
   List<Deck> _decks = [];
-  Map<String, int> _matchCounts = {};
+  Map<String, Map<String, dynamic>> _overviews = {};
   bool _isLoading = true;
   String? _errorMessage;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadDecks();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDecks() async {
@@ -39,19 +49,22 @@ class _DeckListScreenState extends State<DeckListScreen> {
     try {
       final decks = await _deckService.getDecks();
 
-      // Trae el numero real de partidas de cada mazo en paralelo
-      final overviews = await Future.wait(
+      // Trae el overview completo de cada mazo en paralelo (partidas, V-D-E)
+      final overviewsList = await Future.wait(
         decks.map((deck) => _statsService.getDeckOverview(deck.id)),
       );
 
-      final counts = <String, int>{};
+      final overviewsMap = <String, Map<String, dynamic>>{};
       for (var i = 0; i < decks.length; i++) {
-        counts[decks[i].id] = overviews[i]['totalMatches'] ?? 0;
+        overviewsMap[decks[i].id] = overviewsList[i];
       }
 
+      // Orden por ultima actividad (updatedAt, o createdAt si no existe), mas reciente primero
+      final sortedDecks = [...decks]..sort((a, b) => b.lastActivityAt.compareTo(a.lastActivityAt));
+
       setState(() {
-        _decks = decks;
-        _matchCounts = counts;
+        _decks = sortedDecks;
+        _overviews = overviewsMap;
         _isLoading = false;
       });
     } catch (e) {
@@ -60,6 +73,11 @@ class _DeckListScreenState extends State<DeckListScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  List<Deck> get _filteredDecks {
+    if (_searchQuery.isEmpty) return _decks;
+    return _decks.where((d) => d.name.toLowerCase().contains(_searchQuery)).toList();
   }
 
   @override
@@ -118,41 +136,124 @@ class _DeckListScreenState extends State<DeckListScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadDecks,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppSizes.spacingM),
-        itemCount: _decks.length,
-        itemBuilder: (context, index) {
-          final deck = _decks[index];
-          final totalMatches = _matchCounts[deck.id] ?? 0;
+    final filteredDecks = _filteredDecks;
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              minLeadingWidth: 0,
-              horizontalTitleGap: AppSizes.spacingS,
-              leading: SpriteAvatarGroup(sprite1: deck.sprite1, sprite2: deck.sprite2),
-              title: Text(
-                deck.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('${deck.format} · $totalMatches partidas'),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
-                );
-                _loadDecks(); // refresca contadores al volver, por si se añadieron partidas
-              },
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.spacingM,
+            AppSizes.spacingM,
+            AppSizes.spacingM,
+            AppSizes.spacingS,
+          ),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Buscar mazo por nombre',
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
             ),
-          );
-        },
-      ),
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadDecks,
+            child: filteredDecks.isEmpty
+                ? ListView(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSizes.spacingXL),
+                        child: Center(
+                          child: Text(
+                            'Ningún mazo coincide con "$_searchQuery"',
+                            style: const TextStyle(color: AppColors.muted),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSizes.spacingM,
+                      0,
+                      AppSizes.spacingM,
+                      AppSizes.spacingM,
+                    ),
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 200,
+                      mainAxisSpacing: AppSizes.spacingM,
+                      crossAxisSpacing: AppSizes.spacingM,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: filteredDecks.length,
+                    itemBuilder: (context, index) {
+                      final deck = filteredDecks[index];
+                      final overview = _overviews[deck.id];
+                      final wins = overview?['wins'] ?? 0;
+                      final losses = overview?['losses'] ?? 0;
+                      final ties = overview?['ties'] ?? 0;
+                    
+                      return Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
+                            );
+                            _loadDecks();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.spacingM),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                // El sprite escala segun el ancho real de la tarjeta, para que 2 sprites
+                                // quepan sin overflow sin importar cuantas columnas haya en el grid.
+                                final hasTwoSprites = deck.sprite2 != null;
+                                final divisor = hasTwoSprites ? 2.6 : 1.4;
+                                final spriteSize = (constraints.maxWidth / divisor).clamp(AppSizes.iconNormal, AppSizes.iconHuge);
+                    
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SpriteAvatarGroup(
+                                      sprite1: deck.sprite1,
+                                      sprite2: deck.sprite2,
+                                      size: spriteSize,
+                                      centerAlign: true,
+                                    ),
+                                    const SizedBox(height: AppSizes.spacingS),
+                                    Text(
+                                      deck.name,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textS),
+                                    ),
+                                    const SizedBox(height: AppSizes.spacingXS),
+                                    Text(
+                                      '${wins}V-${losses}D-${ties}E',
+                                      style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
