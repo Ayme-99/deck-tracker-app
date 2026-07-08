@@ -1,79 +1,45 @@
 # Deck Tracker – App
 
-Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar el resultado de las partidas jugadas, con estadísticas por mazo y globales.
+Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar partidas, con estadísticas por mazo y globales.
+
+**Demo web:** https://deck-tracker-web.onrender.com
 
 ## Stack
 
 - Flutter / Dart
-- `http` para consumo de API REST
-- `flutter_secure_storage` para persistencia segura del token JWT
-- Backend: [deck-tracker-server](https://github.com/Ayme-99/deck-tracker-server), desplegado en Render
+- `http` (API REST) · `flutter_secure_storage` (token JWT)
+- Backend: [deck-tracker-server](https://github.com/Ayme-99/deck-tracker-server) (Node.js/Express/MongoDB, desplegado en Render)
+
+## Funcionalidades
+
+- **Auth**: registro, login y auto-login con sesión persistente; redirección a Login si el token deja de ser válido.
+- **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente.
+- **Partidas**: registro, edición y borrado, con autocompletado de rivales ya jugados.
+- **Estadísticas**: win-rate, matchups y premios por mazo; stats globales y ranking ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable.
+- **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
 
 ## Estructura del proyecto
 
 ```
 lib/
 ├── main.dart
-├── config/
-│   └── api_config.dart
-├── styles/
-│   ├── colors.dart
-│   ├── sizes.dart
-│   ├── text_styles.dart
-│   └── theme.dart
-├── models/
-│   ├── deck.dart
-│   ├── match.dart
-│   └── opponent_archetype.dart
-├── services/
-│   ├── api_service.dart                 # cliente HTTP base, inyecta el token JWT
-│   ├── auth_service.dart
-│   ├── deck_service.dart
-│   ├── match_service.dart
-│   ├── stats_service.dart
-│   ├── pokemon_service.dart
-│   └── opponent_archetype_service.dart
-├── widgets/
-│   ├── sprite_picker.dart               # seleccion de 1-2 sprites con autocompletado de especies
-│   └── sprite_avatar_group.dart         # visualizacion de sprites, con ancho fijo para alineacion en listas
+├── config/api_config.dart      # URL del backend
+├── styles/                     # tokens de UI: colores, tamaños, tipografías, tema
+├── models/                     # Deck, Match, OpponentArchetype
+├── services/                   # ApiService (HTTP + JWT), auth, decks, matches, stats, pokemon
+├── widgets/                    # SpritePicker, SpriteAvatarGroup
 └── screens/
-    ├── auth/
-    │   ├── splash_screen.dart           # comprueba sesion guardada al abrir la app
-    │   ├── login_screen.dart
-    │   └── register_screen.dart
-    ├── home/
-    │   └── home_screen.dart             # navegacion: Mazos / Stats / Torneos
-    ├── decks/
-    │   ├── deck_list_screen.dart
-    │   ├── deck_detail_screen.dart
-    │   └── deck_form_screen.dart        # crear y editar mazos (parametrizado con Deck?)
-    ├── matches/
-    │   ├── register_match_screen.dart
-    │   └── edit_match_screen.dart
+    ├── auth/                   # splash, login, registro
+    ├── home/                   # navegación: Mazos / Stats / Torneos
+    ├── decks/                  # lista, detalle, formulario (crear/editar)
+    ├── matches/                # registrar, editar
     ├── stats/
-    │   └── stats_screen.dart
-    └── tournaments/
-        └── tournaments_screen.dart      # placeholder, pendiente backend
+    └── tournaments/            # placeholder, pendiente backend
 ```
 
-## Funcionalidades
+## Configuración y ejecución
 
-- Registro / login con persistencia de sesión (auto-login al reabrir la app).
-- CRUD completo de mazos (crear, listar, ver detalle, editar, eliminar).
-- Registro de partidas con autocompletado de rivales ya jugados.
-- Editar y eliminar partidas ya registradas.
-- Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos.
-- Estadísticas globales y ranking de mazos por win-rate.
-- Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado).
-- Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
-- Modo oscuro/claro automático según el ajuste del sistema.
-- Iconos de Pokémon (sprites) para mazos propios y rivales, con autocompletado de especies vía PokeAPI. Los sprites de rivales se recuerdan automáticamente por nombre.
-- Ranking de mazos ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable desde la UI.
-- Vista de mazos en grid adaptable (más columnas en pantallas anchas), con récord de partidas visible, buscador por nombre, y orden por actividad reciente.
-
-## Configuración
-
-La URL del backend está definida en `lib/config/api_config.dart`:
+La URL del backend se define en `lib/config/api_config.dart`:
 
 ```dart
 class ApiConfig {
@@ -81,80 +47,33 @@ class ApiConfig {
 }
 ```
 
-## Instalación y ejecución
-
 ```bash
 flutter pub get
-flutter run -d edge      # o -d windows, -d chrome, un emulador Android, etc.
+flutter run -d edge   # o -d windows, -d chrome, un emulador Android, etc.
 ```
 
 ## Deploy web
 
-La app está desplegada como Static Site en Render:
-- https://deck-tracker-web.onrender.com
+Automatizado con GitHub Actions (`.github/workflows/deploy-web.yml`): en cada push a `main` se compila `flutter build web --release` y se publica `build/web` en la rama `web-build`, desde la que sirve Render (Static Site, Publish directory: `.`).
 
-Despliegue automatizado con GitHub Actions (`.github/workflows/deploy-web.yml`): en cada push a `main`, el workflow instala Flutter, compila (`flutter build web --release`), y publica el contenido de `build/web` en la rama `web-build`. Render sirve directamente desde esa rama (Branch: `web-build`, Publish directory: `.`), sin necesidad de build local ni commits manuales del build.
+## Estilos
 
-## Notas de desarrollo
-
-- El plugin `flutter_secure_storage` en target **Windows Desktop** requiere el componente "ATL de C++ (x86 & x64)" instalado desde Visual Studio Installer (Componentes individuales).
-- El backend está en Render (plan gratuito), por lo que la primera petición tras un periodo de inactividad puede tardar 30-50s en responder mientras el servidor "despierta".
-- Los colores deben aplicarse vía `Theme.of(context).colorScheme` o los tokens de `AppColors`/`AppSizes`/`AppTextStyles` (`lib/styles/`), nunca como literales fijos (`Colors.black87`, etc.) — de lo contrario no se adaptan al modo oscuro.
-
-## Estilos y tokens (UI)
-
-Se ha añadido una capa de estilos reutilizables para evitar valores hardcodeados en las pantallas. Ubicación: `lib/styles/`.
-
-- `lib/styles/colors.dart`: `AppColors` con los colores principales.
-- `lib/styles/sizes.dart`: `AppSizes` con espaciados y tamaños reutilizables (ej. `spacingM`, `iconHuge`, `spinnerSmall`, `badgeWidth`).
-- `lib/styles/text_styles.dart`: `AppTextStyles` para estilos de texto comunes.
-- `lib/styles/theme.dart`: `buildAppTheme()` que construye el `ThemeData` principal.
-- `lib/styles.dart`: export convenience file.
-
-Buenas prácticas:
-
-- Importar siempre con: `import 'package:deck_tracker_app/styles.dart';`
-- Preferir `AppColors`, `AppSizes` y `AppTextStyles` en lugar de literales (`Colors.grey`, `SizedBox(height: 16)`, `fontSize: 16`).
-- Si un valor se repite en varias pantallas, añadirlo a `AppSizes` o `AppColors`.
-- Para pequeñas variaciones locales de tipografía, usar `.copyWith()` sobre `AppTextStyles`.
-
-Refactor realizado:
-
-- Se reemplazaron múltiples literales en `lib/screens/*` por tokens en `lib/styles/`.
-- `flutter analyze` pasó sin issues tras los cambios.
-
-¿Quieres que agregue un archivo `lib/styles/README.md` con estos lineamientos más detallados? 
-
-### Cómo trabajar con los estilos (rápido)
-
-1. Importa los estilos en cualquier pantalla:
+Todos los colores, espaciados y tipografías se aplican vía tokens (`AppColors`, `AppSizes`, `AppTextStyles`) o `Theme.of(context).colorScheme` — nunca literales fijos, o no se adaptarán al modo oscuro.
 
 ```dart
 import 'package:deck_tracker_app/styles.dart';
 ```
 
-2. Aplica el tema global en `MaterialApp` (por ejemplo en `lib/main.dart`):
+Si un valor se repite en varias pantallas, añadirlo como token. Para variaciones puntuales de texto, usar `.copyWith()` sobre `AppTextStyles`.
 
-```dart
-return MaterialApp(
-  title: 'Deck Tracker',
-  theme: buildAppTheme(),
-  home: const HomeScreen(),
-);
-```
+## Notas de desarrollo
 
-3. Ejemplos de uso en widgets:
+- **Android release**: declarar `android.permission.INTERNET` en `android/app/src/main/AndroidManifest.xml` (en debug Flutter lo añade solo; en `--release` no).
+- **Windows Desktop**: `flutter_secure_storage` requiere el componente "ATL de C++ (x86 & x64)" del Visual Studio Installer.
+- **Cold start**: el backend está en el plan gratuito de Render; la primera petición tras inactividad puede tardar 30-50 s.
 
-```dart
-Text('Título', style: AppTextStyles.title);
-Container(padding: const EdgeInsets.all(AppSizes.spacingM));
-Icon(Icons.star, size: AppSizes.iconNormal, color: AppColors.primary);
-```
+## TODO
 
-4. Reglas rápidas
-- Si el valor se repite en más de 1 pantalla, añádelo a `AppSizes` o `AppColors`.
-- Para variaciones de texto, usa `AppTextStyles.title.copyWith(...)` en lugar de crear un `TextStyle` desde cero.
-- Documenta cualquier token nuevo con un nombre claro (p. ej. `spacingSM` para 12px, `badgeWidth` para anchuras pequeñas reutilizables).
-
-5. Verificación
-- Ejecuta `flutter analyze` después de cambios y revisa visualmente con `flutter run`.
+- [ ] Feature de Torneos (pendiente del modelo en backend)
+- [ ] Widget de pantalla de inicio (Android)
+- [ ] Formato cooperativo "Incursiones"

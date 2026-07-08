@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
@@ -18,6 +19,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
 
   bool _isLoading = false;
+  bool _isSlow = false;
+  Timer? _slowTimer;
   String? _errorMessage;
 
   Future<void> _handleLogin() async {
@@ -25,7 +28,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() {
       _isLoading = true;
+      _isSlow = false;
       _errorMessage = null;
+    });
+
+    _slowTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _isSlow = true);
     });
 
     try {
@@ -43,7 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      _slowTimer?.cancel();
+      if (mounted) setState(() { _isLoading = false; _isSlow = false; });
     }
   }
 
@@ -51,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _slowTimer?.cancel();
     super.dispose();
   }
 
@@ -126,6 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const Text('Entrar'),
                   ),
+                  if (_isSlow) ...[
+                    const SizedBox(height: AppSizes.spacingS),
+                    Text(
+                      'Despertando el servidor, puede tardar unos segundos...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
+                    ),
+                  ],
                   const SizedBox(height: AppSizes.spacingSM),
 
                   TextButton(
