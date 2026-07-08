@@ -16,7 +16,17 @@ class _StatsScreenState extends State<StatsScreen> {
   Map<String, dynamic>? _overview;
   List<dynamic> _ranking = [];
   bool _isLoading = true;
+  bool _isLoadingRanking = false;
   String? _errorMessage;
+
+  String _sortBy = 'winRate';
+  int _minMatches = 3;
+
+  final _sortByLabels = const {
+    'winRate': 'Win rate',
+    'totalMatches': 'Partidas',
+    'deckName': 'Nombre',
+  };
 
   @override
   void initState() {
@@ -33,7 +43,7 @@ class _StatsScreenState extends State<StatsScreen> {
     try {
       final results = await Future.wait([
         _statsService.getGlobalOverview(),
-        _statsService.getDeckRanking(),
+        _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy),
       ]);
 
       setState(() {
@@ -49,6 +59,37 @@ class _StatsScreenState extends State<StatsScreen> {
     }
   }
 
+  Future<void> _reloadRanking() async {
+    setState(() => _isLoadingRanking = true);
+
+    try {
+      final ranking = await _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy);
+      setState(() {
+        _ranking = ranking;
+        _isLoadingRanking = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingRanking = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al filtrar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  void _changeSortBy(String? value) {
+    if (value == null) return;
+    setState(() => _sortBy = value);
+    _reloadRanking();
+  }
+
+  void _changeMinMatches(int delta) {
+    final newValue = _minMatches + delta;
+    if (newValue < 1) return;
+    setState(() => _minMatches = newValue);
+    _reloadRanking();
+  }
+
   Widget _statColumn(String value, String label, Color color) {
     return Column(
       children: [
@@ -58,6 +99,57 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
         const SizedBox(height: AppSizes.spacingXS),
         Text(label, style: TextStyle(color: AppColors.surface.withValues(alpha: 0.7), fontSize: AppSizes.textXS)),
+      ],
+    );
+  }
+
+  Widget _buildRankingControls() {
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            initialValue: _sortBy,
+            decoration: const InputDecoration(
+              labelText: 'Ordenar por',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: _sortByLabels.entries
+                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                .toList(),
+            onChanged: _changeSortBy,
+          ),
+        ),
+        const SizedBox(width: AppSizes.spacingM),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Mín. partidas', style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: _minMatches > 1 ? () => _changeMinMatches(-1) : null,
+                  visualDensity: VisualDensity.compact,
+                ),
+                SizedBox(
+                  width: AppSizes.badgeWidth,
+                  child: Text(
+                    '$_minMatches',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => _changeMinMatches(1),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -106,7 +198,7 @@ class _StatsScreenState extends State<StatsScreen> {
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
           Card(
-              child: Padding(
+            child: Padding(
               padding: const EdgeInsets.all(AppSizes.spacing20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,13 +231,17 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: AppSizes.spacingL),
           const Text('Ranking de mazos', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
-          const SizedBox(height: AppSizes.spacingS),
-          Text(
-            'Mínimo 3 partidas jugadas',
-            style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
-          ),
           const SizedBox(height: AppSizes.spacingM),
-          if (_ranking.isEmpty)
+          _buildRankingControls(),
+          const SizedBox(height: AppSizes.spacingM),
+          if (_isLoadingRanking)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSizes.spacingL),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_ranking.isEmpty)
             const Text(
               'Ningún mazo alcanza aún el mínimo de partidas',
               style: TextStyle(color: AppColors.muted),
@@ -167,8 +263,8 @@ class _StatsScreenState extends State<StatsScreen> {
                       CircleAvatar(
                         radius: AppSizes.iconNormal / 2,
                         backgroundColor: index < 3
-                          ? medalColors[index].withValues(alpha: 0.2)
-                          : AppColors.muted.withValues(alpha: 0.1),
+                            ? medalColors[index].withValues(alpha: 0.2)
+                            : AppColors.muted.withValues(alpha: 0.1),
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(

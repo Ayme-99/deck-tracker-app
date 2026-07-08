@@ -19,7 +19,7 @@ class StatsService {
     return await _api.get('/stats/global/overview');
   }
 
-  Future<List<dynamic>> getDeckRanking({int minMatches = 3}) async {
-    return await _api.get('/stats/global/ranking?minMatches=$minMatches');
+  Future<List<dynamic>> getDeckRanking({int minMatches = 3, String sortBy = 'winRate'}) async {
+    return await _api.get('/stats/global/ranking?minMatches=$minMatches&sortBy=$sortBy');
   }
 }
