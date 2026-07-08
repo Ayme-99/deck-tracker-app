@@ -58,18 +58,18 @@ lib/
 
 ## Funcionalidades
 
-- Registro / login con persistencia de sesión (auto-login al reabrir la app)
-- CRUD completo de mazos (crear, listar, ver detalle, editar, eliminar)
-- Registro de partidas con autocompletado de rivales ya jugados
-- Editar y eliminar partidas ya registradas
-- Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos
-- Estadísticas globales y ranking de mazos por win-rate
-- Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado)
+- Registro / login con persistencia de sesión (auto-login al reabrir la app).
+- CRUD completo de mazos (crear, listar, ver detalle, editar, eliminar).
+- Registro de partidas con autocompletado de rivales ya jugados.
+- Editar y eliminar partidas ya registradas.
+- Estadísticas por mazo: win-rate, matchups, premios cogidos/cedidos.
+- Estadísticas globales y ranking de mazos por win-rate.
+- Redirección automática a Login si la sesión deja de ser válida (token inválido o revocado).
 - Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
-- Modo oscuro/claro automático según el ajuste del sistema
+- Modo oscuro/claro automático según el ajuste del sistema.
 - Iconos de Pokémon (sprites) para mazos propios y rivales, con autocompletado de especies vía PokeAPI. Los sprites de rivales se recuerdan automáticamente por nombre.
-- Ranking de mazos ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable desde la UI
-- Vista de mazos en grid adaptable (más columnas en pantallas anchas), con récord de partidas visible, buscador por nombre, y orden por actividad reciente
+- Ranking de mazos ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable desde la UI.
+- Vista de mazos en grid adaptable (más columnas en pantallas anchas), con récord de partidas visible, buscador por nombre, y orden por actividad reciente.
 
 ## Configuración
 
