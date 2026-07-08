@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # Cacheo de imágenes desde la red para mejorar el rendimiento y la experiencia del usuario  
+  cached_network_image: ^3.4.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
