@@ -4,6 +4,7 @@ import '../../services/stats_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../decks/deck_detail_screen.dart';
+import '../../widgets/slow_loading_indicator.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -184,7 +185,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SlowLoadingIndicator();
     }
 
     if (_errorMessage != null) {

@@ -6,6 +6,7 @@ import '../../models/deck.dart';
 import '../../services/deck_service.dart';
 import '../../services/stats_service.dart';
 import 'deck_detail_screen.dart';
+import '../../widgets/slow_loading_indicator.dart';
 
 class DeckListScreen extends StatefulWidget {
   const DeckListScreen({super.key});
@@ -83,7 +84,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SlowLoadingIndicator();
     }
 
     if (_errorMessage != null) {
