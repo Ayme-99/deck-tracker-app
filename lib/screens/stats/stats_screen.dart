@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/stats_service.dart';
+import '../../services/deck_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
+import '../decks/deck_detail_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -12,12 +14,14 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   final _statsService = StatsService();
+  final _deckService = DeckService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _ranking = [];
   bool _isLoading = true;
   bool _isLoadingRanking = false;
   String? _errorMessage;
+  String? _navigatingDeckId;
 
   String _sortBy = 'winRate';
   int _minMatches = 3;
@@ -88,6 +92,29 @@ class _StatsScreenState extends State<StatsScreen> {
     if (newValue < 1) return;
     setState(() => _minMatches = newValue);
     _reloadRanking();
+  }
+
+  Future<void> _openDeckDetail(String deckId) async {
+    setState(() => _navigatingDeckId = deckId);
+
+    try {
+      final deck = await _deckService.getDeckById(deckId);
+      if (!mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
+      );
+
+      // Al volver, refresca por si se registraron partidas nuevas desde el detalle
+      _reloadRanking();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al abrir el mazo: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    } finally {
+      if (mounted) setState(() => _navigatingDeckId = null);
+    }
   }
 
   Widget _statColumn(String value, String label, Color color) {
@@ -250,11 +277,15 @@ class _StatsScreenState extends State<StatsScreen> {
             ..._ranking.asMap().entries.map((entry) {
               final index = entry.key;
               final deck = entry.value;
+              final deckId = deck['deckId'] as String;
+              final isNavigating = _navigatingDeckId == deckId;
               final medalColors = [AppColors.warning, AppColors.muted, AppColors.muted];
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
+                  enabled: _navigatingDeckId == null,
+                  onTap: () => _openDeckDetail(deckId),
                   minLeadingWidth: 0,
                   horizontalTitleGap: AppSizes.spacingS,
                   leading: Row(
@@ -283,10 +314,22 @@ class _StatsScreenState extends State<StatsScreen> {
                   ),
                   title: Text(deck['deckName'], style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${deck['totalMatches']} partidas · ${deck['wins']}V-${deck['losses']}D-${deck['ties']}E'),
-                  trailing: Text(
-                    '${deck['winRate']}%',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
-                  ),
+                  trailing: isNavigating
+                      ? const SizedBox(
+                          height: AppSizes.spinnerSmall,
+                          width: AppSizes.spinnerSmall,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${deck['winRate']}%',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                            ),
+                            const Icon(Icons.chevron_right, color: AppColors.muted),
+                          ],
+                        ),
                 ),
               );
             }),
