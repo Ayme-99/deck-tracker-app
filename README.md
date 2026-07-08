@@ -68,6 +68,7 @@ lib/
 - Para builds `--release` en Android, el permiso `android.permission.INTERNET` debe estar declarado explícitamente en `android/app/src/main/AndroidManifest.xml` (en modo debug Flutter lo añade automáticamente, pero no en release).
 - Modo oscuro/claro automático según el ajuste del sistema
 - Iconos de Pokémon (sprites) para mazos propios y rivales, con autocompletado de especies vía PokeAPI. Los sprites de rivales se recuerdan automáticamente por nombre.
+- Ranking de mazos ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable desde la UI
 
 ## Configuración
 
@@ -98,11 +99,6 @@ Despliegue automatizado con GitHub Actions (`.github/workflows/deploy-web.yml`):
 - El plugin `flutter_secure_storage` en target **Windows Desktop** requiere el componente "ATL de C++ (x86 & x64)" instalado desde Visual Studio Installer (Componentes individuales).
 - El backend está en Render (plan gratuito), por lo que la primera petición tras un periodo de inactividad puede tardar 30-50s en responder mientras el servidor "despierta".
 - Los colores deben aplicarse vía `Theme.of(context).colorScheme` o los tokens de `AppColors`/`AppSizes`/`AppTextStyles` (`lib/styles/`), nunca como literales fijos (`Colors.black87`, etc.) — de lo contrario no se adaptan al modo oscuro.
-
-## TODO futuro
-
-- Pantalla de Torneos (pendiente de modelo en backend)
-- Catálogo real de cartas (actualmente el `cardId` se genera a partir del nombre escrito manualmente)
 
 ## Estilos y tokens (UI)
 
