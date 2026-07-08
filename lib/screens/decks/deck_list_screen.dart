@@ -81,6 +81,72 @@ class _DeckListScreenState extends State<DeckListScreen> {
     return _decks.where((d) => d.name.toLowerCase().contains(_searchQuery)).toList();
   }
 
+  Future<void> _showDeckOptions(Deck deck) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar mazo'),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+              title: const Text('Eliminar mazo'),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (action == 'edit') {
+      final updated = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => DeckFormScreen(deck: deck)),
+      );
+      if (updated == true) _loadDecks();
+    } else if (action == 'delete') {
+      _confirmDeleteDeck(deck);
+    }
+  }
+
+  Future<void> _confirmDeleteDeck(Deck deck) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar mazo'),
+        content: Text('¿Seguro que quieres eliminar "${deck.name}"? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _deckService.deleteDeck(deck.id);
+      _loadDecks();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -201,7 +267,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                       final wins = overview?['wins'] ?? 0;
                       final losses = overview?['losses'] ?? 0;
                       final ties = overview?['ties'] ?? 0;
-                    
+
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
@@ -211,6 +277,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                             );
                             _loadDecks();
                           },
+                          onLongPress: () => _showDeckOptions(deck),
                           child: Padding(
                             padding: const EdgeInsets.all(AppSizes.spacingM),
                             child: LayoutBuilder(
@@ -220,7 +287,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                                 final hasTwoSprites = deck.sprite2 != null;
                                 final divisor = hasTwoSprites ? 2.6 : 1.4;
                                 final spriteSize = (constraints.maxWidth / divisor).clamp(AppSizes.iconNormal, AppSizes.iconHuge);
-                    
+
                                 return Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
