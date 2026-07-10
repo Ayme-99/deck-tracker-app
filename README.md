@@ -12,8 +12,8 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar partidas, c
 
 ## Funcionalidades
 
-- **Auth**: registro, login y auto-login con sesión persistente; redirección a Login si el token deja de ser válido.
-- **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente.
+- **Auth**: registro, login y auto-login con sesión persistente; redirección a Login si el token deja de ser válido. Manejo de sesión robusto frente al cold start del backend: los 401 de peticiones lanzadas antes de un logout (sin token) no expulsan la sesión ni borran el token actual.
+- **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente. Al eliminar un mazo se borran también sus partidas (cascada en backend); el diálogo de confirmación avisa del nº de partidas afectadas.
 - **Partidas**: registro, edición y borrado, con autocompletado de rivales ya jugados.
 - **Estadísticas**: win-rate, matchups y premios por mazo; stats globales y ranking ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable.
 - **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
@@ -71,6 +71,7 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 - **Android release**: declarar `android.permission.INTERNET` en `android/app/src/main/AndroidManifest.xml` (en debug Flutter lo añade solo; en `--release` no).
 - **Windows Desktop**: `flutter_secure_storage` requiere el componente "ATL de C++ (x86 & x64)" del Visual Studio Installer.
 - **Cold start**: el backend está en el plan gratuito de Render; la primera petición tras inactividad puede tardar 30-50 s.
+- **Peticiones y ciclo de vida**: tras cada `await` en cargas de pantalla, comprobar `mounted` antes de continuar o hacer `setState` — evita cadenas de peticiones zombis tras logout/navegación (ver issue #32).
 
 ## TODO
 
