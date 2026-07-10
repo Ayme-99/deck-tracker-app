@@ -50,10 +50,15 @@ class _DeckListScreenState extends State<DeckListScreen> {
     try {
       final decks = await _deckService.getDecks();
 
+      // Si el widget ya no existe (p. ej. logout durante la carga), no lanzar más peticiones
+      if (!mounted) return;
+
       // Trae el overview completo de cada mazo en paralelo (partidas, V-D-E)
       final overviewsList = await Future.wait(
         decks.map((deck) => _statsService.getDeckOverview(deck.id)),
       );
+
+      if (!mounted) return;
 
       final overviewsMap = <String, Map<String, dynamic>>{};
       for (var i = 0; i < decks.length; i++) {
@@ -69,6 +74,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
