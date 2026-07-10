@@ -51,12 +51,16 @@ class _StatsScreenState extends State<StatsScreen> {
         _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy),
       ]);
 
+      // Si el widget ya no existe (p. ej. logout durante la carga), descartar el resultado
+      if (!mounted) return;
+
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
         _ranking = results[1] as List<dynamic>;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -69,13 +73,14 @@ class _StatsScreenState extends State<StatsScreen> {
 
     try {
       final ranking = await _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy);
+      if (!mounted) return;
       setState(() {
         _ranking = ranking;
         _isLoadingRanking = false;
       });
     } catch (e) {
-      setState(() => _isLoadingRanking = false);
       if (!mounted) return;
+      setState(() => _isLoadingRanking = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al filtrar: ${e.toString().replaceFirst('Exception: ', '')}')),
       );
