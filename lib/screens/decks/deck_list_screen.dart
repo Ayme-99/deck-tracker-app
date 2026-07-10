@@ -122,11 +122,21 @@ class _DeckListScreenState extends State<DeckListScreen> {
   }
 
   Future<void> _confirmDeleteDeck(Deck deck) async {
+    final overview = _overviews[deck.id];
+    final totalMatches =
+        (overview?['wins'] ?? 0) + (overview?['losses'] ?? 0) + (overview?['ties'] ?? 0);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar mazo'),
-        content: Text('¿Seguro que quieres eliminar "${deck.name}"? Esta acción no se puede deshacer.'),
+        content: Text(
+          totalMatches > 0
+              ? '¿Seguro que quieres eliminar "${deck.name}"? Se eliminarán también '
+                  'sus $totalMatches partidas registradas y dejarán de contar en tus '
+                  'estadísticas. Esta acción no se puede deshacer.'
+              : '¿Seguro que quieres eliminar "${deck.name}"? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -144,6 +154,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
     try {
       await _deckService.deleteDeck(deck.id);
+      if (!mounted) return;
       _loadDecks();
     } catch (e) {
       if (!mounted) return;
