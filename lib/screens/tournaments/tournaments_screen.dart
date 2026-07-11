@@ -1,31 +1,199 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../../models/tournament.dart';
+import '../../models/deck.dart';
+import '../../services/tournament_service.dart';
+import '../../services/deck_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 
-class TournamentsScreen extends StatelessWidget {
+class TournamentsScreen extends StatefulWidget {
   const TournamentsScreen({super.key});
 
   @override
+  State<TournamentsScreen> createState() => _TournamentsScreenState();
+}
+
+class _TournamentsScreenState extends State<TournamentsScreen> {
+  final _tournamentService = TournamentService();
+  final _deckService = DeckService();
+
+  List<Tournament> _tournaments = [];
+  Map<String, Deck> _decksById = {};
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTournaments();
+  }
+
+  Future<void> _loadTournaments() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Se piden en paralelo: los torneos y el listado de mazos, para poder
+      // mostrar el nombre/sprite del mazo de cada torneo (el backend solo
+      // devuelve deckId, sin poblar el mazo completo)
+      final results = await Future.wait([
+        _tournamentService.getTournaments(),
+        _deckService.getDecks(),
+      ]);
+
+      if (!mounted) return;
+
+      final tournaments = results[0] as List<Tournament>;
+      final decks = results[1] as List<Deck>;
+
+      // Mas recientes primero, por fecha del torneo
+      final sortedTournaments = [...tournaments]..sort((a, b) => b.date.compareTo(a.date));
+
+      setState(() {
+        _tournaments = sortedTournaments;
+        _decksById = {for (final d in decks) d.id: d};
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
+  Widget _statusChip(String status) {
+    final isFinished = status == 'finished';
+    return Chip(
+      label: Text(isFinished ? 'Finalizado' : 'En curso'),
+      backgroundColor: isFinished ? AppColors.muted.withValues(alpha: 0.15) : AppColors.success.withValues(alpha: 0.15),
+      labelStyle: TextStyle(
+        color: isFinished ? AppColors.muted : AppColors.success,
+        fontSize: AppSizes.textXS,
+        fontWeight: FontWeight.w600,
+      ),
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppSizes.spacingL),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    if (_isLoading) {
+      return const SlowLoadingIndicator();
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.spacingL),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error al cargar torneos: $_errorMessage', textAlign: TextAlign.center),
+              const SizedBox(height: AppSizes.spacingM),
+              FilledButton.icon(
+                onPressed: _loadTournaments,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_tournaments.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadTournaments,
+        child: ListView(
           children: [
-            Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
-            SizedBox(height: AppSizes.spacingM),
-            Text(
-              'Próximamente',
-              style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: AppSizes.spacingS),
-            Text(
-              'El seguimiento de torneos estará disponible en una futura actualización.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXL),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
+                  const SizedBox(height: AppSizes.spacingM),
+                  const Text(
+                    'Todavía no tienes torneos',
+                    style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSizes.spacingS),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
+                    child: Text(
+                      'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.muted),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadTournaments,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(AppSizes.spacingM),
+        itemCount: _tournaments.length,
+        separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingS),
+        itemBuilder: (context, index) {
+          final tournament = _tournaments[index];
+          final deck = tournament.deckId != null ? _decksById[tournament.deckId] : null;
+
+          return Card(
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              // La pantalla de detalle (issue #40) se conectara aqui.
+              onTap: () {},
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.spacingM),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tournament.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                          ),
+                          const SizedBox(height: AppSizes.spacingXS),
+                          Text(
+                            [
+                              _formatDate(tournament.date),
+                              if (deck != null) deck.name,
+                              if (tournament.structure != null)
+                                kTournamentStructureLabels[tournament.structure] ?? tournament.structure!,
+                            ].join(' · '),
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spacingS),
+                    _statusChip(tournament.status),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
