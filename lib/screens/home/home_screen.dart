@@ -1,4 +1,5 @@
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
+import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart';
 import 'package:flutter/material.dart';
 import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
@@ -18,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   Key _deckListKey = UniqueKey();
   Key _statsKey = UniqueKey();
+  Key _tournamentsKey = UniqueKey();
 
   Future<void> _handleLogout() async {
     await _authService.logout();
@@ -37,6 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _handleCreateTournament() async {
+    final created = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TournamentFormScreen()),
+    );
+    if (created != null) {
+      setState(() => _tournamentsKey = UniqueKey());
+    }
+  }
+
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
@@ -53,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final screens = [
       DeckListScreen(key: _deckListKey),
       StatsScreen(key: _statsKey),
-      const TournamentsScreen(),
+      TournamentsScreen(key: _tournamentsKey),
     ];
 
     return Scaffold(
@@ -75,7 +86,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _handleCreateDeck,
               child: const Icon(Icons.add),
             )
-          : null,
+          : _currentIndex == 2
+              ? FloatingActionButton(
+                  onPressed: _handleCreateTournament,
+                  child: const Icon(Icons.add),
+                )
+              : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: _onTabSelected,
