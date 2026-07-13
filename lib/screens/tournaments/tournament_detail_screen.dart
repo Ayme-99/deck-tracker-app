@@ -80,7 +80,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
-  /// Solo tiene sentido en 'swiss' y 'league': son las estructuras donde no
+  /// Tiene sentido en cualquier estructura con fase de rondas (swiss,
+  /// swiss_elimination, groups_elimination, league): son las estructuras donde no
   /// hay un bracket que deje claro en que puesto quedaste (a diferencia de
   /// una eliminatoria, donde perder en semifinal ya dice tu puesto). Se
   /// guarda como texto compuesto en finalStanding (unico campo que expone
@@ -646,7 +647,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
-                    if (tournament.structure == 'swiss' || tournament.structure == 'league') ...[
+                    if ((kStructurePhases[tournament.structure] ?? [])
+                        .any((p) => kRoundBasedPhases.contains(p))) ...[
                       const SizedBox(height: AppSizes.spacingS),
                       InkWell(
                         onTap: _editFinalStanding,
