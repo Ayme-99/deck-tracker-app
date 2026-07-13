@@ -9,6 +9,7 @@ import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../matches/register_match_screen.dart';
+import 'tournament_form_screen.dart';
 
 class TournamentDetailScreen extends StatefulWidget {
   final String tournamentId;
@@ -77,6 +78,78 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Solo tiene sentido en 'swiss' y 'league': son las estructuras donde no
+  /// hay un bracket que deje claro en que puesto quedaste (a diferencia de
+  /// una eliminatoria, donde perder en semifinal ya dice tu puesto). Se
+  /// guarda como texto compuesto en finalStanding (unico campo que expone
+  /// el backend para esto), parseando el valor previo si sigue el patron
+  /// "Nº de M" para poder editarlo de nuevo.
+  Future<void> _editFinalStanding() async {
+    final tournament = _tournament!;
+    final match = RegExp(r'^(\d+)º de (\d+)$').firstMatch(tournament.finalStanding ?? '');
+    final positionController = TextEditingController(text: match?.group(1) ?? '');
+    final totalController = TextEditingController(text: match?.group(2) ?? '');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Posición final'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: positionController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Puesto obtenido'),
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            TextField(
+              controller: totalController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Nº total de participantes'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final position = positionController.text.trim();
+    final total = totalController.text.trim();
+    // Si se dejan ambos vacios, se borra la posicion final guardada
+    final finalStanding = (position.isEmpty || total.isEmpty) ? null : '$positionº de $total';
+
+    try {
+      await _tournamentService.updateTournament(tournament.id, {'finalStanding': finalStanding});
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  Future<void> _handleEditTournament() async {
+    final updated = await Navigator.of(context).push<Tournament>(
+      MaterialPageRoute(
+        builder: (_) => TournamentFormScreen(tournament: _tournament),
+      ),
+    );
+    if (updated != null) _loadData();
   }
 
   Future<void> _toggleStatus() async {
@@ -495,13 +568,16 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'toggle_status') {
+              if (value == 'edit') {
+                _handleEditTournament();
+              } else if (value == 'toggle_status') {
                 _toggleStatus();
               } else if (value == 'delete') {
                 _confirmDeleteTournament();
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(value: 'edit', child: Text('Editar torneo')),
               PopupMenuItem(
                 value: 'toggle_status',
                 child: Text(isFinished ? 'Marcar como en curso' : 'Marcar como finalizado'),
@@ -568,6 +644,25 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       Text(
                         '🏆 ${tournament.finalStanding}',
                         style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                    if (tournament.structure == 'swiss' || tournament.structure == 'league') ...[
+                      const SizedBox(height: AppSizes.spacingS),
+                      InkWell(
+                        onTap: _editFinalStanding,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.emoji_events_outlined, size: AppSizes.iconSmall, color: AppColors.muted),
+                            const SizedBox(width: AppSizes.spacingXS),
+                            Text(
+                              tournament.finalStanding == null || tournament.finalStanding!.isEmpty
+                                  ? 'Añadir posición final'
+                                  : 'Editar posición final',
+                              style: const TextStyle(color: AppColors.muted, decoration: TextDecoration.underline),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     if (tournament.notes != null && tournament.notes!.isNotEmpty) ...[

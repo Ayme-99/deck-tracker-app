@@ -5,11 +5,17 @@ import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
 
-/// Pantalla de creacion de torneo. Por ahora solo soporta mode 'tracked'
-/// (seguimiento del propio historial); 'hosted' se deja visible pero
-/// deshabilitado con "Próximamente" hasta que se desarrolle (issue #44).
+/// Pantalla de creacion/edicion de torneo. Por ahora solo soporta mode
+/// 'tracked' (seguimiento del propio historial); 'hosted' se deja visible
+/// pero deshabilitado con "Próximamente" hasta que se desarrolle (issue #44).
+///
+/// En modo edicion (widget.tournament != null) solo se pueden cambiar
+/// nombre, fecha, localizacion y notas -- mode/structure/deckId quedan
+/// fijos porque ya puede haber partidas asociadas que dependen de ellos.
 class TournamentFormScreen extends StatefulWidget {
-  const TournamentFormScreen({super.key});
+  final Tournament? tournament;
+
+  const TournamentFormScreen({super.key, this.tournament});
 
   @override
   State<TournamentFormScreen> createState() => _TournamentFormScreenState();
@@ -17,16 +23,18 @@ class TournamentFormScreen extends StatefulWidget {
 
 class _TournamentFormScreenState extends State<TournamentFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _notesController = TextEditingController();
+  late final _nameController = TextEditingController(text: widget.tournament?.name ?? '');
+  late final _locationController = TextEditingController(text: widget.tournament?.location ?? '');
+  late final _notesController = TextEditingController(text: widget.tournament?.notes ?? '');
   final _tournamentService = TournamentService();
   final _deckService = DeckService();
 
-  String _format = 'Standard';
-  String _structure = 'swiss';
+  bool get _isEditing => widget.tournament != null;
+
+  late String _format = widget.tournament?.format ?? 'Standard';
+  late String _structure = widget.tournament?.structure ?? 'swiss';
   String? _deckId;
-  DateTime _date = DateTime.now();
+  late DateTime _date = widget.tournament?.date ?? DateTime.now();
 
   List<Deck> _decks = [];
   bool _isLoadingDecks = true;
@@ -36,6 +44,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
   @override
   void initState() {
     super.initState();
+    _deckId = widget.tournament?.deckId;
     _loadDecks();
   }
 
@@ -45,7 +54,11 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       if (!mounted) return;
       setState(() {
         _decks = decks;
-        _deckId = decks.isNotEmpty ? decks.first.id : null;
+        // En edicion, respeta el deckId ya asignado al torneo; solo se
+        // preselecciona el primer mazo cuando es una creacion nueva.
+        if (!_isEditing) {
+          _deckId = decks.isNotEmpty ? decks.first.id : null;
+        }
         _isLoadingDecks = false;
       });
     } catch (e) {
@@ -65,6 +78,14 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _date = picked);
+  }
+
+  String? _deckNameById(String? id) {
+    if (id == null) return null;
+    for (final d in _decks) {
+      if (d.id == id) return d.name;
+    }
+    return null;
   }
 
   String _formatDate(DateTime date) {
@@ -87,16 +108,26 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
     });
 
     try {
-      final tournament = await _tournamentService.createTournament(
-        name: _nameController.text.trim(),
-        mode: 'tracked',
-        format: _format,
-        date: _date,
-        location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-        structure: _structure,
-        deckId: _deckId,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      );
+      Tournament tournament;
+      if (_isEditing) {
+        tournament = await _tournamentService.updateTournament(widget.tournament!.id, {
+          'name': _nameController.text.trim(),
+          'date': _date.toIso8601String(),
+          'location': _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        });
+      } else {
+        tournament = await _tournamentService.createTournament(
+          name: _nameController.text.trim(),
+          mode: 'tracked',
+          format: _format,
+          date: _date,
+          location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
+          structure: _structure,
+          deckId: _deckId,
+          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop<Tournament>(tournament);
@@ -145,7 +176,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo torneo')),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar torneo' : 'Nuevo torneo')),
       body: SafeArea(
         child: _isLoadingDecks
             ? const Center(child: CircularProgressIndicator())
@@ -154,10 +185,12 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(AppSizes.spacingM),
                   children: [
-                    const Text('Modo', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: AppSizes.spacingS),
-                    _modeSelector(),
-                    const SizedBox(height: AppSizes.spacingM),
+                    if (!_isEditing) ...[
+                      const Text('Modo', style: TextStyle(fontWeight: FontWeight.w500)),
+                      const SizedBox(height: AppSizes.spacingS),
+                      _modeSelector(),
+                      const SizedBox(height: AppSizes.spacingM),
+                    ],
 
                     TextFormField(
                       controller: _nameController,
@@ -174,41 +207,57 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                     ),
                     const SizedBox(height: AppSizes.spacingM),
 
-                    if (_decks.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
-                        child: Text(
-                          'No tienes mazos creados todavía. Crea uno primero para poder asociarlo al torneo.',
-                          style: TextStyle(color: AppColors.warning),
+                    if (_isEditing) ...[
+                      // Mazo y estructura ya no se pueden cambiar una vez
+                      // creado el torneo: puede haber partidas registradas
+                      // que dependen de ellos.
+                      InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Mazo', border: OutlineInputBorder()),
+                        child: Text(_deckNameById(_deckId) ?? '—'),
+                      ),
+                      const SizedBox(height: AppSizes.spacingM),
+                      InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Estructura', border: OutlineInputBorder()),
+                        child: Text(kTournamentStructureLabels[_structure] ?? _structure),
+                      ),
+                      const SizedBox(height: AppSizes.spacingM),
+                    ] else ...[
+                      if (_decks.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+                          child: Text(
+                            'No tienes mazos creados todavía. Crea uno primero para poder asociarlo al torneo.',
+                            style: TextStyle(color: AppColors.warning),
+                          ),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          initialValue: _deckId,
+                          decoration: const InputDecoration(
+                            labelText: 'Mazo',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _decks
+                              .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
+                              .toList(),
+                          onChanged: (value) => setState(() => _deckId = value),
+                          validator: (value) => value == null ? 'Selecciona un mazo' : null,
                         ),
-                      )
-                    else
+                      const SizedBox(height: AppSizes.spacingM),
+
                       DropdownButtonFormField<String>(
-                        initialValue: _deckId,
+                        initialValue: _structure,
                         decoration: const InputDecoration(
-                          labelText: 'Mazo',
+                          labelText: 'Estructura del torneo',
                           border: OutlineInputBorder(),
                         ),
-                        items: _decks
-                            .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
+                        items: kTournamentStructureLabels.entries
+                            .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                             .toList(),
-                        onChanged: (value) => setState(() => _deckId = value),
-                        validator: (value) => value == null ? 'Selecciona un mazo' : null,
+                        onChanged: (value) => setState(() => _structure = value!),
                       ),
-                    const SizedBox(height: AppSizes.spacingM),
-
-                    DropdownButtonFormField<String>(
-                      initialValue: _structure,
-                      decoration: const InputDecoration(
-                        labelText: 'Estructura del torneo',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: kTournamentStructureLabels.entries
-                          .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                          .toList(),
-                      onChanged: (value) => setState(() => _structure = value!),
-                    ),
-                    const SizedBox(height: AppSizes.spacingM),
+                      const SizedBox(height: AppSizes.spacingM),
+                    ],
 
                     DropdownButtonFormField<String>(
                       initialValue: _format,
@@ -274,7 +323,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                               width: AppSizes.spinnerSmall,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Crear torneo'),
+                          : Text(_isEditing ? 'Guardar cambios' : 'Crear torneo'),
                     ),
                   ],
                 ),
