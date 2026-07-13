@@ -347,7 +347,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(AppSizes.spacingM),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Column(
