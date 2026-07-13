@@ -207,6 +207,20 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
 
     try {
       await _matchService.deleteMatch(match.id);
+
+      // Si la partida borrada tenia ronda, compactamos: todas las partidas
+      // de la misma fase con ronda mayor bajan un puesto, para que no
+      // queden huecos (ronda 1,3,4 -> 1,2,3) y el conteo automatico de
+      // "siguiente ronda" siga siendo valido.
+      if (match.phase != null && match.round != null) {
+        final toRenumber = _matches
+            .where((m) => m.id != match.id && m.phase == match.phase && (m.round ?? 0) > match.round!)
+            .toList();
+        for (final m in toRenumber) {
+          await _matchService.updateMatch(m.id, {'round': m.round! - 1});
+        }
+      }
+
       _loadData();
     } catch (e) {
       if (!mounted) return;
@@ -404,13 +418,14 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
-  /// Cuenta cuantas partidas ya hay registradas en una fase concreta, para
-  /// saber cual es el siguiente numero de ronda. Se asume una partida por
-  /// ronda (swiss/liga/grupos), asi que no tiene sentido dejar que el
-  /// usuario repita o elija libremente un numero ya usado.
+  /// Calcula la siguiente ronda disponible en una fase como el maximo
+  /// round ya usado + 1 (no un simple conteo de partidas): si se borra una
+  /// ronda intermedia, el conteo repetiria un numero ya usado por otra
+  /// partida existente, mientras que el maximo nunca genera duplicados.
   int _nextRoundFor(String phase) {
-    final playedInPhase = _matches.where((m) => m.phase == phase).length;
-    return playedInPhase + 1;
+    final roundsInPhase = _matches.where((m) => m.phase == phase).map((m) => m.round ?? 0);
+    if (roundsInPhase.isEmpty) return 1;
+    return roundsInPhase.reduce((a, b) => a > b ? a : b) + 1;
   }
 
   /// Pregunta en que fase se juega la nueva partida, respetando las fases
