@@ -325,7 +325,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           child: RefreshIndicator(
             onRefresh: _loadTournaments,
             child: ListView.separated(
-              padding: const EdgeInsets.all(AppSizes.spacingM),
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.spacingM,
+                AppSizes.spacingM,
+                AppSizes.spacingM,
+                AppSizes.fabBottomPadding,
+              ),
               itemCount: _sortedTournaments.length,
               separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingS),
               itemBuilder: (context, index) {
