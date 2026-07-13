@@ -371,17 +371,18 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                             ),
                           ),
                           const SizedBox(width: AppSizes.spacingS),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
+                              _statusChip(tournament.status),
                               if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
+                                const SizedBox(height: AppSizes.spacingXS),
                                 Text(
                                   '🏆 ${tournament.finalStanding}',
+                                  textAlign: TextAlign.right,
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
                                 ),
-                                const SizedBox(width: AppSizes.spacingS),
                               ],
-                              _statusChip(tournament.status),
                             ],
                           ),
                         ],
