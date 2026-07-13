@@ -22,6 +22,8 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   Map<String, Deck> _decksById = {};
   bool _isLoading = true;
   String? _errorMessage;
+  // 'date' (por defecto), 'position' (1º primero) o 'percentage' (mejor % de ranking primero)
+  String _sortBy = 'date';
 
   @override
   void initState() {
@@ -130,11 +132,8 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       final tournaments = results[0] as List<Tournament>;
       final decks = results[1] as List<Deck>;
 
-      // Mas recientes primero, por fecha del torneo
-      final sortedTournaments = [...tournaments]..sort((a, b) => b.date.compareTo(a.date));
-
       setState(() {
-        _tournaments = sortedTournaments;
+        _tournaments = tournaments;
         _decksById = {for (final d in decks) d.id: d};
         _isLoading = false;
       });
@@ -151,6 +150,60 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
+  }
+
+  /// Extrae (puesto, total_participantes) del texto guardado en
+  /// finalStanding (formato "Nº de M", ver TournamentDetailScreen).
+  /// Devuelve null si no hay standing o no sigue ese patron.
+  (int, int)? _parseStanding(String? finalStanding) {
+    if (finalStanding == null) return null;
+    final match = RegExp(r'^(\d+)º de (\d+)$').firstMatch(finalStanding);
+    if (match == null) return null;
+    return (int.parse(match.group(1)!), int.parse(match.group(2)!));
+  }
+
+  String get _sortLabel {
+    switch (_sortBy) {
+      case 'position':
+        return 'Posición';
+      case 'percentage':
+        return '% Ranking';
+      default:
+        return 'Fecha';
+    }
+  }
+
+  /// Torneos sin standing guardado siempre quedan al final al ordenar por
+  /// posicion o % ranking, ya que no hay dato con el que compararlos.
+  List<Tournament> get _sortedTournaments {
+    final list = [..._tournaments];
+    switch (_sortBy) {
+      case 'position':
+        list.sort((a, b) {
+          final pa = _parseStanding(a.finalStanding)?.$1;
+          final pb = _parseStanding(b.finalStanding)?.$1;
+          if (pa == null && pb == null) return 0;
+          if (pa == null) return 1;
+          if (pb == null) return -1;
+          return pa.compareTo(pb);
+        });
+        break;
+      case 'percentage':
+        list.sort((a, b) {
+          final sa = _parseStanding(a.finalStanding);
+          final sb = _parseStanding(b.finalStanding);
+          final pa = sa != null ? sa.$1 / sa.$2 : null;
+          final pb = sb != null ? sb.$1 / sb.$2 : null;
+          if (pa == null && pb == null) return 0;
+          if (pa == null) return 1;
+          if (pb == null) return -1;
+          return pa.compareTo(pb);
+        });
+        break;
+      default:
+        list.sort((a, b) => b.date.compareTo(a.date));
+    }
+    return list;
   }
 
   Widget _statusChip(String status) {
@@ -238,69 +291,110 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadTournaments,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppSizes.spacingM),
-        itemCount: _tournaments.length,
-        separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingS),
-        itemBuilder: (context, index) {
-          final tournament = _tournaments[index];
-          final deck = tournament.deckId != null ? _decksById[tournament.deckId] : null;
-
-          return Card(
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => TournamentDetailScreen(tournamentId: tournament.id),
-                  ),
-                );
-                _loadTournaments(); // recarga por si cambio el estado o se elimino
-              },
-              onLongPress: () => _showTournamentOptions(tournament),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacingM),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingS, AppSizes.spacingM, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              PopupMenuButton<String>(
+                initialValue: _sortBy,
+                onSelected: (value) => setState(() => _sortBy = value),
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'date', child: Text('Fecha')),
+                  PopupMenuItem(value: 'position', child: Text('Posición')),
+                  PopupMenuItem(value: 'percentage', child: Text('% Ranking')),
+                ],
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tournament.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
-                          ),
-                          const SizedBox(height: AppSizes.spacingXS),
-                          Text(
-                            [
-                              _formatDate(tournament.date),
-                              if (deck != null) deck.name,
-                              if (tournament.structure != null)
-                                kTournamentStructureLabels[tournament.structure] ?? tournament.structure!,
-                            ].join(' · '),
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
-                          ),
-                          if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
-                            const SizedBox(height: AppSizes.spacingXS),
-                            Text(
-                              '🏆 ${tournament.finalStanding}',
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textS),
-                            ),
-                          ],
-                        ],
-                      ),
+                    const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
+                    const SizedBox(width: AppSizes.spacingXS),
+                    Text(
+                      'Ordenar: $_sortLabel',
+                      style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
                     ),
-                    const SizedBox(width: AppSizes.spacingS),
-                    _statusChip(tournament.status),
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadTournaments,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(AppSizes.spacingM),
+              itemCount: _sortedTournaments.length,
+              separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingS),
+              itemBuilder: (context, index) {
+                final tournament = _sortedTournaments[index];
+                final deck = tournament.deckId != null ? _decksById[tournament.deckId] : null;
+
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => TournamentDetailScreen(tournamentId: tournament.id),
+                        ),
+                      );
+                      _loadTournaments(); // recarga por si cambio el estado o se elimino
+                    },
+                    onLongPress: () => _showTournamentOptions(tournament),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSizes.spacingM),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tournament.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                                ),
+                                const SizedBox(height: AppSizes.spacingXS),
+                                Text(
+                                  [
+                                    _formatDate(tournament.date),
+                                    if (deck != null) deck.name,
+                                    if (tournament.structure != null)
+                                      kTournamentStructureLabels[tournament.structure] ?? tournament.structure!,
+                                  ].join(' · '),
+                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spacingS),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              _statusChip(tournament.status),
+                              if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
+                                const SizedBox(height: AppSizes.spacingXS),
+                                Text(
+                                  '🏆 ${tournament.finalStanding}',
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
