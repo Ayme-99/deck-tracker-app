@@ -347,7 +347,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(AppSizes.spacingM),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Column(
@@ -371,18 +371,17 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                             ),
                           ),
                           const SizedBox(width: AppSizes.spacingS),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              _statusChip(tournament.status),
                               if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
-                                const SizedBox(height: AppSizes.spacingXS),
                                 Text(
                                   '🏆 ${tournament.finalStanding}',
-                                  textAlign: TextAlign.right,
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
                                 ),
+                                const SizedBox(width: AppSizes.spacingS),
                               ],
+                              _statusChip(tournament.status),
                             ],
                           ),
                         ],
