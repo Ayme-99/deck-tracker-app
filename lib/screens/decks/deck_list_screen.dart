@@ -269,7 +269,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                       AppSizes.spacingM,
                       0,
                       AppSizes.spacingM,
-                      AppSizes.spacingM,
+                      AppSizes.fabBottomPadding,
                     ),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 200,
