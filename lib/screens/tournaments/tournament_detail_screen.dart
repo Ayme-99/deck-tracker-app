@@ -129,7 +129,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) {
+      _loadData(); // el cambio de status ya se guardo aunque se cancele el dialogo
+      return;
+    }
 
     final position = positionController.text.trim();
     final total = totalController.text.trim();
@@ -244,7 +247,21 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     final newStatus = tournament.status == 'finished' ? 'in_progress' : 'finished';
     try {
       await _tournamentService.updateTournament(tournament.id, {'status': newStatus});
-      _loadData();
+
+      // Al marcar como finalizado, si la estructura tiene fase de rondas
+      // (donde no hay bracket que ya diga el puesto) y aun no se ha
+      // registrado, se pregunta directamente en vez de esperar a que el
+      // usuario recuerde hacerlo a mano desde la tarjeta.
+      final hasRoundPhase = (kStructurePhases[tournament.structure] ?? [])
+          .any((p) => kRoundBasedPhases.contains(p));
+      final alreadySet = tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty;
+
+      if (newStatus == 'finished' && hasRoundPhase && !alreadySet) {
+        if (!mounted) return;
+        await _editFinalStanding();
+      } else {
+        _loadData();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
