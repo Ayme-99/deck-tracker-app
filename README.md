@@ -16,6 +16,7 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar partidas, c
 - **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente. Al eliminar un mazo se borran también sus partidas (cascada en backend); el diálogo de confirmación avisa del nº de partidas afectadas.
 - **Partidas**: registro, edición y borrado, con autocompletado de rivales ya jugados.
 - **Estadísticas**: win-rate, matchups y premios por mazo; stats globales y ranking ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable.
+- **Torneos** (modo tracked): creación con 5 estructuras (suiza, suiza+eliminatoria, grupos+eliminatoria, eliminatoria directa, liga), detalle con partidas agrupadas por fase/ronda, resumen W-L-T global y por fase, standing manual para ligas, opciones de editar estado/eliminar mediante long-press. Modo *hosted* (alojar el torneo completo) pendiente.
 - **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
 
 ## Estructura del proyecto
@@ -25,8 +26,8 @@ lib/
 ├── main.dart
 ├── config/api_config.dart      # URL del backend
 ├── styles/                     # tokens de UI: colores, tamaños, tipografías, tema
-├── models/                     # Deck, Match, OpponentArchetype
-├── services/                   # ApiService (HTTP + JWT), auth, decks, matches, stats, pokemon
+├── models/                     # Deck, Match, OpponentArchetype, Tournament
+├── services/                   # ApiService (HTTP + JWT), auth, decks, matches, stats, pokemon, tournaments
 ├── widgets/                    # SpritePicker, SpriteAvatarGroup
 └── screens/
     ├── auth/                   # splash, login, registro
@@ -34,7 +35,7 @@ lib/
     ├── decks/                  # lista, detalle, formulario (crear/editar)
     ├── matches/                # registrar, editar
     ├── stats/
-    └── tournaments/            # placeholder, pendiente backend
+    └── tournaments/            # listado, formulario de creación, detalle (partidas por fase/ronda + resumen)
 ```
 
 ## Configuración y ejecución
@@ -75,6 +76,7 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 
 ## TODO
 
-- [ ] Feature de Torneos (pendiente del modelo en backend)
+- [ ] Torneos, modo hosted (alojar torneo completo: jugadores, pairings, clasificación en vivo)
+- [ ] Editar torneo ya creado (por ahora solo se puede crear, marcar finalizado/en curso o eliminar)
 - [ ] Widget de pantalla de inicio (Android)
 - [ ] Formato cooperativo "Incursiones"
