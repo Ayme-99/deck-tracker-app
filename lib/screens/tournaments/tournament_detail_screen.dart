@@ -5,9 +5,11 @@ import '../../models/match.dart';
 import '../../models/opponent_archetype.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
+import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
+import '../matches/edit_match_screen.dart';
 import '../matches/register_match_screen.dart';
 import 'tournament_form_screen.dart';
 
@@ -24,6 +26,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   final _tournamentService = TournamentService();
   final _deckService = DeckService();
   final _archetypeService = OpponentArchetypeService();
+  final _matchService = MatchService();
 
   Tournament? _tournament;
   Deck? _deck;
@@ -140,6 +143,75 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  Future<void> _showMatchOptions(Match match) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar partida'),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+              title: const Text('Eliminar partida'),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (action == 'edit') {
+      // EditMatchScreen solo envia los campos que toca el formulario
+      // (opponentDeck, prizes, endReason, result, notes), asi que
+      // tournamentId/phase/round no se pierden al editar.
+      final updated = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => EditMatchScreen(match: match)),
+      );
+      if (updated == true) _loadData();
+    } else if (action == 'delete') {
+      _confirmDeleteMatch(match);
+    }
+  }
+
+  Future<void> _confirmDeleteMatch(Match match) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar partida'),
+        content: Text('¿Eliminar la partida contra "${match.opponentDeck}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _matchService.deleteMatch(match.id);
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
       );
     }
   }
@@ -741,6 +813,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                                 '${match.userPrizes}-${match.opponentPrizes}',
                               ].join(' · '),
                             ),
+                            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
+                            onTap: () => _showMatchOptions(match),
                           ),
                         );
                       }),
