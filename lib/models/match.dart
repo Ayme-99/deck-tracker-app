@@ -9,6 +9,9 @@ class Match {
   final String format;
   final String? notes;
   final DateTime playedAt;
+  final String? tournamentId;
+  final String? phase;
+  final int? round;
 
   Match({
     required this.id,
@@ -21,6 +24,9 @@ class Match {
     required this.format,
     this.notes,
     required this.playedAt,
+    this.tournamentId,
+    this.phase,
+    this.round,
   });
 
   factory Match.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,21 @@ class Match {
       format: json['format'],
       notes: json['notes'],
       playedAt: DateTime.parse(json['playedAt']),
+      tournamentId: json['tournamentId'],
+      phase: json['phase'],
+      round: json['round'],
     );
   }
 }
+
+// Etiquetas legibles para cada fase, reutilizables en toda la seccion de
+// Torneos (detalle, formulario de partida...)
+const kMatchPhaseLabels = {
+  'group_stage': 'Fase de grupos',
+  'swiss': 'Suiza',
+  'round_of_16': 'Octavos',
+  'quarterfinal': 'Cuartos',
+  'semifinal': 'Semifinal',
+  'final': 'Final',
+  'league_round': 'Jornada',
+};

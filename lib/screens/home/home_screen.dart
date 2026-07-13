@@ -82,14 +82,16 @@ class _HomeScreenState extends State<HomeScreen> {
         children: screens,
       ),
       floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: _handleCreateDeck,
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir mazo'),
             )
           : _currentIndex == 2
-              ? FloatingActionButton(
+              ? FloatingActionButton.extended(
                   onPressed: _handleCreateTournament,
-                  child: const Icon(Icons.add),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Crear torneo'),
                 )
               : null,
       bottomNavigationBar: NavigationBar(

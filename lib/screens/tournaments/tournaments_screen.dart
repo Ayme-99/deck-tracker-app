@@ -5,6 +5,7 @@ import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import 'tournament_detail_screen.dart';
 
 class TournamentsScreen extends StatefulWidget {
   const TournamentsScreen({super.key});
@@ -116,32 +117,42 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     if (_tournaments.isEmpty) {
       return RefreshIndicator(
         onRefresh: _loadTournaments,
-        child: ListView(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXL),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
-                  const SizedBox(height: AppSizes.spacingM),
-                  const Text(
-                    'Todavía no tienes torneos',
-                    style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSizes.spacingS),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
-                    child: Text(
-                      'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.muted),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ListView(
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.spacingL,
+                        vertical: AppSizes.spacingXL,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
+                          const SizedBox(height: AppSizes.spacingM),
+                          const Text(
+                            'Todavía no tienes torneos',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: AppSizes.spacingS),
+                          const Text(
+                            'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.muted),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       );
     }
@@ -159,8 +170,14 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           return Card(
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              // La pantalla de detalle (issue #40) se conectara aqui.
-              onTap: () {},
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TournamentDetailScreen(tournamentId: tournament.id),
+                  ),
+                );
+                _loadTournaments(); // recarga por si cambio el estado o se elimino
+              },
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacingM),
                 child: Row(
