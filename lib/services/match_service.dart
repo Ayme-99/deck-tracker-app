@@ -4,9 +4,10 @@ import 'api_service.dart';
 class MatchService {
   final _api = ApiService();
 
-  Future<List<Match>> getMatches({String? deckId, int page = 1, int limit = 20}) async {
+  Future<List<Match>> getMatches({String? deckId, String? tournamentId, int page = 1, int limit = 20}) async {
     String endpoint = '/matches?page=$page&limit=$limit';
     if (deckId != null) endpoint += '&deckId=$deckId';
+    if (tournamentId != null) endpoint += '&tournamentId=$tournamentId';
 
     final response = await _api.get(endpoint);
     final matchesJson = response['data'] as List;
@@ -26,6 +27,9 @@ class MatchService {
     String endReason = 'normal',
     String? notes,
     String? result,
+    String? tournamentId,
+    String? phase,
+    int? round,
   }) async {
     final response = await _api.post('/matches', {
       'deckId': deckId,
@@ -35,6 +39,9 @@ class MatchService {
       'endReason': endReason,
       'notes': ?notes,
       'result': ?result,
+      'tournamentId': ?tournamentId,
+      'phase': ?phase,
+      'round': ?round,
     });
     return Match.fromJson(response);
   }
@@ -52,4 +59,4 @@ class MatchService {
     final response = await _api.get('/matches/opponent-suggestions?q=$query');
     return List<String>.from(response);
   }
-} 
+}

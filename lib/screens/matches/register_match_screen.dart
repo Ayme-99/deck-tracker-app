@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
+import '../../models/match.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../widgets/sprite_picker.dart';
 
 class RegisterMatchScreen extends StatefulWidget {
   final Deck deck;
+  // Si se informan, la partida se registra asociada a un torneo (issue #40)
+  final String? tournamentId;
+  final String? phase;
+  final int? round;
 
-  const RegisterMatchScreen({super.key, required this.deck});
+  const RegisterMatchScreen({
+    super.key,
+    required this.deck,
+    this.tournamentId,
+    this.phase,
+    this.round,
+  });
 
   @override
   State<RegisterMatchScreen> createState() => _RegisterMatchScreenState();
@@ -78,6 +89,9 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         endReason: _endReason,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         result: _needsManualResult ? (_manualResult ?? 'tie') : null,
+        tournamentId: widget.tournamentId,
+        phase: widget.phase,
+        round: widget.round,
       );
 
       // Guarda/actualiza los sprites asociados a este nombre de rival, si se eligio alguno
@@ -143,6 +157,29 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
           child: ListView(
             padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
+              if (widget.tournamentId != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.spacingS),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.emoji_events, size: AppSizes.iconSmall, color: AppColors.primary),
+                      const SizedBox(width: AppSizes.spacingS),
+                      Text(
+                        [
+                          if (widget.phase != null) kMatchPhaseLabels[widget.phase] ?? widget.phase!,
+                          if (widget.round != null) 'Ronda ${widget.round}',
+                        ].join(' · '),
+                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spacingM),
+              ],
               Autocomplete<String>(
                 optionsBuilder: (textEditingValue) async {
                   if (textEditingValue.text.isEmpty) return const [];

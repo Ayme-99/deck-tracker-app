@@ -87,3 +87,18 @@ const kTournamentStructureLabels = {
   'elimination': 'Eliminatoria directa',
   'league': 'Liga',
 };
+
+// Fases validas para cada structure, en el orden en que se juegan.
+// Se usa al registrar una partida desde el detalle del torneo, para saber
+// que fases ofrecer y si esa fase necesita numero de ronda (swiss/liga/grupos)
+// o no (eliminatoria directa, donde la propia fase ya identifica la partida).
+const kStructurePhases = {
+  'swiss': ['swiss'],
+  'elimination': ['round_of_16', 'quarterfinal', 'semifinal', 'final'],
+  'swiss_elimination': ['swiss', 'round_of_16', 'quarterfinal', 'semifinal', 'final'],
+  'groups_elimination': ['group_stage', 'round_of_16', 'quarterfinal', 'semifinal', 'final'],
+  'league': ['league_round'],
+};
+
+// Fases en las que tiene sentido pedir un numero de ronda/jornada
+const kRoundBasedPhases = {'swiss', 'group_stage', 'league_round'};
