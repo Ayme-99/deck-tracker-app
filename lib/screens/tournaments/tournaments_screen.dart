@@ -29,6 +29,87 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     _loadTournaments();
   }
 
+  Future<void> _showTournamentOptions(Tournament tournament) async {
+    final isFinished = tournament.status == 'finished';
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(isFinished ? Icons.replay : Icons.check_circle_outline),
+              title: Text(isFinished ? 'Marcar como en curso' : 'Marcar como finalizado'),
+              onTap: () => Navigator.of(context).pop('toggle_status'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+              title: const Text('Eliminar torneo'),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (action == 'toggle_status') {
+      _toggleStatus(tournament);
+    } else if (action == 'delete') {
+      _confirmDelete(tournament);
+    }
+  }
+
+  Future<void> _toggleStatus(Tournament tournament) async {
+    final newStatus = tournament.status == 'finished' ? 'in_progress' : 'finished';
+    try {
+      await _tournamentService.updateTournament(tournament.id, {'status': newStatus});
+      _loadTournaments();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al actualizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  Future<void> _confirmDelete(Tournament tournament) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar torneo'),
+        content: Text(
+          '¿Eliminar "${tournament.name}"? Las partidas ya registradas no se borran, '
+          'quedan sueltas fuera del torneo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _tournamentService.deleteTournament(tournament.id);
+      _loadTournaments();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
   Future<void> _loadTournaments() async {
     setState(() {
       _isLoading = true;
@@ -178,6 +259,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 );
                 _loadTournaments(); // recarga por si cambio el estado o se elimino
               },
+              onLongPress: () => _showTournamentOptions(tournament),
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacingM),
                 child: Row(
