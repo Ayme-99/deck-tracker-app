@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../models/opponent_archetype.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
+import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/sprite_avatar_group.dart';
 import '../matches/register_match_screen.dart';
 
 class TournamentDetailScreen extends StatefulWidget {
@@ -19,10 +22,12 @@ class TournamentDetailScreen extends StatefulWidget {
 class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   final _tournamentService = TournamentService();
   final _deckService = DeckService();
+  final _archetypeService = OpponentArchetypeService();
 
   Tournament? _tournament;
   Deck? _deck;
   List<Match> _matches = [];
+  Map<String, OpponentArchetype> _archetypesByName = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -45,15 +50,23 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       final matches = matchesJson.map((m) => Match.fromJson(m)).toList();
 
       Deck? deck;
+      final futures = <Future>[
+        if (tournament.deckId != null) _deckService.getDeckById(tournament.deckId!),
+        _archetypeService.getAll(),
+      ];
+      final results2 = await Future.wait(futures);
+
       if (tournament.deckId != null) {
-        deck = await _deckService.getDeckById(tournament.deckId!);
+        deck = results2[0] as Deck;
       }
+      final archetypes = results2.last as List<OpponentArchetype>;
 
       if (!mounted) return;
       setState(() {
         _tournament = tournament;
         _deck = deck;
         _matches = matches;
+        _archetypesByName = {for (final a in archetypes) a.name: a};
         _isLoading = false;
       });
     } catch (e) {
@@ -384,20 +397,27 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       ),
                       const SizedBox(height: AppSizes.spacingXS),
                       ...matches.map((match) {
+                        final archetype = _archetypesByName[match.opponentDeck];
                         return Card(
                           margin: const EdgeInsets.only(bottom: AppSizes.spacingXS),
                           child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
-                              child: Icon(
-                                match.result == 'win'
-                                    ? Icons.check
-                                    : match.result == 'loss'
-                                        ? Icons.close
-                                        : Icons.remove,
-                                color: _resultColor(match.result),
-                              ),
-                            ),
+                            leading: archetype?.sprite1 != null
+                                ? SpriteAvatarGroup(
+                                    sprite1: archetype!.sprite1,
+                                    sprite2: archetype.sprite2,
+                                    size: AppSizes.iconNormal,
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
+                                    child: Icon(
+                                      match.result == 'win'
+                                          ? Icons.check
+                                          : match.result == 'loss'
+                                              ? Icons.close
+                                              : Icons.remove,
+                                      color: _resultColor(match.result),
+                                    ),
+                                  ),
                             title: Text('vs ${match.opponentDeck}'),
                             subtitle: Text(
                               [
