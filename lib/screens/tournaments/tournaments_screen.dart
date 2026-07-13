@@ -282,6 +282,13 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                             ].join(' · '),
                             style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
                           ),
+                          if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
+                            const SizedBox(height: AppSizes.spacingXS),
+                            Text(
+                              '🏆 ${tournament.finalStanding}',
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textS),
+                            ),
+                          ],
                         ],
                       ),
                     ),
