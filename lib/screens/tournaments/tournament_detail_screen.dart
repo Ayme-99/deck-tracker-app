@@ -28,6 +28,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   Deck? _deck;
   List<Match> _matches = [];
   Map<String, OpponentArchetype> _archetypesByName = {};
+  Map<String, dynamic>? _summary;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -49,17 +50,16 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       final matchesJson = result['matches'] as List;
       final matches = matchesJson.map((m) => Match.fromJson(m)).toList();
 
-      Deck? deck;
-      final futures = <Future>[
-        if (tournament.deckId != null) _deckService.getDeckById(tournament.deckId!),
-        _archetypeService.getAll(),
-      ];
-      final results2 = await Future.wait(futures);
+      // Se piden en paralelo: archetypes (para sprites), resumen W-L-T por
+      // fase, y el mazo del torneo (si tiene). Orden fijo en la lista para
+      // no depender de .last y evitar confusiones si se añade algo mas.
+      final archetypesFuture = _archetypeService.getAll();
+      final summaryFuture = _tournamentService.getTournamentSummary(tournament.id);
+      final deckFuture = tournament.deckId != null ? _deckService.getDeckById(tournament.deckId!) : null;
 
-      if (tournament.deckId != null) {
-        deck = results2[0] as Deck;
-      }
-      final archetypes = results2.last as List<OpponentArchetype>;
+      final archetypes = await archetypesFuture;
+      final summary = await summaryFuture;
+      final deck = deckFuture != null ? await deckFuture : null;
 
       if (!mounted) return;
       setState(() {
@@ -67,6 +67,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         _deck = deck;
         _matches = matches;
         _archetypesByName = {for (final a in archetypes) a.name: a};
+        _summary = summary;
         _isLoading = false;
       });
     } catch (e) {
@@ -251,6 +252,75 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     return {for (final k in orderedKeys) k: grouped[k]!};
   }
 
+  Widget _statColumn(String value, String label, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: AppSizes.spacingXS),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    final overall = _summary!['overall'] as Map<String, dynamic>;
+    final byPhase = _summary!['byPhase'] as List;
+    final totalMatches = overall['totalMatches'] ?? 0;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Resumen · $totalMatches partidas',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            if (totalMatches == 0)
+              const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
+            else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statColumn('${overall['winRate']}%', 'Win rate', AppColors.primaryVariant),
+                  _statColumn('${overall['wins']}', 'Victorias', AppColors.success),
+                  _statColumn('${overall['losses']}', 'Derrotas', AppColors.error),
+                  _statColumn('${overall['ties']}', 'Empates', AppColors.muted),
+                ],
+              ),
+              if (byPhase.length > 1) ...[
+                const Divider(height: 32),
+                Text(
+                  'Por fase',
+                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: AppSizes.spacingS),
+                ...byPhase.map((p) {
+                  final phase = p['phase'] as String?;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXS),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(kMatchPhaseLabels[phase] ?? phase ?? 'Sin fase'),
+                        Text(
+                          '${p['wins']}V - ${p['losses']}D - ${p['ties']}E · ${p['winRate']}%',
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -370,6 +440,11 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               ),
             ),
             const SizedBox(height: AppSizes.spacingL),
+
+            if (_summary != null) ...[
+              _buildSummaryCard(),
+              const SizedBox(height: AppSizes.spacingL),
+            ],
 
             const Text('Partidas', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSizes.spacingS),
