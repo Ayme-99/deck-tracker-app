@@ -93,6 +93,135 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
+  /// Solo tiene sentido en torneos de tipo 'league': aqui no hay forma de
+  /// derivar la clasificacion a partir de las partidas propias (no se sabe
+  /// la puntuacion del resto de participantes), asi que el usuario la
+  /// introduce a mano cuando quiera.
+  Future<void> _addStandingSnapshot() async {
+    final pointsController = TextEditingController();
+    final positionController = TextEditingController();
+    final notesController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Añadir posición'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: pointsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Puntos'),
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            TextField(
+              controller: positionController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Posición en la tabla'),
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(labelText: 'Notas (opcional)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _tournamentService.addStandingSnapshot(
+        _tournament!.id,
+        points: int.tryParse(pointsController.text),
+        position: int.tryParse(positionController.text),
+        notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+      );
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
+  String _formatSnapshotDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildStandingSection() {
+    final snapshots = [..._tournament!.standingSnapshots]..sort((a, b) => b.date.compareTo(a.date));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Clasificación', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
+                TextButton.icon(
+                  onPressed: _addStandingSnapshot,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Añadir'),
+                ),
+              ],
+            ),
+            if (snapshots.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+                child: Text(
+                  'Registra tu posición y puntos cuando quieras hacer seguimiento',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              )
+            else
+              ...snapshots.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXS),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          _formatSnapshotDate(s.date),
+                          style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          [
+                            if (s.position != null) '${s.position}º puesto',
+                            if (s.points != null) '${s.points} pts',
+                            if (s.notes != null && s.notes!.isNotEmpty) s.notes!,
+                          ].join(' · '),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDeleteTournament() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -129,8 +258,19 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
-  /// Pregunta en que fase (y, si aplica, en que ronda) se juega la nueva
-  /// partida, respetando las fases validas para la structure del torneo.
+  /// Cuenta cuantas partidas ya hay registradas en una fase concreta, para
+  /// saber cual es el siguiente numero de ronda. Se asume una partida por
+  /// ronda (swiss/liga/grupos), asi que no tiene sentido dejar que el
+  /// usuario repita o elija libremente un numero ya usado.
+  int _nextRoundFor(String phase) {
+    final playedInPhase = _matches.where((m) => m.phase == phase).length;
+    return playedInPhase + 1;
+  }
+
+  /// Pregunta en que fase se juega la nueva partida, respetando las fases
+  /// validas para la structure del torneo. Si la fase es de las que llevan
+  /// ronda (swiss/grupos/liga), la ronda se calcula automaticamente como
+  /// la siguiente disponible, sin dejar elegirla a mano.
   Future<void> _handleAddMatch() async {
     final tournament = _tournament!;
     if (_deck == null) return;
@@ -139,7 +279,6 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     if (validPhases.isEmpty) return;
 
     String selectedPhase = validPhases.first;
-    final roundController = TextEditingController();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -150,6 +289,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             title: const Text('¿En qué fase se juega?'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: selectedPhase,
@@ -161,10 +301,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 ),
                 if (needsRound) ...[
                   const SizedBox(height: AppSizes.spacingM),
-                  TextField(
-                    controller: roundController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Número de ronda/jornada'),
+                  Text(
+                    'Ronda ${_nextRoundFor(selectedPhase)}',
+                    style: const TextStyle(color: AppColors.muted),
                   ),
                 ],
               ],
@@ -187,7 +326,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     if (confirmed != true || !mounted) return;
 
     final needsRound = kRoundBasedPhases.contains(selectedPhase);
-    final round = needsRound ? int.tryParse(roundController.text) : null;
+    final round = needsRound ? _nextRoundFor(selectedPhase) : null;
 
     final registered = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -443,6 +582,11 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
 
             if (_summary != null) ...[
               _buildSummaryCard(),
+              const SizedBox(height: AppSizes.spacingL),
+            ],
+
+            if (tournament.structure == 'league') ...[
+              _buildStandingSection(),
               const SizedBox(height: AppSizes.spacingL),
             ],
 
