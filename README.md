@@ -16,7 +16,7 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG y registrar partidas, c
 - **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente. Al eliminar un mazo se borran también sus partidas (cascada en backend); el diálogo de confirmación avisa del nº de partidas afectadas.
 - **Partidas**: registro, edición y borrado, con autocompletado de rivales ya jugados.
 - **Estadísticas**: win-rate, matchups y premios por mazo; stats globales y ranking ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable.
-- **Torneos** (modo tracked): creación con 5 estructuras (suiza, suiza+eliminatoria, grupos+eliminatoria, eliminatoria directa, liga), detalle con partidas agrupadas por fase/ronda, resumen W-L-T global y por fase, standing manual para ligas, opciones de editar estado/eliminar mediante long-press. Modo *hosted* (alojar el torneo completo) pendiente.
+- **Torneos** (modo tracked): creación con 5 estructuras (suiza, suiza+eliminatoria, grupos+eliminatoria, eliminatoria directa, liga), detalle con partidas agrupadas por fase/ronda, resumen W-L-T global y por fase, standing manual para ligas, opciones de editar estado/eliminar mediante long-press. Modo *hosted* (alojar el torneo completo) pendiente — diseño completo en [`TORNEOS_HOSTED_GDD.md`](./TORNEOS_HOSTED_GDD.md).
 - **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
 
 ## Estructura del proyecto
