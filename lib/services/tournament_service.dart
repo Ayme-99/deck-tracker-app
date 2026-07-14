@@ -30,6 +30,9 @@ class TournamentService {
     String? structure,
     String? deckId,
     String? notes,
+    String eliminationFormat = 'single_match',
+    bool thirdPlacePlayoff = false,
+    bool leagueDoubleRound = false,
   }) async {
     final response = await _api.post('/tournaments', {
       'name': name,
@@ -40,6 +43,9 @@ class TournamentService {
       'structure': structure,
       'deckId': deckId,
       'notes': notes,
+      'eliminationFormat': eliminationFormat,
+      'thirdPlacePlayoff': thirdPlacePlayoff,
+      'leagueDoubleRound': leagueDoubleRound,
     });
     return Tournament.fromJson(response);
   }

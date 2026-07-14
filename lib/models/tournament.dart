@@ -36,6 +36,10 @@ class Tournament {
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  // --- Configuracion especifica del modo hosted ---
+  final String eliminationFormat; // 'single_match' | 'two_legs'
+  final bool thirdPlacePlayoff;
+  final bool leagueDoubleRound;
 
   Tournament({
     required this.id,
@@ -52,6 +56,9 @@ class Tournament {
     this.notes,
     required this.createdAt,
     this.updatedAt,
+    this.eliminationFormat = 'single_match',
+    this.thirdPlacePlayoff = false,
+    this.leagueDoubleRound = false,
   });
 
   factory Tournament.fromJson(Map<String, dynamic> json) {
@@ -74,9 +81,22 @@ class Tournament {
       notes: json['notes'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      eliminationFormat: json['eliminationFormat'] ?? 'single_match',
+      thirdPlacePlayoff: json['thirdPlacePlayoff'] ?? false,
+      leagueDoubleRound: json['leagueDoubleRound'] ?? false,
     );
   }
 }
+
+// Etiquetas legibles para eliminationFormat
+const kEliminationFormatLabels = {
+  'single_match': 'Partido único',
+  'two_legs': 'Ida y vuelta',
+};
+
+// Estructuras que incluyen una fase de eliminatoria directa en algun punto
+// (para saber cuando mostrar la config de eliminationFormat/thirdPlacePlayoff)
+const kStructuresWithElimination = {'elimination', 'swiss_elimination', 'groups_elimination'};
 
 // Etiquetas legibles para las structure, reutilizables en toda la seccion
 // de Torneos (listado, formulario, detalle...)
