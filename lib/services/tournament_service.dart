@@ -1,6 +1,7 @@
 import 'package:deck_tracker_app/services/api_service.dart';
 
 import '../models/tournament.dart';
+import '../models/tournament_player.dart';
 
 class TournamentService {
   final _api = ApiService();
@@ -76,5 +77,41 @@ class TournamentService {
   Future<Map<String, dynamic>> getTournamentSummary(String id) async {
     final response = await _api.get('/tournaments/$id/summary');
     return response as Map<String, dynamic>;
+  }
+
+  // --- Jugadores (modo hosted, issue #45) ---
+
+  Future<TournamentPlayer> createPlayer(
+    String tournamentId, {
+    required String name,
+    String? deckArchetype,
+    bool isOrganizer = false,
+    String? deckId,
+  }) async {
+    final response = await _api.post('/tournaments/$tournamentId/players', {
+      'name': name,
+      'deckArchetype': deckArchetype,
+      'isOrganizer': isOrganizer,
+      if (deckId != null) 'deckId': deckId,
+    });
+    return TournamentPlayer.fromJson(response);
+  }
+
+  Future<List<TournamentPlayer>> getPlayers(String tournamentId) async {
+    final response = await _api.get('/tournaments/$tournamentId/players') as List;
+    return response.map((p) => TournamentPlayer.fromJson(p)).toList();
+  }
+
+  Future<TournamentPlayer> updatePlayer(
+    String tournamentId,
+    String playerId,
+    Map<String, dynamic> updates,
+  ) async {
+    final response = await _api.put('/tournaments/$tournamentId/players/$playerId', updates);
+    return TournamentPlayer.fromJson(response);
+  }
+
+  Future<void> deletePlayer(String tournamentId, String playerId) async {
+    await _api.delete('/tournaments/$tournamentId/players/$playerId');
   }
 }
