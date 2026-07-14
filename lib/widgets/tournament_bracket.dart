@@ -147,7 +147,7 @@ class TournamentBracket extends StatelessWidget {
               match: thirdPlaceMatch,
               player1: _player(thirdPlaceMatch.player1Id),
               player2: _player(thirdPlaceMatch.player2Id),
-              onTap: () => onMatchTap(thirdPlaceMatch),
+              onTap: () => onMatchTap(thirdPlaceMatch!),
             ),
           ],
         ],

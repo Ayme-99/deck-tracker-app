@@ -228,7 +228,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
                 RadioListTile<String>(
                   contentPadding: EdgeInsets.zero,
                   title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
-                  value: match.player2Id,
+                  value: match.player2Id!,
                   groupValue: winnerId,
                   onChanged: (value) => setDialogState(() => winnerId = value),
                 ),
