@@ -13,6 +13,14 @@ import 'sprite_avatar_group.dart';
 /// partido se calculan de abajo a arriba (los de la 1a fase se reparten
 /// uniformemente, y cada fase siguiente centra su partido entre los dos
 /// de los que depende), sin necesidad de medir RenderBox tras el layout.
+///
+/// FIX (issue #80): en formato 'two_legs' (ida y vuelta), cada
+/// enfrentamiento real genera 2 TournamentMatch (first_leg + second_leg,
+/// y opcionalmente sudden_death) enlazadas por tiedMatchId. Antes se
+/// pintaba cada una como un nodo independiente del arbol, duplicando
+/// nodos y desplazando las etiquetas de fase. Ahora se agrupan primero
+/// en "nodos visuales" (_BracketNode), igual que ya hacia el backend en
+/// advanceBracketRound.
 class TournamentBracket extends StatelessWidget {
   final List<String> phaseOrder;
   final Map<String, List<TournamentMatch>> matchesByPhase;
@@ -35,11 +43,37 @@ class TournamentBracket extends StatelessWidget {
 
   TournamentPlayer? _player(String? id) => id == null ? null : playersById[id];
 
+  /// Agrupa las partidas de una fase en nodos visuales: en single_match,
+  /// cada partida es su propio nodo; en two_legs, first_leg+second_leg
+  /// (+sudden_death si existe) se agrupan en un unico nodo.
+  List<_BracketNode> _groupIntoNodes(List<TournamentMatch> phaseMatches) {
+    final nodes = <_BracketNode>[];
+    final seen = <String>{};
+
+    for (final m in phaseMatches) {
+      if (seen.contains(m.id)) continue;
+      final group = [m];
+      seen.add(m.id);
+
+      if (m.tiedMatchId != null) {
+        for (final other in phaseMatches) {
+          if (seen.contains(other.id)) continue;
+          final isLinked = other.id == m.tiedMatchId || other.tiedMatchId == m.id;
+          if (isLinked) {
+            group.add(other);
+            seen.add(other.id);
+          }
+        }
+      }
+
+      nodes.add(_BracketNode(group));
+    }
+
+    return nodes;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Solo se pintan las fases que ya tienen partidas creadas; las fases
-    // futuras del bracket no existen todavia hasta que se avanza (ver
-    // advanceBracketRound en el backend).
     final phasesWithMatches = phaseOrder.where((p) => (matchesByPhase[p] ?? []).isNotEmpty).toList();
     if (phasesWithMatches.isEmpty) {
       return const Padding(
@@ -48,7 +82,6 @@ class TournamentBracket extends StatelessWidget {
       );
     }
 
-    // Separa el partido de 3er/4º puesto (si existe) del resto del arbol principal
     TournamentMatch? thirdPlaceMatch;
     for (final m in matchesByPhase['final'] ?? []) {
       if (m.isThirdPlaceMatch) {
@@ -56,25 +89,25 @@ class TournamentBracket extends StatelessWidget {
         break;
       }
     }
-    final mainMatchesByPhase = {
+
+    final nodesByPhase = {
       for (final p in phasesWithMatches)
-        p: (matchesByPhase[p] ?? []).where((m) => !m.isThirdPlaceMatch).toList(),
+        p: _groupIntoNodes((matchesByPhase[p] ?? []).where((m) => !m.isThirdPlaceMatch).toList()),
     };
 
-    // Centros verticales por fase, calculados de abajo a arriba
     final centers = <String, List<double>>{};
     for (int i = 0; i < phasesWithMatches.length; i++) {
       final phase = phasesWithMatches[i];
-      final matches = mainMatchesByPhase[phase]!;
+      final nodes = nodesByPhase[phase]!;
       if (i == 0) {
         centers[phase] = List.generate(
-          matches.length,
+          nodes.length,
           (idx) => idx * (cardHeight + leafGap) + cardHeight / 2,
         );
       } else {
         final prevPhase = phasesWithMatches[i - 1];
         final prevCenters = centers[prevPhase]!;
-        centers[phase] = List.generate(matches.length, (idx) {
+        centers[phase] = List.generate(nodes.length, (idx) {
           final c1 = prevCenters.length > idx * 2 ? prevCenters[idx * 2] : 0.0;
           final c2 = prevCenters.length > idx * 2 + 1 ? prevCenters[idx * 2 + 1] : c1;
           return (c1 + c2) / 2;
@@ -103,24 +136,22 @@ class TournamentBracket extends StatelessWidget {
                   painter: _BracketConnectorPainter(
                     phasesWithMatches: phasesWithMatches,
                     centers: centers,
-                    matchesByPhase: mainMatchesByPhase,
                   ),
                 ),
                 for (int i = 0; i < phasesWithMatches.length; i++)
-                  for (int j = 0; j < mainMatchesByPhase[phasesWithMatches[i]]!.length; j++)
+                  for (int j = 0; j < nodesByPhase[phasesWithMatches[i]]!.length; j++)
                     Positioned(
                       left: i * (cardWidth + colGap),
                       top: centers[phasesWithMatches[i]]![j] - cardHeight / 2,
-                      child: _BracketMatchCard(
+                      child: _BracketNodeCard(
                         width: cardWidth,
                         height: cardHeight,
-                        match: mainMatchesByPhase[phasesWithMatches[i]]![j],
-                        player1: _player(mainMatchesByPhase[phasesWithMatches[i]]![j].player1Id),
-                        player2: _player(mainMatchesByPhase[phasesWithMatches[i]]![j].player2Id),
-                        onTap: () => onMatchTap(mainMatchesByPhase[phasesWithMatches[i]]![j]),
+                        node: nodesByPhase[phasesWithMatches[i]]![j],
+                        player1: _player(nodesByPhase[phasesWithMatches[i]]![j].player1Id),
+                        player2: _player(nodesByPhase[phasesWithMatches[i]]![j].player2Id),
+                        onSelectMatch: onMatchTap,
                       ),
                     ),
-                // Etiquetas de fase arriba de cada columna
                 for (int i = 0; i < phasesWithMatches.length; i++)
                   Positioned(
                     left: i * (cardWidth + colGap),
@@ -140,13 +171,13 @@ class TournamentBracket extends StatelessWidget {
             const SizedBox(height: AppSizes.spacingL),
             const Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
             const SizedBox(height: AppSizes.spacingXS),
-            _BracketMatchCard(
+            _BracketNodeCard(
               width: cardWidth,
               height: cardHeight,
-              match: thirdPlaceMatch,
+              node: _BracketNode([thirdPlaceMatch]),
               player1: _player(thirdPlaceMatch.player1Id),
               player2: _player(thirdPlaceMatch.player2Id),
-              onTap: () => onMatchTap(thirdPlaceMatch!),
+              onSelectMatch: onMatchTap,
             ),
           ],
         ],
@@ -155,21 +186,77 @@ class TournamentBracket extends StatelessWidget {
   }
 }
 
-class _BracketMatchCard extends StatelessWidget {
+/// Nodo visual del arbol: 1 partida (single_match) o varias enlazadas por
+/// tiedMatchId (two_legs: first_leg+second_leg[+sudden_death]).
+class _BracketNode {
+  final List<TournamentMatch> legs;
+
+  _BracketNode(this.legs);
+
+  bool get isTwoLegs => legs.length > 1;
+
+  String get player1Id => legs.first.player1Id;
+  String? get player2Id => legs.first.player2Id;
+  bool get isBye => legs.first.isBye;
+
+  TournamentMatch? get _firstLeg =>
+      legs.length == 1 ? null : (legs.where((m) => m.leg == 'first_leg').firstOrNull ?? legs.first);
+  TournamentMatch? get _secondLeg =>
+      legs.length == 1 ? null : legs.where((m) => m.leg == 'second_leg').firstOrNull;
+  TournamentMatch? get _suddenDeath =>
+      legs.length == 1 ? null : legs.where((m) => m.leg == 'sudden_death').firstOrNull;
+
+  String get resultLabel {
+    if (legs.length == 1) {
+      final m = legs.first;
+      if (m.status != 'completed') return 'Sin resultado';
+      if (m.isDraw) return 'Empate';
+      return '${m.player1Prizes ?? '-'} - ${m.player2Prizes ?? '-'}';
+    }
+
+    final firstLeg = _firstLeg;
+    final secondLeg = _secondLeg;
+    final suddenDeath = _suddenDeath;
+
+    if (suddenDeath != null && suddenDeath.status == 'completed') {
+      return 'Agregado + muerte súbita';
+    }
+    if (firstLeg != null && firstLeg.status == 'completed' && secondLeg != null && secondLeg.status == 'completed') {
+      final p1Total = (firstLeg.player1Prizes ?? 0) +
+          (secondLeg.player2Id == firstLeg.player1Id ? (secondLeg.player2Prizes ?? 0) : (secondLeg.player1Prizes ?? 0));
+      final p2Total = (firstLeg.player2Prizes ?? 0) +
+          (secondLeg.player1Id == firstLeg.player2Id ? (secondLeg.player1Prizes ?? 0) : (secondLeg.player2Prizes ?? 0));
+      if (p1Total == p2Total) return 'Empate agregado ($p1Total-$p2Total) · falta muerte súbita';
+      return '$p1Total - $p2Total (agregado)';
+    }
+    if (firstLeg != null && firstLeg.status == 'completed') {
+      return 'Ida: ${firstLeg.player1Prizes ?? '-'}-${firstLeg.player2Prizes ?? '-'} · Vuelta pendiente';
+    }
+    return 'Sin resultado';
+  }
+
+  bool get hasAnyResult => legs.any((m) => m.status == 'completed');
+}
+
+extension _FirstOrNullExt<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}
+
+class _BracketNodeCard extends StatelessWidget {
   final double width;
   final double height;
-  final TournamentMatch match;
+  final _BracketNode node;
   final TournamentPlayer? player1;
   final TournamentPlayer? player2;
-  final VoidCallback onTap;
+  final void Function(TournamentMatch match) onSelectMatch;
 
-  const _BracketMatchCard({
+  const _BracketNodeCard({
     required this.width,
     required this.height,
-    required this.match,
+    required this.node,
     required this.player1,
     required this.player2,
-    required this.onTap,
+    required this.onSelectMatch,
   });
 
   Widget _row(TournamentPlayer? player, {required bool isBye}) {
@@ -177,8 +264,8 @@ class _BracketMatchCard extends StatelessWidget {
       height: height / 2,
       child: Row(
         children: [
-          SpriteAvatarGroup(
-            sprite1: null, // el arquetipo del jugador no trae sprite propio resuelto aqui; se añade en #47 si aporta
+          const SpriteAvatarGroup(
+            sprite1: null,
             size: AppSizes.iconSmall,
             centerAlign: true,
           ),
@@ -195,16 +282,44 @@ class _BracketMatchCard extends StatelessWidget {
     );
   }
 
+  Future<void> _handleTap(BuildContext context) async {
+    if (!node.isTwoLegs) {
+      onSelectMatch(node.legs.first);
+      return;
+    }
+
+    final selected = await showModalBottomSheet<TournamentMatch>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: node.legs.map((leg) {
+            final label = switch (leg.leg) {
+              'first_leg' => 'Ida',
+              'second_leg' => 'Vuelta',
+              'sudden_death' => 'Muerte súbita',
+              _ => leg.leg,
+            };
+            final resultText = leg.status == 'completed'
+                ? (leg.isDraw ? 'Empate' : '${leg.player1Prizes ?? '-'}-${leg.player2Prizes ?? '-'}')
+                : 'Sin resultado';
+            return ListTile(
+              title: Text(label),
+              subtitle: Text(resultText),
+              onTap: () => Navigator.of(context).pop(leg),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+
+    if (selected != null) onSelectMatch(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final resultLabel = match.status == 'completed'
-        ? (match.isDraw
-            ? 'Empate'
-            : '${match.player1Prizes ?? '-'} - ${match.player2Prizes ?? '-'}')
-        : 'Sin resultado';
-
     return InkWell(
-      onTap: onTap,
+      onTap: () => _handleTap(context),
       child: Container(
         width: width,
         height: height,
@@ -222,15 +337,16 @@ class _BracketMatchCard extends StatelessWidget {
                 children: [
                   _row(player1, isBye: false),
                   const Divider(height: 1),
-                  _row(player2, isBye: match.isBye),
+                  _row(player2, isBye: node.isBye),
                 ],
               ),
             ),
             const SizedBox(width: AppSizes.spacingXS),
             Text(
-              resultLabel,
+              node.resultLabel,
+              textAlign: TextAlign.right,
               style: TextStyle(
-                color: match.status == 'completed' ? null : AppColors.muted,
+                color: node.hasAnyResult ? null : AppColors.muted,
                 fontSize: AppSizes.textXS,
                 fontWeight: FontWeight.w600,
               ),
@@ -245,12 +361,10 @@ class _BracketMatchCard extends StatelessWidget {
 class _BracketConnectorPainter extends CustomPainter {
   final List<String> phasesWithMatches;
   final Map<String, List<double>> centers;
-  final Map<String, List<TournamentMatch>> matchesByPhase;
 
   _BracketConnectorPainter({
     required this.phasesWithMatches,
     required this.centers,
-    required this.matchesByPhase,
   });
 
   @override
