@@ -93,7 +93,7 @@ class TournamentService {
       'name': name,
       'deckArchetype': deckArchetype,
       'isOrganizer': isOrganizer,
-      if (deckId != null) 'deckId': deckId,
+      'deckId': ?deckId,
     });
     return TournamentPlayer.fromJson(response);
   }
@@ -158,8 +158,8 @@ class TournamentService {
     int? qualifiersPerGroup,
   }) async {
     final response = await _api.post('/tournaments/$tournamentId/close-phase', {
-      if (topCut != null) 'topCut': topCut,
-      if (qualifiersPerGroup != null) 'qualifiersPerGroup': qualifiersPerGroup,
+      'topCut': ?topCut,
+      'qualifiersPerGroup': ?qualifiersPerGroup,
     });
     return response as Map<String, dynamic>;
   }

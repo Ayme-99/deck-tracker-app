@@ -217,22 +217,25 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
                 value: isDraw,
                 onChanged: (value) => setDialogState(() => isDraw = value),
               ),
-              if (!isDraw) ...[
-                RadioListTile<String>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Gana ${player1?.name ?? 'jugador 1'}'),
-                  value: match.player1Id,
+              if (!isDraw)
+                RadioGroup<String>(
                   groupValue: winnerId,
                   onChanged: (value) => setDialogState(() => winnerId = value),
+                  child: Column(
+                    children: [
+                      RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('Gana ${player1?.name ?? 'jugador 1'}'),
+                        value: match.player1Id,
+                      ),
+                      RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
+                        value: match.player2Id!,
+                      ),
+                    ],
+                  ),
                 ),
-                RadioListTile<String>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
-                  value: match.player2Id!,
-                  groupValue: winnerId,
-                  onChanged: (value) => setDialogState(() => winnerId = value),
-                ),
-              ],
             ],
           ),
           actions: [

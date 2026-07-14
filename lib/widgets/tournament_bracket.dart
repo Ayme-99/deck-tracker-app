@@ -33,7 +33,6 @@ class TournamentBracket extends StatelessWidget {
     required this.onMatchTap,
   });
 
-  String? _playerName(String? id) => id == null ? null : playersById[id]?.name;
   TournamentPlayer? _player(String? id) => id == null ? null : playersById[id];
 
   @override
