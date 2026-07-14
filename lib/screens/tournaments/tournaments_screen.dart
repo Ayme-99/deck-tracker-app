@@ -6,6 +6,7 @@ import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_detail_screen.dart';
+import 'tournament_players_screen.dart';
 
 class TournamentsScreen extends StatefulWidget {
   const TournamentsScreen({super.key});
@@ -341,9 +342,14 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () async {
+                      // Los torneos hosted aun no tienen su propia pantalla
+                      // de detalle completa (llegara con #46/#47); por ahora
+                      // se entra directamente a gestion de jugadores.
                       await Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => TournamentDetailScreen(tournamentId: tournament.id),
+                          builder: (_) => tournament.mode == 'hosted'
+                              ? TournamentPlayersScreen(tournamentId: tournament.id)
+                              : TournamentDetailScreen(tournamentId: tournament.id),
                         ),
                       );
                       _loadTournaments(); // recarga por si cambio el estado o se elimino
