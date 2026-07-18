@@ -670,6 +670,14 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(tournament.name),
+        // Boton "atras" explicito que siempre devuelve true al hacer pop,
+        // para que quien empujo esta pantalla (ej. tras crear el torneo,
+        // ver issue #82) sepa que debe refrescar sus datos incluso si el
+        // usuario no llego a cambiar nada aqui.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
