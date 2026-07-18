@@ -27,9 +27,16 @@ class TournamentBracket extends StatelessWidget {
   final Map<String, TournamentPlayer> playersById;
   final void Function(TournamentMatch match) onMatchTap;
 
+  // FIX (issue #83): antes rowHeight se derivaba dividiendo cardHeight
+  // entre 2, sin dejar hueco para el Divider entre ambas filas -- las 2
+  // filas + el divisor sumaban mas que cardHeight, provocando overflow
+  // vertical en cada tarjeta ("BOTTOM OVERFLOWED BY X PIXELS"). Ahora se
+  // define la altura de fila de forma independiente, y cardHeight se
+  // calcula sumando ambas filas + el divisor, con margen de sobra.
+  static const double dividerHeight = 1;
+  static const double rowHeight = 32;
+  static const double cardHeight = rowHeight * 2 + dividerHeight + 4; // +4 de margen de seguridad
   static const double cardWidth = 210;
-  static const double cardHeight = 64;
-  static const double rowHeight = cardHeight / 2;
   static const double leafGap = 14;
   static const double colGap = 48;
 
@@ -261,7 +268,7 @@ class _BracketNodeCard extends StatelessWidget {
 
   Widget _row(TournamentPlayer? player, {required bool isBye}) {
     return SizedBox(
-      height: height / 2,
+      height: TournamentBracket.rowHeight,
       child: Row(
         children: [
           const SpriteAvatarGroup(
@@ -336,7 +343,7 @@ class _BracketNodeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _row(player1, isBye: false),
-                  const Divider(height: 1),
+                  const Divider(height: TournamentBracket.dividerHeight),
                   _row(player2, isBye: node.isBye),
                 ],
               ),
