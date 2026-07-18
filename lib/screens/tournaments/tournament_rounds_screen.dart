@@ -20,6 +20,7 @@ class TournamentRoundsScreen extends StatefulWidget {
 
 class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
   final _tournamentService = TournamentService();
+  final _scrollController = ScrollController();
 
   Tournament? _tournament;
   List<TournamentPlayer> _players = [];
@@ -32,6 +33,12 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -388,7 +395,12 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    // Solo se muestra la pantalla completa de carga en la primera carga
+    // (_tournament == null). En recargas posteriores (tras registrar un
+    // resultado, generar una ronda, etc.) se mantiene el ListView montado
+    // con los datos anteriores hasta que llegan los nuevos, para no perder
+    // la posicion de scroll (issue #81).
+    if (_isLoading && _tournament == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -414,12 +426,21 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
     final hasAnyMatch = _matches.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Rondas y emparejamientos')),
+      appBar: AppBar(
+        title: const Text('Rondas y emparejamientos'),
+        bottom: _isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
+      ),
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: Stack(
           children: [
             ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.only(bottom: AppSizes.spacingXL),
               children: [
                 _buildActions(),
