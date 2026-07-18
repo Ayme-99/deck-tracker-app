@@ -276,6 +276,14 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jugadores'),
+        // Boton "atras" explicito que siempre devuelve true al hacer pop,
+        // para que quien empujo esta pantalla (ej. tras crear un torneo
+        // hosted, ver issue #82) sepa que debe refrescar sus datos incluso
+        // si el usuario no llego a crear/editar ningun jugador.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.sports_score),

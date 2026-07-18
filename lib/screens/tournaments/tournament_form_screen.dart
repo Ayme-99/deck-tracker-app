@@ -4,6 +4,7 @@ import '../../models/deck.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
+import 'tournament_players_screen.dart';
 
 /// Pantalla de creacion/edicion de torneo. Soporta ambos modos: 'tracked'
 /// (seguimiento del propio historial) y 'hosted' (la app aloja el torneo
@@ -142,7 +143,20 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop<Tournament>(tournament);
+
+      // Al crear (no editar) un torneo hosted, ir directo a inscribir
+      // jugadores en vez de volver al listado -- no tiene sentido pasar
+      // por una pantalla intermedia para lo primero que hay que hacer
+      // siempre despues de crear un torneo hosted (issue #82).
+      if (!_isEditing && _mode == 'hosted') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TournamentPlayersScreen(tournamentId: tournament.id),
+          ),
+        );
+      } else {
+        Navigator.of(context).pop<Tournament>(tournament);
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
