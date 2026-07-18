@@ -4,6 +4,8 @@ import '../../models/deck.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
+import 'tournament_players_screen.dart';
+import 'tournament_detail_screen.dart';
 
 /// Pantalla de creacion/edicion de torneo. Soporta ambos modos: 'tracked'
 /// (seguimiento del propio historial) y 'hosted' (la app aloja el torneo
@@ -142,7 +144,36 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop<Tournament>(tournament);
+
+      // Al crear (no editar) un torneo hosted, ir directo a inscribir
+      // jugadores en vez de volver al listado -- no tiene sentido pasar
+      // por una pantalla intermedia para lo primero que hay que hacer
+      // siempre despues de crear un torneo hosted (issue #82).
+      if (!_isEditing && _mode == 'hosted') {
+        // result: hace que la pantalla que empujo este formulario (home_screen)
+        // reciba un valor no nulo y refresque su listado, aunque el usuario
+        // no vuelva a pasar por aqui -- sin esto, pushReplacement resuelve
+        // el push original con null de inmediato y el torneo "no aparece"
+        // en el listado aunque si se haya guardado en el backend.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TournamentPlayersScreen(tournamentId: tournament.id),
+          ),
+          result: tournament,
+        );
+      } else if (!_isEditing && _mode == 'tracked') {
+        // Mismo criterio que en hosted (issue #82): tras crear, ir directo
+        // al detalle en vez de volver al listado -- ahi es donde se
+        // empiezan a añadir partidas, paso natural siguiente.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TournamentDetailScreen(tournamentId: tournament.id),
+          ),
+          result: tournament,
+        );
+      } else {
+        Navigator.of(context).pop<Tournament>(tournament);
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
