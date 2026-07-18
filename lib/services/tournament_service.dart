@@ -171,6 +171,14 @@ class TournamentService {
     return response as Map<String, dynamic>;
   }
 
+  /// Resuelve la entrada a la fase destino tras completar una ronda previa
+  /// (byes + ganadores de la previa). No requiere parametros: el backend
+  /// ya recuerda los clasificados desde closePhaseToElimination.
+  Future<Map<String, dynamic>> resolvePreliminaryEntry(String tournamentId) async {
+    final response = await _api.post('/tournaments/$tournamentId/resolve-preliminary-entry', {});
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getHostedStandings(String tournamentId) async {
     final response = await _api.get('/tournaments/$tournamentId/hosted-standings');
     return List<Map<String, dynamic>>.from(response['standings']);

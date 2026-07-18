@@ -180,7 +180,27 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
   Future<void> _handleAdvanceBracket() async {
     final phase = _currentEliminationPhase;
     if (phase == null) return;
-    await _runAction(() => _tournamentService.advanceBracketRound(widget.tournamentId, phase));
+
+    await _runAction(() async {
+      // Se intenta primero resolvePreliminaryEntry (para el caso "ronda
+      // previa reducida ya completada"); si el backend responde que este
+      // torneo no tenia ninguna ronda previa pendiente -- puede devolver
+      // dos mensajes distintos segun el motivo exacto, ver
+      // tournamentController.resolvePreliminaryEntry -- se cae de vuelta
+      // a advanceBracketRound (avance normal de una fase completa).
+      try {
+        await _tournamentService.resolvePreliminaryEntry(widget.tournamentId);
+      } catch (e) {
+        final message = e.toString();
+        final noPendingEntry = message.contains('no tenia ronda previa') ||
+            message.contains('ninguna entrada a eliminatoria pendiente');
+        if (noPendingEntry) {
+          await _tournamentService.advanceBracketRound(widget.tournamentId, phase);
+        } else {
+          rethrow;
+        }
+      }
+    });
   }
 
   Future<void> _handleMatchTap(TournamentMatch match) async {
