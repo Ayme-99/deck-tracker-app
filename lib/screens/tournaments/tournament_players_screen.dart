@@ -8,6 +8,7 @@ import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import 'tournament_rounds_screen.dart';
+import 'tournament_standings_screen.dart';
 
 /// Gestion de jugadores de un torneo hosted (issue #45): alta, baja
 /// (drop), edicion y eliminacion. El campo deckArchetype se autocompleta
@@ -285,6 +286,15 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
           onPressed: () => Navigator.of(context).pop(true),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard_outlined),
+            tooltip: 'Clasificación',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TournamentStandingsScreen(tournamentId: widget.tournamentId),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.sports_score),
             tooltip: 'Rondas y emparejamientos',
