@@ -122,8 +122,17 @@ class TournamentBracket extends StatelessWidget {
       }
     }
 
+    // FIX: la etiqueta de fase ("Semifinal", "Final"...) y la primera
+    // tarjeta de cada columna compartian la misma posicion (top: 0),
+    // solapandose. Se desplazan todos los centros hacia abajo para dejar
+    // hueco reservado a la etiqueta.
+    const labelHeight = 24.0;
+    for (final phase in centers.keys) {
+      centers[phase] = centers[phase]!.map((c) => c + labelHeight).toList();
+    }
+
     final totalHeight = centers[phasesWithMatches.first]!.isEmpty
-        ? cardHeight
+        ? cardHeight + labelHeight
         : centers[phasesWithMatches.first]!.last + cardHeight / 2 + leafGap;
     final totalWidth = phasesWithMatches.length * cardWidth + (phasesWithMatches.length - 1) * colGap;
 
