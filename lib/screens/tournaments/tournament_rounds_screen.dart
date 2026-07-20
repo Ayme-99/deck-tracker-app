@@ -373,7 +373,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
     );
   }
 
-  Widget _buildRoundBasedList() {
+  Widget _buildRoundTabs() {
     final roundPhases = _matchesByPhase.keys.where((p) => kRoundBasedPhases.contains(p)).toList();
     if (roundPhases.isEmpty) return const SizedBox.shrink();
 
@@ -388,27 +388,12 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
             ),
           ),
-          ...(_matchesByPhase[phase]!..sort((a, b) => (a.round ?? 0).compareTo(b.round ?? 0))).map((match) {
-            final p1 = _playersById[match.player1Id];
-            final p2 = match.player2Id != null ? _playersById[match.player2Id] : null;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM, vertical: AppSizes.spacingXS),
-              child: Card(
-                child: ListTile(
-                  onTap: () => _handleMatchTap(match),
-                  title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
-                  subtitle: Text(
-                    [
-                      if (match.round != null) 'Ronda ${match.round}',
-                      match.status == 'completed'
-                          ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
-                          : 'Sin resultado',
-                    ].join(' · '),
-                  ),
-                ),
-              ),
-            );
-          }),
+          const SizedBox(height: AppSizes.spacingXS),
+          _RoundTabs(
+            matches: _matchesByPhase[phase]!,
+            playersById: _playersById,
+            onMatchTap: _handleMatchTap,
+          ),
           const SizedBox(height: AppSizes.spacingM),
         ],
       ],
@@ -500,7 +485,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
                       ),
                     ),
                   ),
-                _buildRoundBasedList(),
+                _buildRoundTabs(),
                 if (_hasEliminationMatches)
                   TournamentBracket(
                     phaseOrder: kEliminationPhaseOrder,
@@ -517,6 +502,81 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+/// Pestañas por ronda (issue #85): antes todas las partidas de una fase
+/// con rondas (swiss, liga, grupos) se listaban en una unica columna
+/// continua, obligando a scrollear por todo el historial para llegar a
+/// una ronda concreta. Ahora cada ronda es su propia pestaña.
+class _RoundTabs extends StatelessWidget {
+  final List<TournamentMatch> matches;
+  final Map<String, TournamentPlayer> playersById;
+  final void Function(TournamentMatch match) onMatchTap;
+
+  const _RoundTabs({
+    required this.matches,
+    required this.playersById,
+    required this.onMatchTap,
+  });
+
+  Widget _matchCard(TournamentMatch match) {
+    final p1 = playersById[match.player1Id];
+    final p2 = match.player2Id != null ? playersById[match.player2Id] : null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
+      child: Card(
+        child: ListTile(
+          onTap: () => onMatchTap(match),
+          title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
+          subtitle: Text(
+            match.status == 'completed'
+                ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
+                : 'Sin resultado',
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rounds = matches.map((m) => m.round ?? 0).toSet().toList()..sort();
+    if (rounds.isEmpty) return const SizedBox.shrink();
+
+    // Una sola ronda: no hace falta pestaña, se muestra directa (evita
+    // el ruido visual de un TabBar con una unica opcion).
+    if (rounds.length == 1) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM),
+        child: Column(children: matches.map(_matchCard).toList()),
+      );
+    }
+
+    return DefaultTabController(
+      length: rounds.length,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [for (final r in rounds) Tab(text: 'Ronda $r')],
+          ),
+          SizedBox(
+            height: 420,
+            child: TabBarView(
+              children: [
+                for (final r in rounds)
+                  ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM, vertical: AppSizes.spacingS),
+                    children: matches.where((m) => (m.round ?? 0) == r).map(_matchCard).toList(),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
