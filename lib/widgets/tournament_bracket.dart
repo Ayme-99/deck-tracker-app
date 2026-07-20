@@ -122,10 +122,80 @@ class _TournamentBracketState extends State<TournamentBracket> {
       }
     }
 
-    final nodesByPhase = {
+    final nodesByPhase = <String, List<_BracketNode>>{
       for (final p in phasesWithMatches)
         p: _groupIntoNodes((matchesByPhase[p] ?? []).where((m) => !m.isThirdPlaceMatch).toList()),
     };
+
+    // FIX: cuando una fase viene de una ronda previa reducida (extra>0 en
+    // calculateEliminationEntry), el nº de partidos de la fase anterior
+    // puede coincidir con el de la siguiente (relacion 1:1: cada bye se
+    // empareja con 1 ganador de la previa) en vez de la relacion 2:1
+    // normal del bracket. En vez de intentar dibujar conectores especiales
+    // para ese caso (lo que acabo dando lineas cruzadas confusas), se
+    // "rellena" la fase anterior con tarjetas BYE sinteticas -- una por
+    // cada jugador que se salto esa ronda -- colocadas justo al lado de
+    // su rival real, restaurando la relacion 2:1 de siempre. Asi el resto
+    // del algoritmo (centrado + conectores en V) funciona sin casos
+    // especiales, igual que un bracket normal.
+    for (int i = 0; i < phasesWithMatches.length - 1; i++) {
+      final prevPhase = phasesWithMatches[i];
+      final nextPhase = phasesWithMatches[i + 1];
+      final prevNodes = nodesByPhase[prevPhase]!;
+      final nextNodes = nodesByPhase[nextPhase]!;
+      final isStandardHalving = nextNodes.length == (prevNodes.length / 2).ceil();
+      if (isStandardHalving) continue;
+
+      final reordered = <_BracketNode>[];
+      for (final nextNode in nextNodes) {
+        _BracketNode? realSource;
+        for (final pn in prevNodes) {
+          final w = pn.winnerId;
+          if (w != null && (w == nextNode.player1Id || w == nextNode.player2Id)) {
+            realSource = pn;
+            break;
+          }
+        }
+
+        final byePlayerId = (realSource?.winnerId == nextNode.player1Id)
+            ? nextNode.player2Id
+            : nextNode.player1Id;
+
+        final byeNode = _BracketNode([
+          TournamentMatch(
+            id: 'virtual-bye-${byePlayerId ?? "?"}-${nextNode.player1Id}',
+            phase: prevPhase,
+            player1Id: byePlayerId ?? '?',
+            status: 'completed',
+            isDraw: false,
+            leg: 'single',
+            winnerId: byePlayerId,
+          ),
+        ]);
+
+        if (realSource != null) {
+          reordered.add(realSource);
+          reordered.add(byeNode);
+        } else {
+          // Ninguno de los dos jugadores viene de un ganador de la fase
+          // anterior (caso extremo, no deberia pasar en la practica) --
+          // se añaden ambos como bye sinteticos para no romper el layout.
+          reordered.add(byeNode);
+          reordered.add(_BracketNode([
+            TournamentMatch(
+              id: 'virtual-bye-${nextNode.player1Id}-alt',
+              phase: prevPhase,
+              player1Id: nextNode.player1Id,
+              status: 'completed',
+              isDraw: false,
+              leg: 'single',
+              winnerId: nextNode.player1Id,
+            ),
+          ]));
+        }
+      }
+      nodesByPhase[prevPhase] = reordered;
+    }
 
     final centers = <String, List<double>>{};
     for (int i = 0; i < phasesWithMatches.length; i++) {
@@ -178,6 +248,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
                 painter: _BracketConnectorPainter(
                   phasesWithMatches: phasesWithMatches,
                   centers: centers,
+                  nodesByPhase: nodesByPhase,
                 ),
               ),
               for (int i = 0; i < phasesWithMatches.length; i++)
@@ -310,6 +381,34 @@ class _BracketNode {
   }
 
   bool get hasAnyResult => legs.any((m) => m.status == 'completed');
+
+  /// Ganador real de este nodo (jugador que avanza), null si aun no hay
+  /// ganador determinable. Se usa para calcular los conectores del
+  /// bracket comparando IDs de jugador entre fases, en vez de adivinar
+  /// por posicion visual (ver fix del conector enganoso).
+  String? get winnerId {
+    if (legs.length == 1) {
+      final m = legs.first;
+      return (m.status == 'completed' && !m.isDraw) ? m.winnerId : null;
+    }
+
+    final firstLeg = _firstLeg;
+    final secondLeg = _secondLeg;
+    final suddenDeath = _suddenDeath;
+
+    if (suddenDeath != null && suddenDeath.status == 'completed' && suddenDeath.winnerId != null) {
+      return suddenDeath.winnerId;
+    }
+    if (firstLeg != null && firstLeg.status == 'completed' && secondLeg != null && secondLeg.status == 'completed') {
+      final p1Total = (firstLeg.player1Prizes ?? 0) +
+          (secondLeg.player2Id == firstLeg.player1Id ? (secondLeg.player2Prizes ?? 0) : (secondLeg.player1Prizes ?? 0));
+      final p2Total = (firstLeg.player2Prizes ?? 0) +
+          (secondLeg.player1Id == firstLeg.player2Id ? (secondLeg.player1Prizes ?? 0) : (secondLeg.player2Prizes ?? 0));
+      if (p1Total == p2Total) return null; // agregado empatado, sin ganador aun
+      return p1Total > p2Total ? firstLeg.player1Id : firstLeg.player2Id;
+    }
+    return null;
+  }
 }
 
 extension _FirstOrNullExt<T> on Iterable<T> {
@@ -436,10 +535,12 @@ class _BracketNodeCard extends StatelessWidget {
 class _BracketConnectorPainter extends CustomPainter {
   final List<String> phasesWithMatches;
   final Map<String, List<double>> centers;
+  final Map<String, List<_BracketNode>> nodesByPhase;
 
   _BracketConnectorPainter({
     required this.phasesWithMatches,
     required this.centers,
+    required this.nodesByPhase,
   });
 
   @override
@@ -454,30 +555,50 @@ class _BracketConnectorPainter extends CustomPainter {
       final nextPhaseName = phasesWithMatches[i + 1];
       final phaseCenters = centers[phase]!;
       final nextCenters = centers[nextPhaseName]!;
+      final prevNodes = nodesByPhase[phase]!;
+      final nextNodes = nodesByPhase[nextPhaseName]!;
 
       final x1 = i * (TournamentBracket.cardWidth + TournamentBracket.colGap) + TournamentBracket.cardWidth;
       final xMid = x1 + TournamentBracket.colGap / 2;
       final x2 = (i + 1) * (TournamentBracket.cardWidth + TournamentBracket.colGap);
 
-      final isStandardHalving = nextCenters.length == (phaseCenters.length / 2).ceil();
-
-      if (isStandardHalving) {
-        for (int j = 0; j < nextCenters.length; j++) {
-          final yChild0 = phaseCenters.length > j * 2 ? phaseCenters[j * 2] : null;
-          final yChild1 = phaseCenters.length > j * 2 + 1 ? phaseCenters[j * 2 + 1] : null;
-          final yParent = nextCenters[j];
-
-          if (yChild0 != null) canvas.drawLine(Offset(x1, yChild0), Offset(xMid, yChild0), paint);
-          if (yChild1 != null) canvas.drawLine(Offset(x1, yChild1), Offset(xMid, yChild1), paint);
-          if (yChild0 != null && yChild1 != null) {
-            canvas.drawLine(Offset(xMid, yChild0), Offset(xMid, yChild1), paint);
+      // FIX: en vez de adivinar por posicion visual (fila i con fila i, o
+      // pares consecutivos), se busca de verdad que partido de la fase
+      // anterior "alimenta" a cada partido de la siguiente, comparando
+      // el winnerId de cada nodo anterior contra los player1Id/player2Id
+      // del nodo siguiente. Esto funciona igual de bien tanto en un
+      // bracket normal (2 fuentes por partido) como en el caso irregular
+      // de ronda previa reducida (1 sola fuente real; el otro jugador es
+      // un bye que nunca jugo en la fase anterior, sin fuente que dibujar).
+      for (int j = 0; j < nextNodes.length; j++) {
+        final nextNode = nextNodes[j];
+        final sourceIndices = <int>[];
+        for (int k = 0; k < prevNodes.length; k++) {
+          final winner = prevNodes[k].winnerId;
+          if (winner != null && (winner == nextNode.player1Id || winner == nextNode.player2Id)) {
+            sourceIndices.add(k);
           }
+        }
+
+        final yParent = nextCenters[j];
+
+        if (sourceIndices.length == 2) {
+          final yChild0 = phaseCenters[sourceIndices[0]];
+          final yChild1 = phaseCenters[sourceIndices[1]];
+          canvas.drawLine(Offset(x1, yChild0), Offset(xMid, yChild0), paint);
+          canvas.drawLine(Offset(x1, yChild1), Offset(xMid, yChild1), paint);
+          canvas.drawLine(Offset(xMid, yChild0), Offset(xMid, yChild1), paint);
+          canvas.drawLine(Offset(xMid, yParent), Offset(x2, yParent), paint);
+        } else if (sourceIndices.length == 1) {
+          final yChild = phaseCenters[sourceIndices[0]];
+          canvas.drawLine(Offset(x1, yChild), Offset(xMid, yChild), paint);
+          canvas.drawLine(Offset(xMid, yChild), Offset(xMid, yParent), paint);
           canvas.drawLine(Offset(xMid, yParent), Offset(x2, yParent), paint);
         }
-      } else {
-        for (int j = 0; j < phaseCenters.length && j < nextCenters.length; j++) {
-          canvas.drawLine(Offset(x1, phaseCenters[j]), Offset(x2, nextCenters[j]), paint);
-        }
+        // 0 fuentes encontradas: ninguno de los dos jugadores de este
+        // partido proviene de un ganador de la fase anterior (ambos son
+        // "de fuera", ej. la primera fase del bracket) -- no hay nada
+        // que conectar.
       }
     }
   }
