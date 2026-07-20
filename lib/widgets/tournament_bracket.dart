@@ -307,7 +307,23 @@ class _TournamentBracketState extends State<TournamentBracket> {
               maxScale: 3,
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacingXL),
-                child: content,
+                // FIX: Positioned.fill fuerza al InteractiveViewer a una
+                // altura limitada (la del viewport visible), y esa
+                // restriccion se propagaba hasta el Column interno,
+                // provocando overflow cuando el contenido (con las
+                // tarjetas BYE añadidas) crecia mas alto que el viewport.
+                // OverflowBox ignora esa restriccion del padre y deja que
+                // el contenido tome su tamaño real -- el propio
+                // InteractiveViewer se encarga de recortar/paneear segun
+                // haga falta, sin que Flutter se queje de overflow.
+                child: OverflowBox(
+                  alignment: Alignment.topLeft,
+                  minWidth: 0,
+                  minHeight: 0,
+                  maxWidth: double.infinity,
+                  maxHeight: double.infinity,
+                  child: content,
+                ),
               ),
             ),
           ),
