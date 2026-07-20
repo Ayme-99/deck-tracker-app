@@ -6,6 +6,7 @@ import '../../models/tournament_player.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/tournament_bracket.dart';
 import 'tournament_standings_screen.dart';
+import 'tournament_bracket_screen.dart';
 
 /// Pantalla de rondas/emparejamientos de un torneo hosted (issue #46):
 /// genera rondas segun la estructura, muestra el bracket de eliminatoria
@@ -450,6 +451,18 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
       appBar: AppBar(
         title: const Text('Rondas y emparejamientos'),
         actions: [
+          if (_hasEliminationMatches)
+            IconButton(
+              icon: const Icon(Icons.fullscreen),
+              tooltip: 'Ver bracket a pantalla completa',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TournamentBracketScreen(
+                    tournamentId: widget.tournamentId,
+                  ),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.leaderboard_outlined),
             tooltip: 'Clasificación',

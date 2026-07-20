@@ -9,33 +9,35 @@ import 'sprite_avatar_group.dart';
 /// la app "Winner" (tema oscuro, sprite por jugador, "Sin resultado" en
 /// vez de badge "vs"). Ver capturas de referencia en la conversacion.
 ///
-/// Layout: cada fase es una columna; los centros verticales de cada
-/// partido se calculan de abajo a arriba (los de la 1a fase se reparten
-/// uniformemente, y cada fase siguiente centra su partido entre los dos
-/// de los que depende), sin necesidad de medir RenderBox tras el layout.
+/// FIX (issue #80): agrupa first_leg+second_leg[+sudden_death] en un
+/// unico nodo visual via tiedMatchId, en vez de pintar cada partida
+/// suelta como un nodo independiente.
 ///
-/// FIX (issue #80): en formato 'two_legs' (ida y vuelta), cada
-/// enfrentamiento real genera 2 TournamentMatch (first_leg + second_leg,
-/// y opcionalmente sudden_death) enlazadas por tiedMatchId. Antes se
-/// pintaba cada una como un nodo independiente del arbol, duplicando
-/// nodos y desplazando las etiquetas de fase. Ahora se agrupan primero
-/// en "nodos visuales" (_BracketNode), igual que ya hacia el backend en
-/// advanceBracketRound.
-class TournamentBracket extends StatelessWidget {
+/// FIX (issue #84): pantalla independiente con pan/zoom (interactive:true).
+///
+/// FIX (bug post-#84): la formula de centrado asumia que cada fase tiene
+/// siempre la mitad de nodos que la anterior (bracket normal). Con una
+/// ronda previa reducida (extra>0 en calculateEliminationEntry), la
+/// relacion puede ser 1:1 (cada bye se empareja con 1 ganador de la
+/// previa) en vez de 2:1 -- se detecta el caso irregular y se usa
+/// reparto uniforme + conectores rectos 1 a 1 en su lugar, evitando que
+/// varias tarjetas colapsen en la misma posicion.
+class TournamentBracket extends StatefulWidget {
   final List<String> phaseOrder;
   final Map<String, List<TournamentMatch>> matchesByPhase;
   final Map<String, TournamentPlayer> playersById;
   final void Function(TournamentMatch match) onMatchTap;
+  // Si true, el bracket se envuelve en InteractiveViewer (pan + zoom libre,
+  // "tipo mapa", issue #84) en vez del SingleChildScrollView horizontal
+  // habitual usado cuando se muestra embebido dentro de otra lista.
+  final bool interactive;
 
-  // FIX (issue #83): antes rowHeight se derivaba dividiendo cardHeight
-  // entre 2, sin dejar hueco para el Divider entre ambas filas -- las 2
-  // filas + el divisor sumaban mas que cardHeight, provocando overflow
-  // vertical en cada tarjeta ("BOTTOM OVERFLOWED BY X PIXELS"). Ahora se
-  // define la altura de fila de forma independiente, y cardHeight se
-  // calcula sumando ambas filas + el divisor, con margen de sobra.
+  // FIX (issue #83): rowHeight es fijo, y cardHeight se calcula sumando
+  // ambas filas + el divisor + margen, en vez de derivar rowHeight
+  // dividiendo cardHeight entre 2 (eso no dejaba hueco para el Divider).
   static const double dividerHeight = 1;
   static const double rowHeight = 32;
-  static const double cardHeight = rowHeight * 2 + dividerHeight + 4; // +4 de margen de seguridad
+  static const double cardHeight = rowHeight * 2 + dividerHeight + 4;
   static const double cardWidth = 210;
   static const double leafGap = 14;
   static const double colGap = 48;
@@ -46,13 +48,28 @@ class TournamentBracket extends StatelessWidget {
     required this.matchesByPhase,
     required this.playersById,
     required this.onMatchTap,
+    this.interactive = false,
   });
 
-  TournamentPlayer? _player(String? id) => id == null ? null : playersById[id];
+  @override
+  State<TournamentBracket> createState() => _TournamentBracketState();
+}
 
-  /// Agrupa las partidas de una fase en nodos visuales: en single_match,
-  /// cada partida es su propio nodo; en two_legs, first_leg+second_leg
-  /// (+sudden_death si existe) se agrupan en un unico nodo.
+class _TournamentBracketState extends State<TournamentBracket> {
+  final _transformationController = TransformationController();
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _recenter() {
+    _transformationController.value = Matrix4.identity();
+  }
+
+  TournamentPlayer? _player(String? id) => id == null ? null : widget.playersById[id];
+
   List<_BracketNode> _groupIntoNodes(List<TournamentMatch> phaseMatches) {
     final nodes = <_BracketNode>[];
     final seen = <String>{};
@@ -81,6 +98,14 @@ class TournamentBracket extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final phaseOrder = widget.phaseOrder;
+    final matchesByPhase = widget.matchesByPhase;
+    final onMatchTap = widget.onMatchTap;
+    const cardHeight = TournamentBracket.cardHeight;
+    const cardWidth = TournamentBracket.cardWidth;
+    const leafGap = TournamentBracket.leafGap;
+    const colGap = TournamentBracket.colGap;
+
     final phasesWithMatches = phaseOrder.where((p) => (matchesByPhase[p] ?? []).isNotEmpty).toList();
     if (phasesWithMatches.isEmpty) {
       return const Padding(
@@ -97,10 +122,80 @@ class TournamentBracket extends StatelessWidget {
       }
     }
 
-    final nodesByPhase = {
+    final nodesByPhase = <String, List<_BracketNode>>{
       for (final p in phasesWithMatches)
         p: _groupIntoNodes((matchesByPhase[p] ?? []).where((m) => !m.isThirdPlaceMatch).toList()),
     };
+
+    // FIX: cuando una fase viene de una ronda previa reducida (extra>0 en
+    // calculateEliminationEntry), el nº de partidos de la fase anterior
+    // puede coincidir con el de la siguiente (relacion 1:1: cada bye se
+    // empareja con 1 ganador de la previa) en vez de la relacion 2:1
+    // normal del bracket. En vez de intentar dibujar conectores especiales
+    // para ese caso (lo que acabo dando lineas cruzadas confusas), se
+    // "rellena" la fase anterior con tarjetas BYE sinteticas -- una por
+    // cada jugador que se salto esa ronda -- colocadas justo al lado de
+    // su rival real, restaurando la relacion 2:1 de siempre. Asi el resto
+    // del algoritmo (centrado + conectores en V) funciona sin casos
+    // especiales, igual que un bracket normal.
+    for (int i = 0; i < phasesWithMatches.length - 1; i++) {
+      final prevPhase = phasesWithMatches[i];
+      final nextPhase = phasesWithMatches[i + 1];
+      final prevNodes = nodesByPhase[prevPhase]!;
+      final nextNodes = nodesByPhase[nextPhase]!;
+      final isStandardHalving = nextNodes.length == (prevNodes.length / 2).ceil();
+      if (isStandardHalving) continue;
+
+      final reordered = <_BracketNode>[];
+      for (final nextNode in nextNodes) {
+        _BracketNode? realSource;
+        for (final pn in prevNodes) {
+          final w = pn.winnerId;
+          if (w != null && (w == nextNode.player1Id || w == nextNode.player2Id)) {
+            realSource = pn;
+            break;
+          }
+        }
+
+        final byePlayerId = (realSource?.winnerId == nextNode.player1Id)
+            ? nextNode.player2Id
+            : nextNode.player1Id;
+
+        final byeNode = _BracketNode([
+          TournamentMatch(
+            id: 'virtual-bye-${byePlayerId ?? "?"}-${nextNode.player1Id}',
+            phase: prevPhase,
+            player1Id: byePlayerId ?? '?',
+            status: 'completed',
+            isDraw: false,
+            leg: 'single',
+            winnerId: byePlayerId,
+          ),
+        ]);
+
+        if (realSource != null) {
+          reordered.add(realSource);
+          reordered.add(byeNode);
+        } else {
+          // Ninguno de los dos jugadores viene de un ganador de la fase
+          // anterior (caso extremo, no deberia pasar en la practica) --
+          // se añaden ambos como bye sinteticos para no romper el layout.
+          reordered.add(byeNode);
+          reordered.add(_BracketNode([
+            TournamentMatch(
+              id: 'virtual-bye-${nextNode.player1Id}-alt',
+              phase: prevPhase,
+              player1Id: nextNode.player1Id,
+              status: 'completed',
+              isDraw: false,
+              leg: 'single',
+              winnerId: nextNode.player1Id,
+            ),
+          ]));
+        }
+      }
+      nodesByPhase[prevPhase] = reordered;
+    }
 
     final centers = <String, List<double>>{};
     for (int i = 0; i < phasesWithMatches.length; i++) {
@@ -114,18 +209,22 @@ class TournamentBracket extends StatelessWidget {
       } else {
         final prevPhase = phasesWithMatches[i - 1];
         final prevCenters = centers[prevPhase]!;
-        centers[phase] = List.generate(nodes.length, (idx) {
-          final c1 = prevCenters.length > idx * 2 ? prevCenters[idx * 2] : 0.0;
-          final c2 = prevCenters.length > idx * 2 + 1 ? prevCenters[idx * 2 + 1] : c1;
-          return (c1 + c2) / 2;
-        });
+        final isStandardHalving = nodes.length == (prevCenters.length / 2).ceil();
+        if (isStandardHalving) {
+          centers[phase] = List.generate(nodes.length, (idx) {
+            final c1 = prevCenters.length > idx * 2 ? prevCenters[idx * 2] : 0.0;
+            final c2 = prevCenters.length > idx * 2 + 1 ? prevCenters[idx * 2 + 1] : c1;
+            return (c1 + c2) / 2;
+          });
+        } else {
+          centers[phase] = List.generate(
+            nodes.length,
+            (idx) => idx * (cardHeight + leafGap) + cardHeight / 2,
+          );
+        }
       }
     }
 
-    // FIX: la etiqueta de fase ("Semifinal", "Final"...) y la primera
-    // tarjeta de cada columna compartian la misma posicion (top: 0),
-    // solapandose. Se desplazan todos los centros hacia abajo para dejar
-    // hueco reservado a la etiqueta.
     const labelHeight = 24.0;
     for (final phase in centers.keys) {
       centers[phase] = centers[phase]!.map((c) => c + labelHeight).toList();
@@ -136,74 +235,120 @@ class TournamentBracket extends StatelessWidget {
         : centers[phasesWithMatches.first]!.last + cardHeight / 2 + leafGap;
     final totalWidth = phasesWithMatches.length * cardWidth + (phasesWithMatches.length - 1) * colGap;
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: totalWidth,
+          height: totalHeight,
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size(totalWidth, totalHeight),
+                painter: _BracketConnectorPainter(
+                  phasesWithMatches: phasesWithMatches,
+                  centers: centers,
+                  nodesByPhase: nodesByPhase,
+                ),
+              ),
+              for (int i = 0; i < phasesWithMatches.length; i++)
+                for (int j = 0; j < nodesByPhase[phasesWithMatches[i]]!.length; j++)
+                  Positioned(
+                    left: i * (cardWidth + colGap),
+                    top: centers[phasesWithMatches[i]]![j] - cardHeight / 2,
+                    child: _BracketNodeCard(
+                      width: cardWidth,
+                      height: cardHeight,
+                      node: nodesByPhase[phasesWithMatches[i]]![j],
+                      player1: _player(nodesByPhase[phasesWithMatches[i]]![j].player1Id),
+                      player2: _player(nodesByPhase[phasesWithMatches[i]]![j].player2Id),
+                      onSelectMatch: onMatchTap,
+                    ),
+                  ),
+              for (int i = 0; i < phasesWithMatches.length; i++)
+                Positioned(
+                  left: i * (cardWidth + colGap),
+                  top: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      kTournamentMatchPhaseLabels[phasesWithMatches[i]] ?? phasesWithMatches[i],
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (thirdPlaceMatch != null) ...[
+          const SizedBox(height: AppSizes.spacingL),
+          const Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
+          const SizedBox(height: AppSizes.spacingXS),
+          _BracketNodeCard(
+            width: cardWidth,
+            height: cardHeight,
+            node: _BracketNode([thirdPlaceMatch]),
+            player1: _player(thirdPlaceMatch.player1Id),
+            player2: _player(thirdPlaceMatch.player2Id),
+            onSelectMatch: onMatchTap,
+          ),
+        ],
+      ],
+    );
+
+    if (widget.interactive) {
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: InteractiveViewer(
+              transformationController: _transformationController,
+              boundaryMargin: const EdgeInsets.symmetric(horizontal: 300, vertical: 300),
+              minScale: 0.3,
+              maxScale: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.spacingXL),
+                // FIX: Positioned.fill fuerza al InteractiveViewer a una
+                // altura limitada (la del viewport visible), y esa
+                // restriccion se propagaba hasta el Column interno,
+                // provocando overflow cuando el contenido (con las
+                // tarjetas BYE añadidas) crecia mas alto que el viewport.
+                // OverflowBox ignora esa restriccion del padre y deja que
+                // el contenido tome su tamaño real -- el propio
+                // InteractiveViewer se encarga de recortar/paneear segun
+                // haga falta, sin que Flutter se queje de overflow.
+                child: OverflowBox(
+                  alignment: Alignment.topLeft,
+                  minWidth: 0,
+                  minHeight: 0,
+                  maxWidth: double.infinity,
+                  maxHeight: double.infinity,
+                  child: content,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: AppSizes.spacingM,
+            bottom: AppSizes.spacingM,
+            child: FloatingActionButton.small(
+              heroTag: 'bracket_recenter',
+              tooltip: 'Centrar vista',
+              onPressed: _recenter,
+              child: const Icon(Icons.center_focus_strong),
+            ),
+          ),
+        ],
+      );
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.all(AppSizes.spacingM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: totalWidth,
-            height: totalHeight,
-            child: Stack(
-              children: [
-                CustomPaint(
-                  size: Size(totalWidth, totalHeight),
-                  painter: _BracketConnectorPainter(
-                    phasesWithMatches: phasesWithMatches,
-                    centers: centers,
-                  ),
-                ),
-                for (int i = 0; i < phasesWithMatches.length; i++)
-                  for (int j = 0; j < nodesByPhase[phasesWithMatches[i]]!.length; j++)
-                    Positioned(
-                      left: i * (cardWidth + colGap),
-                      top: centers[phasesWithMatches[i]]![j] - cardHeight / 2,
-                      child: _BracketNodeCard(
-                        width: cardWidth,
-                        height: cardHeight,
-                        node: nodesByPhase[phasesWithMatches[i]]![j],
-                        player1: _player(nodesByPhase[phasesWithMatches[i]]![j].player1Id),
-                        player2: _player(nodesByPhase[phasesWithMatches[i]]![j].player2Id),
-                        onSelectMatch: onMatchTap,
-                      ),
-                    ),
-                for (int i = 0; i < phasesWithMatches.length; i++)
-                  Positioned(
-                    left: i * (cardWidth + colGap),
-                    top: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        kTournamentMatchPhaseLabels[phasesWithMatches[i]] ?? phasesWithMatches[i],
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (thirdPlaceMatch != null) ...[
-            const SizedBox(height: AppSizes.spacingL),
-            const Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
-            const SizedBox(height: AppSizes.spacingXS),
-            _BracketNodeCard(
-              width: cardWidth,
-              height: cardHeight,
-              node: _BracketNode([thirdPlaceMatch]),
-              player1: _player(thirdPlaceMatch.player1Id),
-              player2: _player(thirdPlaceMatch.player2Id),
-              onSelectMatch: onMatchTap,
-            ),
-          ],
-        ],
-      ),
+      child: content,
     );
   }
 }
 
-/// Nodo visual del arbol: 1 partida (single_match) o varias enlazadas por
-/// tiedMatchId (two_legs: first_leg+second_leg[+sudden_death]).
 class _BracketNode {
   final List<TournamentMatch> legs;
 
@@ -252,6 +397,34 @@ class _BracketNode {
   }
 
   bool get hasAnyResult => legs.any((m) => m.status == 'completed');
+
+  /// Ganador real de este nodo (jugador que avanza), null si aun no hay
+  /// ganador determinable. Se usa para calcular los conectores del
+  /// bracket comparando IDs de jugador entre fases, en vez de adivinar
+  /// por posicion visual (ver fix del conector enganoso).
+  String? get winnerId {
+    if (legs.length == 1) {
+      final m = legs.first;
+      return (m.status == 'completed' && !m.isDraw) ? m.winnerId : null;
+    }
+
+    final firstLeg = _firstLeg;
+    final secondLeg = _secondLeg;
+    final suddenDeath = _suddenDeath;
+
+    if (suddenDeath != null && suddenDeath.status == 'completed' && suddenDeath.winnerId != null) {
+      return suddenDeath.winnerId;
+    }
+    if (firstLeg != null && firstLeg.status == 'completed' && secondLeg != null && secondLeg.status == 'completed') {
+      final p1Total = (firstLeg.player1Prizes ?? 0) +
+          (secondLeg.player2Id == firstLeg.player1Id ? (secondLeg.player2Prizes ?? 0) : (secondLeg.player1Prizes ?? 0));
+      final p2Total = (firstLeg.player2Prizes ?? 0) +
+          (secondLeg.player1Id == firstLeg.player2Id ? (secondLeg.player1Prizes ?? 0) : (secondLeg.player2Prizes ?? 0));
+      if (p1Total == p2Total) return null; // agregado empatado, sin ganador aun
+      return p1Total > p2Total ? firstLeg.player1Id : firstLeg.player2Id;
+    }
+    return null;
+  }
 }
 
 extension _FirstOrNullExt<T> on Iterable<T> {
@@ -336,6 +509,7 @@ class _BracketNodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => _handleTap(context),
+      borderRadius: BorderRadius.circular(AppSizes.radiusM),
       child: Container(
         width: width,
         height: height,
@@ -377,10 +551,12 @@ class _BracketNodeCard extends StatelessWidget {
 class _BracketConnectorPainter extends CustomPainter {
   final List<String> phasesWithMatches;
   final Map<String, List<double>> centers;
+  final Map<String, List<_BracketNode>> nodesByPhase;
 
   _BracketConnectorPainter({
     required this.phasesWithMatches,
     required this.centers,
+    required this.nodesByPhase,
   });
 
   @override
@@ -395,22 +571,50 @@ class _BracketConnectorPainter extends CustomPainter {
       final nextPhaseName = phasesWithMatches[i + 1];
       final phaseCenters = centers[phase]!;
       final nextCenters = centers[nextPhaseName]!;
+      final prevNodes = nodesByPhase[phase]!;
+      final nextNodes = nodesByPhase[nextPhaseName]!;
 
       final x1 = i * (TournamentBracket.cardWidth + TournamentBracket.colGap) + TournamentBracket.cardWidth;
       final xMid = x1 + TournamentBracket.colGap / 2;
       final x2 = (i + 1) * (TournamentBracket.cardWidth + TournamentBracket.colGap);
 
-      for (int j = 0; j < nextCenters.length; j++) {
-        final yChild0 = phaseCenters.length > j * 2 ? phaseCenters[j * 2] : null;
-        final yChild1 = phaseCenters.length > j * 2 + 1 ? phaseCenters[j * 2 + 1] : null;
+      // FIX: en vez de adivinar por posicion visual (fila i con fila i, o
+      // pares consecutivos), se busca de verdad que partido de la fase
+      // anterior "alimenta" a cada partido de la siguiente, comparando
+      // el winnerId de cada nodo anterior contra los player1Id/player2Id
+      // del nodo siguiente. Esto funciona igual de bien tanto en un
+      // bracket normal (2 fuentes por partido) como en el caso irregular
+      // de ronda previa reducida (1 sola fuente real; el otro jugador es
+      // un bye que nunca jugo en la fase anterior, sin fuente que dibujar).
+      for (int j = 0; j < nextNodes.length; j++) {
+        final nextNode = nextNodes[j];
+        final sourceIndices = <int>[];
+        for (int k = 0; k < prevNodes.length; k++) {
+          final winner = prevNodes[k].winnerId;
+          if (winner != null && (winner == nextNode.player1Id || winner == nextNode.player2Id)) {
+            sourceIndices.add(k);
+          }
+        }
+
         final yParent = nextCenters[j];
 
-        if (yChild0 != null) canvas.drawLine(Offset(x1, yChild0), Offset(xMid, yChild0), paint);
-        if (yChild1 != null) canvas.drawLine(Offset(x1, yChild1), Offset(xMid, yChild1), paint);
-        if (yChild0 != null && yChild1 != null) {
+        if (sourceIndices.length == 2) {
+          final yChild0 = phaseCenters[sourceIndices[0]];
+          final yChild1 = phaseCenters[sourceIndices[1]];
+          canvas.drawLine(Offset(x1, yChild0), Offset(xMid, yChild0), paint);
+          canvas.drawLine(Offset(x1, yChild1), Offset(xMid, yChild1), paint);
           canvas.drawLine(Offset(xMid, yChild0), Offset(xMid, yChild1), paint);
+          canvas.drawLine(Offset(xMid, yParent), Offset(x2, yParent), paint);
+        } else if (sourceIndices.length == 1) {
+          final yChild = phaseCenters[sourceIndices[0]];
+          canvas.drawLine(Offset(x1, yChild), Offset(xMid, yChild), paint);
+          canvas.drawLine(Offset(xMid, yChild), Offset(xMid, yParent), paint);
+          canvas.drawLine(Offset(xMid, yParent), Offset(x2, yParent), paint);
         }
-        canvas.drawLine(Offset(xMid, yParent), Offset(x2, yParent), paint);
+        // 0 fuentes encontradas: ninguno de los dos jugadores de este
+        // partido proviene de un ganador de la fase anterior (ambos son
+        // "de fuera", ej. la primera fase del bracket) -- no hay nada
+        // que conectar.
       }
     }
   }
