@@ -458,10 +458,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => TournamentBracketScreen(
-                    phaseOrder: kEliminationPhaseOrder,
-                    matchesByPhase: _matchesByPhase,
-                    playersById: _playersById,
-                    onMatchTap: _handleMatchTap,
+                    tournamentId: widget.tournamentId,
                   ),
                 ),
               ),
