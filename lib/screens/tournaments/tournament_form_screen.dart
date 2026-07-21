@@ -4,6 +4,7 @@ import '../../models/deck.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/submit_on_enter.dart';
 import 'tournament_players_screen.dart';
 import 'tournament_detail_screen.dart';
 
@@ -220,7 +221,10 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       body: SafeArea(
         child: _isLoadingDecks
             ? const Center(child: CircularProgressIndicator())
-            : Form(
+            : SubmitOnEnter(
+                onSubmit: _handleSubmit,
+                enabled: !_isSubmitting,
+                child: Form(
                 key: _formKey,
                 child: ListView(
                   padding: const EdgeInsets.all(AppSizes.spacingM),
@@ -413,6 +417,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
       ),
     );

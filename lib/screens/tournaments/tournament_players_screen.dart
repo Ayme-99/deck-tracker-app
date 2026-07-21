@@ -7,6 +7,7 @@ import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
+import '../../widgets/submit_on_enter.dart';
 import 'tournament_rounds_screen.dart';
 import 'tournament_standings_screen.dart';
 
@@ -91,7 +92,15 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
+          void confirm() {
+            if (nameController.text.trim().isEmpty) return;
+            if (isSelf && selfDeckId == null) return; // no se puede confirmar sin mazo
+            Navigator.of(context).pop(true);
+          }
+
+          return SubmitOnEnter(
+            onSubmit: confirm,
+            child: AlertDialog(
             title: Text(player == null ? 'Añadir jugador' : 'Editar jugador'),
             content: SingleChildScrollView(
               child: Column(
@@ -146,14 +155,11 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                 child: const Text('Cancelar'),
               ),
               FilledButton(
-                onPressed: () {
-                  if (nameController.text.trim().isEmpty) return;
-                  if (isSelf && selfDeckId == null) return; // no se puede confirmar sin mazo
-                  Navigator.of(context).pop(true);
-                },
+                onPressed: confirm,
                 child: const Text('Guardar'),
               ),
             ],
+            ),
           );
         },
       ),

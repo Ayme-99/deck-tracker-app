@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/submit_on_enter.dart';
 import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -61,33 +62,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Usuario',
-                      border: OutlineInputBorder(),
+            child: SubmitOnEnter(
+              onSubmit: _handleRegister,
+              enabled: !_isLoading,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _usernameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Usuario',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Introduce un usuario';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Introduce un usuario';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
+                    const SizedBox(height: AppSizes.spacingM),
 
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                      border: OutlineInputBorder(),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                        border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.length < 6) {
@@ -118,6 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         : const Text('Crear cuenta'),
                   ),
                 ],
+              ),
               ),
             ),
           ),
