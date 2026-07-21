@@ -19,6 +19,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Map<String, dynamic>? _overview;
   List<dynamic> _ranking = [];
+  List<dynamic> _opponentMatchups = [];
   bool _isLoading = true;
   bool _isLoadingRanking = false;
   String? _errorMessage;
@@ -49,6 +50,7 @@ class _StatsScreenState extends State<StatsScreen> {
       final results = await Future.wait([
         _statsService.getGlobalOverview(),
         _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy),
+        _statsService.getOpponentMatchups(),
       ]);
 
       // Si el widget ya no existe (p. ej. logout durante la carga), descartar el resultado
@@ -57,6 +59,7 @@ class _StatsScreenState extends State<StatsScreen> {
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
         _ranking = results[1] as List<dynamic>;
+        _opponentMatchups = results[2] as List<dynamic>;
         _isLoading = false;
       });
     } catch (e) {
@@ -336,6 +339,44 @@ class _StatsScreenState extends State<StatsScreen> {
                             const Icon(Icons.chevron_right, color: AppColors.muted),
                           ],
                         ),
+                ),
+              );
+            }),
+
+          const SizedBox(height: AppSizes.spacingL),
+          const Text('Contra cada rival', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSizes.spacingXS),
+          Text(
+            'Cruzando todos tus mazos, sin importar con cuál jugaste',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
+          ),
+          const SizedBox(height: AppSizes.spacingM),
+          if (_opponentMatchups.isEmpty)
+            const Text(
+              'Registra partidas para ver tu historial contra cada rival',
+              style: TextStyle(color: AppColors.muted),
+            )
+          else
+            ..._opponentMatchups.map((matchup) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: SpriteAvatarGroup(
+                    sprite1: matchup['sprite1'],
+                    sprite2: matchup['sprite2'],
+                    size: AppSizes.iconNormal,
+                  ),
+                  title: Text(
+                    matchup['opponentDeck'] ?? 'Desconocido',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${matchup['totalMatches']} partidas · ${matchup['wins']}V-${matchup['losses']}D-${matchup['ties']}E',
+                  ),
+                  trailing: Text(
+                    '${matchup['winRate']}%',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                  ),
                 ),
               );
             }),
