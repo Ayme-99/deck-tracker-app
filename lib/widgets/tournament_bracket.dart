@@ -127,72 +127,60 @@ class _TournamentBracketState extends State<TournamentBracket> {
         p: _groupIntoNodes((matchesByPhase[p] ?? []).where((m) => !m.isThirdPlaceMatch).toList()),
     };
 
-    // FIX: cuando una fase viene de una ronda previa reducida (extra>0 en
-    // calculateEliminationEntry), el nº de partidos de la fase anterior
-    // puede coincidir con el de la siguiente (relacion 1:1: cada bye se
-    // empareja con 1 ganador de la previa) en vez de la relacion 2:1
-    // normal del bracket. En vez de intentar dibujar conectores especiales
-    // para ese caso (lo que acabo dando lineas cruzadas confusas), se
-    // "rellena" la fase anterior con tarjetas BYE sinteticas -- una por
-    // cada jugador que se salto esa ronda -- colocadas justo al lado de
-    // su rival real, restaurando la relacion 2:1 de siempre. Asi el resto
-    // del algoritmo (centrado + conectores en V) funciona sin casos
-    // especiales, igual que un bracket normal.
+    // FIX (generalizado tras bug reportado): antes solo se reordenaba la
+    // fase anterior en el caso especial de ronda previa reducida (1:1).
+    // Con datos reales creados fuera del flujo normal (ej. bracket
+    // insertado a mano), el orden de llegada de las partidas no tiene por
+    // que coincidir con "vecino visual" -- aunque la relacion sea 2:1
+    // normal, los dos ganadores que se enfrentan en la fase siguiente
+    // pueden estar en filas muy alejadas entre si en la fase anterior,
+    // haciendo que la linea que los fusiona se estire por encima de un
+    // monton de filas intermedias (parece una linea "que no corresponde").
+    // Ahora se reordena SIEMPRE: para cada partido de la fase siguiente,
+    // se buscan sus 2 fuentes reales (por winnerId) y se colocan
+    // adyacentes; si falta alguna (bye autentico), se rellena con una
+    // tarjeta BYE sintetica. Esto garantiza que cualquier fusion en V sea
+    // siempre entre dos filas contiguas, sin excepciones.
     for (int i = 0; i < phasesWithMatches.length - 1; i++) {
       final prevPhase = phasesWithMatches[i];
       final nextPhase = phasesWithMatches[i + 1];
       final prevNodes = nodesByPhase[prevPhase]!;
       final nextNodes = nodesByPhase[nextPhase]!;
-      final isStandardHalving = nextNodes.length == (prevNodes.length / 2).ceil();
-      if (isStandardHalving) continue;
 
+      final usedMatchIds = <String>{};
       final reordered = <_BracketNode>[];
-      for (final nextNode in nextNodes) {
-        _BracketNode? realSource;
-        for (final pn in prevNodes) {
-          final w = pn.winnerId;
-          if (w != null && (w == nextNode.player1Id || w == nextNode.player2Id)) {
-            realSource = pn;
-            break;
-          }
-        }
 
-        final byePlayerId = (realSource?.winnerId == nextNode.player1Id)
-            ? nextNode.player2Id
-            : nextNode.player1Id;
-
-        final byeNode = _BracketNode([
-          TournamentMatch(
-            id: 'virtual-bye-${byePlayerId ?? "?"}-${nextNode.player1Id}',
-            phase: prevPhase,
-            player1Id: byePlayerId ?? '?',
-            status: 'completed',
-            isDraw: false,
-            leg: 'single',
-            winnerId: byePlayerId,
-          ),
-        ]);
-
-        if (realSource != null) {
-          reordered.add(realSource);
-          reordered.add(byeNode);
-        } else {
-          // Ninguno de los dos jugadores viene de un ganador de la fase
-          // anterior (caso extremo, no deberia pasar en la practica) --
-          // se añaden ambos como bye sinteticos para no romper el layout.
-          reordered.add(byeNode);
-          reordered.add(_BracketNode([
+      _BracketNode byeNodeFor(String? playerId, String label) => _BracketNode([
             TournamentMatch(
-              id: 'virtual-bye-${nextNode.player1Id}-alt',
+              id: 'virtual-bye-${playerId ?? "?"}-$label',
               phase: prevPhase,
-              player1Id: nextNode.player1Id,
+              player1Id: playerId ?? '?',
               status: 'completed',
               isDraw: false,
               leg: 'single',
-              winnerId: nextNode.player1Id,
+              winnerId: playerId,
             ),
-          ]));
+          ]);
+
+      for (final nextNode in nextNodes) {
+        _BracketNode? source1;
+        _BracketNode? source2;
+        for (final pn in prevNodes) {
+          final matchId = pn.legs.first.id;
+          if (usedMatchIds.contains(matchId)) continue;
+          final w = pn.winnerId;
+          if (w == null) continue;
+          if (w == nextNode.player1Id && source1 == null) {
+            source1 = pn;
+            usedMatchIds.add(matchId);
+          } else if (w == nextNode.player2Id && source2 == null) {
+            source2 = pn;
+            usedMatchIds.add(matchId);
+          }
         }
+
+        reordered.add(source1 ?? byeNodeFor(nextNode.player1Id, nextNode.legs.first.id));
+        reordered.add(source2 ?? byeNodeFor(nextNode.player2Id, nextNode.legs.first.id));
       }
       nodesByPhase[prevPhase] = reordered;
     }

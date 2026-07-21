@@ -20,9 +20,15 @@ class TournamentRoundsScreen extends StatefulWidget {
   State<TournamentRoundsScreen> createState() => _TournamentRoundsScreenState();
 }
 
-class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
+class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with TickerProviderStateMixin {
   final _tournamentService = TournamentService();
   final _scrollController = ScrollController();
+  // Controla el scroll horizontal del bracket embebido, para poder
+  // desplazarlo programaticamente a una fase concreta desde las pestañas
+  // combinadas (issue #85), sin perder el arbol completo ni sus conectores.
+  final _bracketScrollController = ScrollController();
+  TabController? _tabController;
+  List<_TabEntry> _tabEntries = [];
 
   Tournament? _tournament;
   List<TournamentPlayer> _players = [];
@@ -40,6 +46,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _bracketScrollController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -373,30 +381,148 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
     );
   }
 
-  Widget _buildRoundTabs() {
+  /// Construye la lista de pestañas combinadas: una por cada ronda de las
+  /// fases con rondas (swiss/liga/grupos) + una por cada fase de
+  /// eliminatoria que ya tenga partidas. Reinicializa el TabController si
+  /// el nº de pestañas cambio desde la ultima vez (nueva ronda generada,
+  /// fase avanzada, etc.) -- se llama desde build(), es idempotente si
+  /// nada cambio.
+  void _ensureTabController() {
+    final entries = <_TabEntry>[];
+
     final roundPhases = _matchesByPhase.keys.where((p) => kRoundBasedPhases.contains(p)).toList();
-    if (roundPhases.isEmpty) return const SizedBox.shrink();
+    for (final phase in roundPhases) {
+      final rounds = _matchesByPhase[phase]!.map((m) => m.round ?? 0).toSet().toList()..sort();
+      for (final r in rounds) {
+        entries.add(_TabEntry.round(label: 'Ronda $r', phase: phase, round: r));
+      }
+    }
+
+    for (final phase in kEliminationPhaseOrder) {
+      if ((_matchesByPhase[phase] ?? []).isNotEmpty) {
+        entries.add(_TabEntry.phase(label: kTournamentMatchPhaseLabels[phase] ?? phase, phase: phase));
+      }
+    }
+
+    final sameLength = _tabController != null && _tabController!.length == entries.length;
+    if (sameLength) {
+      _tabEntries = entries;
+      return;
+    }
+
+    _tabController?.dispose();
+    _tabEntries = entries;
+    if (entries.isEmpty) {
+      _tabController = null;
+      return;
+    }
+    _tabController = TabController(length: entries.length, vsync: this);
+    _tabController!.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (_tabController == null || _tabController!.indexIsChanging) return;
+    // Fuerza la reconstruccion para que los Offstage reflejen la pestaña
+    // recien seleccionada (el listener del TabController por si solo no
+    // reconstruye nada).
+    if (mounted) setState(() {});
+
+    final entry = _tabEntries[_tabController!.index];
+    if (!entry.isPhase) return;
+
+    final phaseIndex = kEliminationPhaseOrder
+        .where((p) => (_matchesByPhase[p] ?? []).isNotEmpty)
+        .toList()
+        .indexOf(entry.phase);
+    if (phaseIndex < 0) return;
+
+    final offset = phaseIndex * (TournamentBracket.cardWidth + TournamentBracket.colGap);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_bracketScrollController.hasClients) {
+        _bracketScrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  Widget _buildCombinedTabs() {
+    if (_tabEntries.isEmpty) return const SizedBox.shrink();
+
+    final anyPhaseTab = _tabEntries.any((e) => e.isPhase);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final phase in roundPhases) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM),
-            child: Text(
-              kTournamentMatchPhaseLabels[phase] ?? phase,
-              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-            ),
+        TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [for (final e in _tabEntries) Tab(text: e.label)],
+        ),
+        Expanded(
+          child: Stack(
+            children: [
+              for (int i = 0; i < _tabEntries.length; i++)
+                if (!_tabEntries[i].isPhase)
+                  Offstage(
+                    offstage: _tabController!.index != i,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM, vertical: AppSizes.spacingS),
+                      children: _matchesByPhase[_tabEntries[i].phase]!
+                          .where((m) => (m.round ?? 0) == _tabEntries[i].round)
+                          .map(_buildMatchCard)
+                          .toList(),
+                    ),
+                  ),
+              // El bracket se mantiene siempre montado (Offstage, no
+              // eliminado del arbol) para no perder su posicion de scroll
+              // al cambiar entre pestañas de fase.
+              if (anyPhaseTab)
+                Offstage(
+                  offstage: !_tabEntries[_tabController!.index].isPhase,
+                  // FIX: el arbol del bracket solo se desplazaba en horizontal por
+                  // dentro (via scrollController) -- dentro de la caja de altura fija
+                  // de las pestañas, con muchas tarjetas en la primera fase (16, y
+                  // hasta 32 cuando soportemos 64 jugadores) siempre desbordaba
+                  // verticalmente. Se envuelve en un SingleChildScrollView vertical
+                  // para que tambien se pueda desplazar hacia abajo dentro de la caja.
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: TournamentBracket(
+                      phaseOrder: kEliminationPhaseOrder,
+                      matchesByPhase: _matchesByPhase,
+                      playersById: _playersById,
+                      onMatchTap: _handleMatchTap,
+                      // scrollController: _bracketScrollController,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: AppSizes.spacingXS),
-          _RoundTabs(
-            matches: _matchesByPhase[phase]!,
-            playersById: _playersById,
-            onMatchTap: _handleMatchTap,
-          ),
-          const SizedBox(height: AppSizes.spacingM),
-        ],
+        ),
       ],
+    );
+  }
+
+  Widget _buildMatchCard(TournamentMatch match) {
+    final p1 = _playersById[match.player1Id];
+    final p2 = match.player2Id != null ? _playersById[match.player2Id] : null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
+      child: Card(
+        child: ListTile(
+          onTap: () => _handleMatchTap(match),
+          title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
+          subtitle: Text(
+            match.status == 'completed'
+                ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
+                : 'Sin resultado',
+          ),
+        ),
+      ),
     );
   }
 
@@ -431,6 +557,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
     }
 
     final hasAnyMatch = _matches.isNotEmpty;
+    _ensureTabController();
 
     return Scaffold(
       appBar: AppBar(
@@ -469,9 +596,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
         onRefresh: _loadData,
         child: Stack(
           children: [
-            ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.only(bottom: AppSizes.spacingXL),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildActions(),
                 if (!hasAnyMatch)
@@ -485,14 +611,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
                       ),
                     ),
                   ),
-                _buildRoundTabs(),
-                if (_hasEliminationMatches)
-                  TournamentBracket(
-                    phaseOrder: kEliminationPhaseOrder,
-                    matchesByPhase: _matchesByPhase,
-                    playersById: _playersById,
-                    onMatchTap: _handleMatchTap,
-                  ),
+                Expanded(child: _buildCombinedTabs()),
               ],
             ),
             if (_isActionRunning)
@@ -506,78 +625,19 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> {
     );
   }
 }
-/// Pestañas por ronda (issue #85): antes todas las partidas de una fase
-/// con rondas (swiss, liga, grupos) se listaban en una unica columna
-/// continua, obligando a scrollear por todo el historial para llegar a
-/// una ronda concreta. Ahora cada ronda es su propia pestaña.
-class _RoundTabs extends StatelessWidget {
-  final List<TournamentMatch> matches;
-  final Map<String, TournamentPlayer> playersById;
-  final void Function(TournamentMatch match) onMatchTap;
+/// Descriptor de una pestaña combinada (issue #85): representa o bien una
+/// ronda concreta de una fase con rondas (swiss/liga/grupos), o bien una
+/// fase de eliminatoria completa (Octavos, Cuartos...). Las de ronda
+/// muestran un listado simple; las de fase desplazan el arbol del bracket
+/// (ya montado de forma persistente) hasta esa columna.
+class _TabEntry {
+  final String label;
+  final bool isPhase;
+  final String phase;
+  final int? round;
 
-  const _RoundTabs({
-    required this.matches,
-    required this.playersById,
-    required this.onMatchTap,
-  });
-
-  Widget _matchCard(TournamentMatch match) {
-    final p1 = playersById[match.player1Id];
-    final p2 = match.player2Id != null ? playersById[match.player2Id] : null;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
-      child: Card(
-        child: ListTile(
-          onTap: () => onMatchTap(match),
-          title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
-          subtitle: Text(
-            match.status == 'completed'
-                ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
-                : 'Sin resultado',
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final rounds = matches.map((m) => m.round ?? 0).toSet().toList()..sort();
-    if (rounds.isEmpty) return const SizedBox.shrink();
-
-    // Una sola ronda: no hace falta pestaña, se muestra directa (evita
-    // el ruido visual de un TabBar con una unica opcion).
-    if (rounds.length == 1) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM),
-        child: Column(children: matches.map(_matchCard).toList()),
-      );
-    }
-
-    return DefaultTabController(
-      length: rounds.length,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [for (final r in rounds) Tab(text: 'Ronda $r')],
-          ),
-          SizedBox(
-            height: 420,
-            child: TabBarView(
-              children: [
-                for (final r in rounds)
-                  ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM, vertical: AppSizes.spacingS),
-                    children: matches.where((m) => (m.round ?? 0) == r).map(_matchCard).toList(),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  _TabEntry.round({required this.label, required this.phase, required this.round}) : isPhase = false;
+  _TabEntry.phase({required this.label, required this.phase})
+      : isPhase = true,
+        round = null;
 }
