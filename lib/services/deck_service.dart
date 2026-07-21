@@ -5,7 +5,13 @@ import '../models/deck.dart';
 class DeckService {
   final _api = ApiService();
 
-  Future<List<Deck>> getDecks({int page = 1, int limit = 10}) async {
+  // FIX (issue #97): el limite por defecto era 10, y deck_list_screen
+  // llama a getDecks() sin argumentos -- solo se veian los 10 mazos mas
+  // recientes (backend ordena por createdAt desc), los demas "desaparecian"
+  // segun se creaban mazos nuevos. Se sube el limite por defecto a un
+  // valor que cubra cualquier uso real, sin necesitar paginacion/scroll
+  // infinito completo para un caso de uso tan acotado (mazos de un usuario).
+  Future<List<Deck>> getDecks({int page = 1, int limit = 1000}) async {
     final response = await _api.get('/decks?page=$page&limit=$limit');
     final decksJson = response['data'] as List;
     return decksJson.map((d) => Deck.fromJson(d)).toList();
