@@ -205,4 +205,28 @@ class TournamentService {
     });
     return response as Map<String, dynamic>;
   }
+
+  // --- Exportar / Importar (issue #76) ---
+
+  Future<Map<String, dynamic>> exportTournament(String tournamentId) async {
+    final response = await _api.get('/tournaments/$tournamentId/export');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Importa un torneo exportado por otro usuario. Si `selfPlayerId` no es
+  /// null (el _id ORIGINAL del jugador que eres tu dentro del JSON
+  /// exportado), hay que pasar tambien `selfDeckId` (tu mazo real) --
+  /// el backend lo exige para poder marcar esa inscripcion como propia.
+  Future<Map<String, dynamic>> importTournament(
+    Map<String, dynamic> data, {
+    String? selfPlayerId,
+    String? selfDeckId,
+  }) async {
+    final response = await _api.post('/tournaments/import', {
+      'data': data,
+      if (selfPlayerId != null) 'selfPlayerId': selfPlayerId,
+      if (selfDeckId != null) 'selfDeckId': selfDeckId,
+    });
+    return response as Map<String, dynamic>;
+  }
 }
