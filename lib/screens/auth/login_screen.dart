@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/submit_on_enter.dart';
 import 'register_screen.dart';
 import '../home/home_screen.dart';
 
@@ -71,49 +72,54 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingL),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.style, size: AppSizes.iconHuge),
-                  const SizedBox(height: AppSizes.spacingM),
-                  Text(
-                    'Deck Tracker',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSizes.spacingXL),
-
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Usuario',
-                      border: OutlineInputBorder(),
+            child: SubmitOnEnter(
+              onSubmit: _handleLogin,
+              enabled: !_isLoading,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.style, size: AppSizes.iconHuge),
+                    const SizedBox(height: AppSizes.spacingM),
+                    Text(
+                      'Deck Tracker',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Introduce tu usuario';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
+                    const SizedBox(height: AppSizes.spacingXL),
 
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                      border: OutlineInputBorder(),
+                    TextFormField(
+                      controller: _usernameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Usuario',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Introduce tu usuario';
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Introduce tu contraseña';
-                      }
-                      return null;
-                    },
+                    const SizedBox(height: AppSizes.spacingM),
+
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Introduce tu contraseña';
+                        }
+                        return null;
+                      },
                   ),
                   const SizedBox(height: AppSizes.spacingL),
 
@@ -155,6 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text('¿No tienes cuenta? Regístrate'),
                   ),
                 ],
+              ),
               ),
             ),
           ),
