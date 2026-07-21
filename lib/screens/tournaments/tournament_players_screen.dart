@@ -10,6 +10,7 @@ import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/submit_on_enter.dart';
 import 'tournament_rounds_screen.dart';
 import 'tournament_standings_screen.dart';
+import 'tournament_export_screen.dart';
 
 /// Gestion de jugadores de un torneo hosted (issue #45): alta, baja
 /// (drop), edicion y eliminacion. El campo deckArchetype se autocompleta
@@ -292,6 +293,15 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
           onPressed: () => Navigator.of(context).pop(true),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.file_upload_outlined),
+            tooltip: 'Exportar torneo',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TournamentExportScreen(tournamentId: widget.tournamentId),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.leaderboard_outlined),
             tooltip: 'Clasificación',

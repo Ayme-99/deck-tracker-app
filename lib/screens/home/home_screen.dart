@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
+import '../tournaments/tournament_import_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
 
@@ -48,6 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _handleImportTournament() async {
+    final imported = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TournamentImportScreen()),
+    );
+    if (imported != null) {
+      setState(() => _tournamentsKey = UniqueKey());
+    }
+  }
+
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
@@ -71,6 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(titles[_currentIndex]),
         actions: [
+          if (_currentIndex == 2)
+            IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: 'Importar torneo',
+              onPressed: _handleImportTournament,
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _handleLogout,
