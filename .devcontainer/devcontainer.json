@@ -1,0 +1,30 @@
+{
+  "name": "deck-tracker-app (Flutter)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  // Reenvia el puerto que usamos para "flutter run -d web-server"
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Flutter web",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // Se ejecuta una unica vez, la primera vez que se crea el Codespace:
+  // clona Flutter (canal stable), lo añade al PATH de forma persistente
+  // y descarga las dependencias del proyecto. Tarda unos minutos la
+  // primera vez; en Codespaces posteriores del mismo repo (si se
+  // reconstruyen) se repite, pero abrir/cerrar el MISMO Codespace no
+  // vuelve a ejecutarlo.
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code"
+      ]
+    }
+  }
+}
