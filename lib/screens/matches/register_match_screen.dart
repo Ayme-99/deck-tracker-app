@@ -5,6 +5,7 @@ import '../../models/match.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../widgets/sprite_picker.dart';
+import '../../widgets/submit_on_enter.dart';
 
 class RegisterMatchScreen extends StatefulWidget {
   final Deck deck;
@@ -152,7 +153,10 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('Nueva partida · ${widget.deck.name}')),
       body: SafeArea(
-        child: Form(
+        child: SubmitOnEnter(
+          onSubmit: _handleSubmit,
+          enabled: !_isLoading,
+          child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(AppSizes.spacingM),
@@ -322,6 +326,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                     : const Text('Registrar partida'),
               ),
             ],
+          ),
           ),
         ),
       ),
