@@ -66,11 +66,12 @@ class ApiService {
     return _handleResponse(response, hadToken: auth.hadToken);
   }
 
-  Future<dynamic> delete(String endpoint) async {
+  Future<dynamic> delete(String endpoint, {Map<String, dynamic>? body}) async {
     final auth = await _getHeaders();
     final response = await http.delete(
       Uri.parse('${ApiConfig.baseUrl}$endpoint'),
       headers: auth.headers,
+      body: body != null ? jsonEncode(body) : null,
     );
     return _handleResponse(response, hadToken: auth.hadToken);
   }
