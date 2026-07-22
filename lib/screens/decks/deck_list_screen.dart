@@ -25,6 +25,8 @@ class _DeckListScreenState extends State<DeckListScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   String _searchQuery = '';
+  // 'activity' (por defecto, ultima actividad primero), 'name' (A-Z) o 'wins' (mas victorias primero)
+  String _sortBy = 'activity';
 
   @override
   void initState() {
@@ -65,11 +67,8 @@ class _DeckListScreenState extends State<DeckListScreen> {
         overviewsMap[decks[i].id] = overviewsList[i];
       }
 
-      // Orden por ultima actividad (updatedAt, o createdAt si no existe), mas reciente primero
-      final sortedDecks = [...decks]..sort((a, b) => b.lastActivityAt.compareTo(a.lastActivityAt));
-
       setState(() {
-        _decks = sortedDecks;
+        _decks = decks;
         _overviews = overviewsMap;
         _isLoading = false;
       });
@@ -82,9 +81,39 @@ class _DeckListScreenState extends State<DeckListScreen> {
     }
   }
 
+  String get _sortLabel {
+    switch (_sortBy) {
+      case 'name':
+        return 'Nombre';
+      case 'wins':
+        return 'Más victorias';
+      default:
+        return 'Actividad reciente';
+    }
+  }
+
   List<Deck> get _filteredDecks {
-    if (_searchQuery.isEmpty) return _decks;
-    return _decks.where((d) => d.name.toLowerCase().contains(_searchQuery)).toList();
+    final base = _searchQuery.isEmpty
+        ? _decks
+        : _decks.where((d) => d.name.toLowerCase().contains(_searchQuery)).toList();
+
+    final sorted = [...base];
+    switch (_sortBy) {
+      case 'name':
+        sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case 'wins':
+        sorted.sort((a, b) {
+          final winsA = _overviews[a.id]?['wins'] ?? 0;
+          final winsB = _overviews[b.id]?['wins'] ?? 0;
+          return (winsB as num).compareTo(winsA as num);
+        });
+        break;
+      default:
+        // Ultima actividad (updatedAt, o createdAt si no existe), mas reciente primero
+        sorted.sort((a, b) => b.lastActivityAt.compareTo(a.lastActivityAt));
+    }
+    return sorted;
   }
 
   Future<void> _showDeckOptions(Deck deck) async {
@@ -245,6 +274,39 @@ class _DeckListScreenState extends State<DeckListScreen> {
                     )
                   : null,
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.spacingM,
+            0,
+            AppSizes.spacingM,
+            AppSizes.spacingS,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              PopupMenuButton<String>(
+                initialValue: _sortBy,
+                onSelected: (value) => setState(() => _sortBy = value),
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'activity', child: Text('Actividad reciente')),
+                  PopupMenuItem(value: 'name', child: Text('Nombre')),
+                  PopupMenuItem(value: 'wins', child: Text('Más victorias')),
+                ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
+                    const SizedBox(width: AppSizes.spacingXS),
+                    Text(
+                      'Ordenar: $_sortLabel',
+                      style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         Expanded(
