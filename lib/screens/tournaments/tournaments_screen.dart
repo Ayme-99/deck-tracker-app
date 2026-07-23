@@ -5,8 +5,8 @@ import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
-import '../../widgets/sprite_avatar_group.dart';
 import 'tournament_detail_screen.dart';
+import 'tournament_list_tile.dart';
 import 'tournament_players_screen.dart';
 
 class TournamentsScreen extends StatefulWidget {
@@ -148,12 +148,6 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
   /// Extrae (puesto, total_participantes) del texto guardado en
   /// finalStanding (formato "Nº de M", ver TournamentDetailScreen).
   /// Devuelve null si no hay standing o no sigue ese patron.
@@ -208,19 +202,80 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     return list;
   }
 
-  Widget _statusChip(String status) {
-    final isFinished = status == 'finished';
-    return Chip(
-      label: Text(isFinished ? 'Finalizado' : 'En curso'),
-      backgroundColor: isFinished ? AppColors.muted.withValues(alpha: 0.15) : AppColors.success.withValues(alpha: 0.15),
-      labelStyle: TextStyle(
-        color: isFinished ? AppColors.muted : AppColors.success,
-        fontSize: AppSizes.textXS,
-        fontWeight: FontWeight.w600,
+  /// Estado vacio (sin torneos todavia), con RefreshIndicator para poder
+  /// tirar hacia abajo y comprobar de nuevo aunque no haya nada que listar.
+  Widget _buildEmptyState() {
+    return RefreshIndicator(
+      onRefresh: _loadTournaments,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ListView(
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacingL,
+                      vertical: AppSizes.spacingXL,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
+                        const SizedBox(height: AppSizes.spacingM),
+                        const Text(
+                          'Todavía no tienes torneos',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: AppSizes.spacingS),
+                        const Text(
+                          'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  /// Control de orden del listado (fecha / posicion / % ranking).
+  Widget _buildSortMenu() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingS, AppSizes.spacingM, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          PopupMenuButton<String>(
+            initialValue: _sortBy,
+            onSelected: (value) => setState(() => _sortBy = value),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'date', child: Text('Fecha')),
+              PopupMenuItem(value: 'position', child: Text('Posición')),
+              PopupMenuItem(value: 'percentage', child: Text('% Ranking')),
+            ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
+                const SizedBox(width: AppSizes.spacingXS),
+                Text(
+                  'Ordenar: $_sortLabel',
+                  style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -251,78 +306,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
 
     if (_tournaments.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _loadTournaments,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return ListView(
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.spacingL,
-                        vertical: AppSizes.spacingXL,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
-                          const SizedBox(height: AppSizes.spacingM),
-                          const Text(
-                            'Todavía no tienes torneos',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: AppSizes.spacingS),
-                          const Text(
-                            'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
+      return _buildEmptyState();
     }
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingS, AppSizes.spacingM, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              PopupMenuButton<String>(
-                initialValue: _sortBy,
-                onSelected: (value) => setState(() => _sortBy = value),
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'date', child: Text('Fecha')),
-                  PopupMenuItem(value: 'position', child: Text('Posición')),
-                  PopupMenuItem(value: 'percentage', child: Text('% Ranking')),
-                ],
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
-                    const SizedBox(width: AppSizes.spacingXS),
-                    Text(
-                      'Ordenar: $_sortLabel',
-                      style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildSortMenu(),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadTournaments,
@@ -339,76 +328,23 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 final tournament = _sortedTournaments[index];
                 final deck = tournament.deckId != null ? _decksById[tournament.deckId] : null;
 
-                return Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () async {
-                      // Los torneos hosted aun no tienen su propia pantalla
-                      // de detalle completa (llegara con #46/#47); por ahora
-                      // se entra directamente a gestion de jugadores.
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => tournament.mode == 'hosted'
-                              ? TournamentPlayersScreen(tournamentId: tournament.id)
-                              : TournamentDetailScreen(tournamentId: tournament.id),
-                        ),
-                      );
-                      _loadTournaments(); // recarga por si cambio el estado o se elimino
-                    },
-                    onLongPress: () => _showTournamentOptions(tournament),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSizes.spacingM),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          if (deck != null) ...[
-                            SpriteAvatarGroup(
-                              sprite1: deck.sprite1,
-                              sprite2: deck.sprite2,
-                              size: AppSizes.iconNormal,
-                            ),
-                            const SizedBox(width: AppSizes.spacingM),
-                          ],
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tournament.name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
-                                ),
-                                const SizedBox(height: AppSizes.spacingXS),
-                                Text(
-                                  [
-                                    _formatDate(tournament.date),
-                                    if (deck != null) deck.name,
-                                    if (tournament.structure != null)
-                                      kTournamentStructureLabels[tournament.structure] ?? tournament.structure!,
-                                  ].join(' · '),
-                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.spacingS),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _statusChip(tournament.status),
-                              if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
-                                const SizedBox(height: AppSizes.spacingXS),
-                                Text(
-                                  '🏆 ${tournament.finalStanding}',
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
+                return TournamentListTile(
+                  tournament: tournament,
+                  deck: deck,
+                  onTap: () async {
+                    // Los torneos hosted aun no tienen su propia pantalla
+                    // de detalle completa (llegara con #46/#47); por ahora
+                    // se entra directamente a gestion de jugadores.
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => tournament.mode == 'hosted'
+                            ? TournamentPlayersScreen(tournamentId: tournament.id)
+                            : TournamentDetailScreen(tournamentId: tournament.id),
                       ),
-                    ),
-                  ),
+                    );
+                    _loadTournaments(); // recarga por si cambio el estado o se elimino
+                  },
+                  onLongPress: () => _showTournamentOptions(tournament),
                 );
               },
             ),

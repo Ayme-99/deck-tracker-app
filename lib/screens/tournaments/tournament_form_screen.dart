@@ -192,6 +192,127 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
     super.dispose();
   }
 
+  /// Campos de mazo/estructura: en edicion son de solo lectura (ya puede
+  /// haber partidas que dependan de ellos), en creacion son selects, con
+  /// la configuracion especifica de hosted anidada dentro.
+  Widget _deckAndStructureFields() {
+    if (_isEditing) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InputDecorator(
+            decoration: const InputDecoration(labelText: 'Mazo', border: OutlineInputBorder()),
+            child: Text(_deckNameById(_deckId) ?? '—'),
+          ),
+          const SizedBox(height: AppSizes.spacingM),
+          InputDecorator(
+            decoration: const InputDecoration(labelText: 'Estructura', border: OutlineInputBorder()),
+            child: Text(kTournamentStructureLabels[_structure] ?? _structure),
+          ),
+          const SizedBox(height: AppSizes.spacingM),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_mode == 'tracked') ...[
+          if (_decks.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+              child: Text(
+                'No tienes mazos creados todavía. Crea uno primero para poder asociarlo al torneo.',
+                style: TextStyle(color: AppColors.warning),
+              ),
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: _deckId,
+              decoration: const InputDecoration(
+                labelText: 'Mazo',
+                border: OutlineInputBorder(),
+              ),
+              items: _decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
+              onChanged: (value) => setState(() => _deckId = value),
+              validator: (value) => value == null ? 'Selecciona un mazo' : null,
+            ),
+          const SizedBox(height: AppSizes.spacingM),
+        ] else ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+            child: Text(
+              'Si tú también participas, podrás vincular tu mazo más adelante desde la gestión de jugadores.',
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ),
+          const SizedBox(height: AppSizes.spacingS),
+        ],
+
+        DropdownButtonFormField<String>(
+          initialValue: _structure,
+          decoration: const InputDecoration(
+            labelText: 'Estructura del torneo',
+            border: OutlineInputBorder(),
+          ),
+          items: kTournamentStructureLabels.entries
+              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+              .toList(),
+          onChanged: (value) => setState(() => _structure = value!),
+        ),
+        const SizedBox(height: AppSizes.spacingM),
+
+        // Configuracion especifica del modo hosted, segun la
+        // estructura elegida (ver TORNEOS_HOSTED_GDD.md).
+        if (_mode == 'hosted') _hostedStructureOptions(),
+      ],
+    );
+  }
+
+  /// Formato de eliminatoria + 3er/4º puesto (si la estructura tiene fase
+  /// eliminatoria) y opcion de ida/vuelta (si es liga) -- solo aplica en
+  /// modo hosted.
+  Widget _hostedStructureOptions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (kStructuresWithElimination.contains(_structure)) ...[
+          DropdownButtonFormField<String>(
+            initialValue: _eliminationFormat,
+            decoration: const InputDecoration(
+              labelText: 'Formato de eliminatoria',
+              border: OutlineInputBorder(),
+            ),
+            items: kEliminationFormatLabels.entries
+                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                .toList(),
+            onChanged: (value) => setState(() => _eliminationFormat = value!),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Disputar 3er y 4º puesto'),
+            value: _thirdPlacePlayoff,
+            onChanged: (value) => setState(() => _thirdPlacePlayoff = value),
+          ),
+          const SizedBox(height: AppSizes.spacingS),
+        ],
+        if (_structure == 'league') ...[
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Ida y vuelta'),
+            subtitle: const Text('Cada enfrentamiento se juega dos veces'),
+            value: _leagueDoubleRound,
+            onChanged: (value) => setState(() => _leagueDoubleRound = value),
+          ),
+          const SizedBox(height: AppSizes.spacingS),
+        ],
+      ],
+    );
+  }
+
   Widget _modeSelector() {
     return Row(
       children: [
@@ -251,103 +372,10 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                     ),
                     const SizedBox(height: AppSizes.spacingM),
 
-                    if (_isEditing) ...[
-                      // Mazo y estructura ya no se pueden cambiar una vez
-                      // creado el torneo: puede haber partidas registradas
-                      // que dependen de ellos.
-                      InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Mazo', border: OutlineInputBorder()),
-                        child: Text(_deckNameById(_deckId) ?? '—'),
-                      ),
-                      const SizedBox(height: AppSizes.spacingM),
-                      InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Estructura', border: OutlineInputBorder()),
-                        child: Text(kTournamentStructureLabels[_structure] ?? _structure),
-                      ),
-                      const SizedBox(height: AppSizes.spacingM),
-                    ] else ...[
-                      if (_mode == 'tracked') ...[
-                        if (_decks.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
-                            child: Text(
-                              'No tienes mazos creados todavía. Crea uno primero para poder asociarlo al torneo.',
-                              style: TextStyle(color: AppColors.warning),
-                            ),
-                          )
-                        else
-                          DropdownButtonFormField<String>(
-                            initialValue: _deckId,
-                            decoration: const InputDecoration(
-                              labelText: 'Mazo',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: _decks
-                                .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
-                                .toList(),
-                            onChanged: (value) => setState(() => _deckId = value),
-                            validator: (value) => value == null ? 'Selecciona un mazo' : null,
-                          ),
-                        const SizedBox(height: AppSizes.spacingM),
-                      ] else ...[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
-                          child: Text(
-                            'Si tú también participas, podrás vincular tu mazo más adelante desde la gestión de jugadores.',
-                            style: TextStyle(color: AppColors.muted),
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.spacingS),
-                      ],
-
-                      DropdownButtonFormField<String>(
-                        initialValue: _structure,
-                        decoration: const InputDecoration(
-                          labelText: 'Estructura del torneo',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: kTournamentStructureLabels.entries
-                            .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                            .toList(),
-                        onChanged: (value) => setState(() => _structure = value!),
-                      ),
-                      const SizedBox(height: AppSizes.spacingM),
-
-                      // Configuracion especifica del modo hosted, segun la
-                      // estructura elegida (ver TORNEOS_HOSTED_GDD.md).
-                      if (_mode == 'hosted') ...[
-                        if (kStructuresWithElimination.contains(_structure)) ...[
-                          DropdownButtonFormField<String>(
-                            initialValue: _eliminationFormat,
-                            decoration: const InputDecoration(
-                              labelText: 'Formato de eliminatoria',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: kEliminationFormatLabels.entries
-                                .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                                .toList(),
-                            onChanged: (value) => setState(() => _eliminationFormat = value!),
-                          ),
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Disputar 3er y 4º puesto'),
-                            value: _thirdPlacePlayoff,
-                            onChanged: (value) => setState(() => _thirdPlacePlayoff = value),
-                          ),
-                          const SizedBox(height: AppSizes.spacingS),
-                        ],
-                        if (_structure == 'league') ...[
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Ida y vuelta'),
-                            subtitle: const Text('Cada enfrentamiento se juega dos veces'),
-                            value: _leagueDoubleRound,
-                            onChanged: (value) => setState(() => _leagueDoubleRound = value),
-                          ),
-                          const SizedBox(height: AppSizes.spacingS),
-                        ],
-                      ],
-                    ],
+                    // Mazo y estructura: solo lectura si se esta editando
+                    // (puede haber partidas que dependan de ellos), selects
+                    // + configuracion especifica de hosted si se esta creando.
+                    _deckAndStructureFields(),
 
                     DropdownButtonFormField<String>(
                       initialValue: _format,

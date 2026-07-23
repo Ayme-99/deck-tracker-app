@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../models/opponent_archetype.dart';
+import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
@@ -27,8 +28,7 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
   final _archetypeService = OpponentArchetypeService();
 
   List<Map<String, dynamic>> _standings = [];
-  List<Deck> _decks = [];
-  List<OpponentArchetype> _archetypes = [];
+  ArchetypeSpriteLookup _spriteLookup = const ArchetypeSpriteLookup(decks: [], archetypes: []);
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -54,8 +54,10 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
       if (!mounted) return;
       setState(() {
         _standings = results[0] as List<Map<String, dynamic>>;
-        _decks = results[1] as List<Deck>;
-        _archetypes = results[2] as List<OpponentArchetype>;
+        _spriteLookup = ArchetypeSpriteLookup(
+          decks: results[1] as List<Deck>,
+          archetypes: results[2] as List<OpponentArchetype>,
+        );
         _isLoading = false;
       });
     } catch (e) {
@@ -65,19 +67,6 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
-  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
-  (String?, String?) _spritesForName(String? name) {
-    if (name == null || name.isEmpty) return (null, null);
-    for (final d in _decks) {
-      if (d.name == name) return (d.sprite1, d.sprite2);
-    }
-    for (final a in _archetypes) {
-      if (a.name == name) return (a.sprite1, a.sprite2);
-    }
-    return (null, null);
   }
 
   @override
@@ -124,7 +113,7 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
                           separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingXS),
                           itemBuilder: (context, index) {
                             final entry = _standings[index];
-                            final sprites = _spritesForName(entry['deckArchetype'] as String?);
+                            final sprites = _spriteLookup.spritesForName(entry['deckArchetype'] as String?);
                             return _StandingRow(entry: entry, sprite1: sprites.$1, sprite2: sprites.$2);
                           },
                         ),

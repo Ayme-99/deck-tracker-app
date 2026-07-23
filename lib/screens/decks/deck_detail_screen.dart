@@ -8,7 +8,9 @@ import '../../models/opponent_archetype.dart';
 import '../../services/stats_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
-import '../../widgets/sprite_avatar_group.dart';
+import 'deck_detail/deck_matchups_section.dart';
+import 'deck_detail/deck_overview_card.dart';
+import 'deck_detail/deck_recent_matches_section.dart';
 import '../matches/register_match_screen.dart';
 import '../matches/edit_match_screen.dart';
 
@@ -170,28 +172,6 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     }
   }
 
-  Color _resultColor(String result) {
-    switch (result) {
-      case 'win':
-        return AppColors.success;
-      case 'loss':
-        return AppColors.error;
-      default:
-        return AppColors.muted;
-    }
-  }
-
-  String _resultLabel(String result) {
-    switch (result) {
-      case 'win':
-        return 'Victoria';
-      case 'loss':
-        return 'Derrota';
-      default:
-        return 'Empate';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,11 +224,15 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                       AppSizes.fabBottomPadding,
                     ),
                     children: [
-                      _buildOverviewCard(),
+                      DeckOverviewCard(overview: _overview!, deckFormat: widget.deck.format),
                       const SizedBox(height: AppSizes.spacingL),
-                      _buildMatchupsSection(),
+                      DeckMatchupsSection(matchups: _matchups, archetypesByName: _archetypesByName),
                       const SizedBox(height: AppSizes.spacingL),
-                      _buildRecentMatchesSection(),
+                      DeckRecentMatchesSection(
+                        matches: _recentMatches,
+                        archetypesByName: _archetypesByName,
+                        onMatchTap: _showMatchOptions,
+                      ),
                     ],
                   ),
                 ),
@@ -265,148 +249,4 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     );
   }
 
-  Widget _buildOverviewCard() {
-    final overview = _overview!;
-    final winRate = overview['winRate'] ?? 0;
-    final totalMatches = overview['totalMatches'] ?? 0;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${widget.deck.format} · $totalMatches partidas',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSizes.spacingM),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _statColumn('$winRate%', 'Win rate', AppColors.primaryVariant),
-                _statColumn('${overview['wins']}', 'Victorias', AppColors.success),
-                _statColumn('${overview['losses']}', 'Derrotas', AppColors.error),
-                _statColumn('${overview['ties']}', 'Empates', AppColors.muted),
-              ],
-            ),
-            if (totalMatches > 0) ...[
-              const Divider(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _statColumn(
-                    '${overview['totalUserPrizes']}',
-                    'Premios cogidos',
-                    Theme.of(context).colorScheme.onSurface,
-                  ),
-                  _statColumn(
-                    '${overview['totalOpponentPrizes']}',
-                    'Premios cedidos',
-                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _statColumn(String value, String label, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold, color: color),
-        ),
-        const SizedBox(height: AppSizes.spacingXS),
-        Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
-      ],
-    );
-  }
-
-  Widget _buildMatchupsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Matchups', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
-        const SizedBox(height: AppSizes.spacingM),
-        if (_matchups.isEmpty)
-          const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
-        else
-          ..._matchups.map((m) {
-            final archetype = _archetypesByName[m['opponentDeck']];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                minLeadingWidth: 0,
-                horizontalTitleGap: AppSizes.spacingS,
-                leading: SpriteAvatarGroup(
-                  sprite1: archetype?.sprite1,
-                  sprite2: archetype?.sprite2,
-                  size: AppSizes.iconNormal,
-                ),
-                title: Text(m['opponentDeck']),
-                subtitle: Text('${m['wins']}V - ${m['losses']}D - ${m['ties']}E'),
-                trailing: Text(
-                  '${m['winRate']}%',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            );
-          }),
-      ],
-    );
-  }
-
-  Widget _buildRecentMatchesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Partidas recientes', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
-        const SizedBox(height: AppSizes.spacingSM),
-        if (_recentMatches.isEmpty)
-          const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
-        else
-          ..._recentMatches.map((match) {
-            final archetype = _archetypesByName[match.opponentDeck];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                onTap: () => _showMatchOptions(match),
-                minLeadingWidth: 0,
-                horizontalTitleGap: AppSizes.spacingS,
-                leading: archetype?.sprite1 != null
-                    ? SpriteAvatarGroup(
-                        sprite1: archetype!.sprite1,
-                        sprite2: archetype.sprite2,
-                        size: AppSizes.iconNormal,
-                      )
-                    : CircleAvatar(
-                        backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
-                        child: Icon(
-                          match.result == 'win'
-                              ? Icons.check
-                              : match.result == 'loss'
-                                  ? Icons.close
-                                  : Icons.remove,
-                          color: _resultColor(match.result),
-                        ),
-                      ),
-                title: Text('vs ${match.opponentDeck}'),
-                subtitle: Text(
-                  '${_resultLabel(match.result)} · ${match.userPrizes}-${match.opponentPrizes}',
-                ),
-                trailing: Text(
-                  '${match.playedAt.day}/${match.playedAt.month}',
-                  style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
-                ),
-              ),
-            );
-          }),
-      ],
-    );
-  }
 }
