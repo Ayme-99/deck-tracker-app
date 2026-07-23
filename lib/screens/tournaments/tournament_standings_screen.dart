@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../../models/deck.dart';
+import '../../models/opponent_archetype.dart';
+import '../../services/deck_service.dart';
+import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/sprite_avatar_group.dart';
 
 /// Clasificacion en vivo de un torneo hosted (issue #47): puntos, W-L-D
 /// y desempates (diferencial de premios, OMW%), reutilizando
@@ -18,8 +23,12 @@ class TournamentStandingsScreen extends StatefulWidget {
 
 class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
   final _tournamentService = TournamentService();
+  final _deckService = DeckService();
+  final _archetypeService = OpponentArchetypeService();
 
   List<Map<String, dynamic>> _standings = [];
+  List<Deck> _decks = [];
+  List<OpponentArchetype> _archetypes = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -36,10 +45,17 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
     });
 
     try {
-      final standings = await _tournamentService.getHostedStandings(widget.tournamentId);
+      final results = await Future.wait([
+        _tournamentService.getHostedStandings(widget.tournamentId),
+        _deckService.getDecks(),
+        _archetypeService.getAll(),
+      ]);
+
       if (!mounted) return;
       setState(() {
-        _standings = standings;
+        _standings = results[0] as List<Map<String, dynamic>>;
+        _decks = results[1] as List<Deck>;
+        _archetypes = results[2] as List<OpponentArchetype>;
         _isLoading = false;
       });
     } catch (e) {
@@ -49,6 +65,19 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
+  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
+  (String?, String?) _spritesForName(String? name) {
+    if (name == null || name.isEmpty) return (null, null);
+    for (final d in _decks) {
+      if (d.name == name) return (d.sprite1, d.sprite2);
+    }
+    for (final a in _archetypes) {
+      if (a.name == name) return (a.sprite1, a.sprite2);
+    }
+    return (null, null);
   }
 
   @override
@@ -93,7 +122,11 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
                           padding: const EdgeInsets.all(AppSizes.spacingM),
                           itemCount: _standings.length,
                           separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingXS),
-                          itemBuilder: (context, index) => _StandingRow(entry: _standings[index]),
+                          itemBuilder: (context, index) {
+                            final entry = _standings[index];
+                            final sprites = _spritesForName(entry['deckArchetype'] as String?);
+                            return _StandingRow(entry: entry, sprite1: sprites.$1, sprite2: sprites.$2);
+                          },
                         ),
                 ),
     );
@@ -102,8 +135,10 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
 
 class _StandingRow extends StatelessWidget {
   final Map<String, dynamic> entry;
+  final String? sprite1;
+  final String? sprite2;
 
-  const _StandingRow({required this.entry});
+  const _StandingRow({required this.entry, this.sprite1, this.sprite2});
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +167,10 @@ class _StandingRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSizes.spacingS),
+            if (sprite1 != null || sprite2 != null) ...[
+              SpriteAvatarGroup(sprite1: sprite1, sprite2: sprite2, size: AppSizes.iconNormal),
+              const SizedBox(width: AppSizes.spacingS),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

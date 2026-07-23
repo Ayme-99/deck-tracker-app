@@ -720,12 +720,26 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            [
-                              _formatDate(tournament.date),
-                              if (_deck != null) _deck!.name,
-                            ].join(' · '),
-                            style: const TextStyle(color: AppColors.textSecondary),
+                          child: Row(
+                            children: [
+                              if (_deck != null) ...[
+                                SpriteAvatarGroup(
+                                  sprite1: _deck!.sprite1,
+                                  sprite2: _deck!.sprite2,
+                                  size: AppSizes.iconNormal,
+                                ),
+                                const SizedBox(width: AppSizes.spacingS),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  [
+                                    _formatDate(tournament.date),
+                                    if (_deck != null) _deck!.name,
+                                  ].join(' · '),
+                                  style: const TextStyle(color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         Chip(

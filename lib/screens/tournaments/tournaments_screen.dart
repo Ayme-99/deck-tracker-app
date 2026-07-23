@@ -5,6 +5,7 @@ import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../widgets/sprite_avatar_group.dart';
 import 'tournament_detail_screen.dart';
 import 'tournament_players_screen.dart';
 
@@ -360,6 +361,14 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          if (deck != null) ...[
+                            SpriteAvatarGroup(
+                              sprite1: deck.sprite1,
+                              sprite2: deck.sprite2,
+                              size: AppSizes.iconNormal,
+                            ),
+                            const SizedBox(width: AppSizes.spacingM),
+                          ],
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

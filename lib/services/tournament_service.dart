@@ -224,8 +224,8 @@ class TournamentService {
   }) async {
     final response = await _api.post('/tournaments/import', {
       'data': data,
-      if (selfPlayerId != null) 'selfPlayerId': selfPlayerId,
-      if (selfDeckId != null) 'selfDeckId': selfDeckId,
+      'selfPlayerId': ?selfPlayerId,
+      'selfDeckId': ?selfDeckId,
     });
     return response as Map<String, dynamic>;
   }

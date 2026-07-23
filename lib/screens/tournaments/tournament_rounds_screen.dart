@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../../models/deck.dart';
+import '../../models/opponent_archetype.dart';
 import '../../models/tournament.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
+import '../../services/deck_service.dart';
+import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/tournament_bracket.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_bracket_screen.dart';
@@ -22,6 +27,8 @@ class TournamentRoundsScreen extends StatefulWidget {
 
 class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with TickerProviderStateMixin {
   final _tournamentService = TournamentService();
+  final _deckService = DeckService();
+  final _archetypeService = OpponentArchetypeService();
   final _scrollController = ScrollController();
   // Controla el scroll horizontal del bracket embebido, para poder
   // desplazarlo programaticamente a una fase concreta desde las pestañas
@@ -33,6 +40,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   Tournament? _tournament;
   List<TournamentPlayer> _players = [];
   List<TournamentMatch> _matches = [];
+  List<Deck> _decks = [];
+  List<OpponentArchetype> _archetypes = [];
   bool _isLoading = true;
   bool _isActionRunning = false;
   String? _errorMessage;
@@ -61,16 +70,22 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
       final tournamentFuture = _tournamentService.getTournamentById(widget.tournamentId);
       final playersFuture = _tournamentService.getPlayers(widget.tournamentId);
       final matchesFuture = _tournamentService.getHostedMatches(widget.tournamentId);
+      final decksFuture = _deckService.getDecks();
+      final archetypesFuture = _archetypeService.getAll();
 
       final tournamentResult = await tournamentFuture;
       final players = await playersFuture;
       final matches = await matchesFuture;
+      final decks = await decksFuture;
+      final archetypes = await archetypesFuture;
 
       if (!mounted) return;
       setState(() {
         _tournament = tournamentResult['tournament'] as Tournament;
         _players = players;
         _matches = matches;
+        _decks = decks;
+        _archetypes = archetypes;
         _isLoading = false;
       });
     } catch (e) {
@@ -83,6 +98,19 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   }
 
   Map<String, TournamentPlayer> get _playersById => {for (final p in _players) p.id: p};
+
+  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
+  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
+  (String?, String?) _spritesForName(String? name) {
+    if (name == null || name.isEmpty) return (null, null);
+    for (final d in _decks) {
+      if (d.name == name) return (d.sprite1, d.sprite2);
+    }
+    for (final a in _archetypes) {
+      if (a.name == name) return (a.sprite1, a.sprite2);
+    }
+    return (null, null);
+  }
 
   Map<String, List<TournamentMatch>> get _matchesByPhase {
     final map = <String, List<TournamentMatch>>{};
@@ -223,6 +251,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
 
     final player1 = _playersById[match.player1Id];
     final player2 = _playersById[match.player2Id];
+    final player1Sprites = _spritesForName(player1?.deckArchetype);
+    final player2Sprites = _spritesForName(player2?.deckArchetype);
     final p1Controller = TextEditingController(text: match.player1Prizes?.toString() ?? '');
     final p2Controller = TextEditingController(text: match.player2Prizes?.toString() ?? '');
     bool isDraw = match.isDraw;
@@ -232,7 +262,21 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('${player1?.name ?? '?'} vs ${player2?.name ?? '?'}'),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SpriteAvatarGroup(sprite1: player1Sprites.$1, sprite2: player1Sprites.$2, size: AppSizes.iconNormal),
+              const SizedBox(width: AppSizes.spacingXS),
+              Flexible(
+                child: Text(
+                  '${player1?.name ?? '?'} vs ${player2?.name ?? '?'}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spacingXS),
+              SpriteAvatarGroup(sprite1: player2Sprites.$1, sprite2: player2Sprites.$2, size: AppSizes.iconNormal),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -510,11 +554,17 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   Widget _buildMatchCard(TournamentMatch match) {
     final p1 = _playersById[match.player1Id];
     final p2 = match.player2Id != null ? _playersById[match.player2Id] : null;
+    final p1Sprites = _spritesForName(p1?.deckArchetype);
+    final p2Sprites = _spritesForName(p2?.deckArchetype);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
       child: Card(
         child: ListTile(
           onTap: () => _handleMatchTap(match),
+          leading: SpriteAvatarGroup(sprite1: p1Sprites.$1, sprite2: p1Sprites.$2, size: AppSizes.iconNormal),
+          trailing: match.isBye
+              ? null
+              : SpriteAvatarGroup(sprite1: p2Sprites.$1, sprite2: p2Sprites.$2, size: AppSizes.iconNormal),
           title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
           subtitle: Text(
             match.status == 'completed'
