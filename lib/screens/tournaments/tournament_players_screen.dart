@@ -130,6 +130,28 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                       );
                     },
                   ),
+                  // Preview del icono ya guardado para ese nombre. Si el mazo
+                  // es nuevo (sin sprites guardados aun), no se muestra nada.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: archetypeController,
+                    builder: (context, value, _) {
+                      final sprites = _spritesForName(value.text.trim());
+                      if (sprites.$1 == null && sprites.$2 == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSizes.spacingS),
+                        child: Row(
+                          children: [
+                            SpriteAvatarGroup(sprite1: sprites.$1, sprite2: sprites.$2, size: AppSizes.iconNormal),
+                            const SizedBox(width: AppSizes.spacingS),
+                            const Text(
+                              'Icono guardado para este mazo',
+                              style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: AppSizes.spacingM),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -271,12 +293,23 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     }
   }
 
+  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
+  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
+  (String?, String?) _spritesForName(String name) {
+    if (name.isEmpty) return (null, null);
+    for (final d in _decks) {
+      if (d.name == name) return (d.sprite1, d.sprite2);
+    }
+    for (final a in _archetypes) {
+      if (a.name == name) return (a.sprite1, a.sprite2);
+    }
+    return (null, null);
+  }
+
   String? _spriteFor(TournamentPlayer player, {required bool first}) {
     if (player.deckArchetype == null) return null;
-    for (final a in _archetypes) {
-      if (a.name == player.deckArchetype) return first ? a.sprite1 : a.sprite2;
-    }
-    return null;
+    final sprites = _spritesForName(player.deckArchetype!);
+    return first ? sprites.$1 : sprites.$2;
   }
 
   @override
