@@ -8,9 +8,12 @@ import '../../services/deck_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
-import '../../widgets/sprite_avatar_group.dart';
 import '../matches/edit_match_screen.dart';
 import '../matches/register_match_screen.dart';
+import 'tournament_detail/tournament_header_card.dart';
+import 'tournament_detail/tournament_matches_list.dart';
+import 'tournament_detail/tournament_standing_section.dart';
+import 'tournament_detail/tournament_summary_card.dart';
 import 'tournament_form_screen.dart';
 
 class TournamentDetailScreen extends StatefulWidget {
@@ -335,70 +338,6 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     }
   }
 
-  String _formatSnapshotDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildStandingSection() {
-    final snapshots = [..._tournament!.standingSnapshots]..sort((a, b) => b.date.compareTo(a.date));
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Clasificación', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
-                TextButton.icon(
-                  onPressed: _addStandingSnapshot,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Añadir'),
-                ),
-              ],
-            ),
-            if (snapshots.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
-                child: Text(
-                  'Registra tu posición y puntos cuando quieras hacer seguimiento',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              )
-            else
-              ...snapshots.map((s) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXS),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          _formatSnapshotDate(s.date),
-                          style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          [
-                            if (s.position != null) '${s.position}º puesto',
-                            if (s.points != null) '${s.points} pts',
-                            if (s.notes != null && s.notes!.isNotEmpty) s.notes!,
-                          ].join(' · '),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _confirmDeleteTournament() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -520,23 +459,6 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     if (registered == true) _loadData();
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
-  Color _resultColor(String result) {
-    switch (result) {
-      case 'win':
-        return AppColors.success;
-      case 'loss':
-        return AppColors.error;
-      default:
-        return AppColors.muted;
-    }
-  }
-
   /// Agrupa los matches por phase, respetando el orden logico de las fases
   /// (grupos/suiza primero, luego eliminatoria; liga aparte)
   Map<String, List<Match>> _groupByPhase() {
@@ -567,75 +489,6 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     ];
 
     return {for (final k in orderedKeys) k: grouped[k]!};
-  }
-
-  Widget _statColumn(String value, String label, Color color) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(height: AppSizes.spacingXS),
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard() {
-    final overall = _summary!['overall'] as Map<String, dynamic>;
-    final byPhase = _summary!['byPhase'] as List;
-    final totalMatches = overall['totalMatches'] ?? 0;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.spacing20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Resumen · $totalMatches partidas',
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSizes.spacingM),
-            if (totalMatches == 0)
-              const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
-            else ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _statColumn('${overall['winRate']}%', 'Win rate', AppColors.primaryVariant),
-                  _statColumn('${overall['wins']}', 'Victorias', AppColors.success),
-                  _statColumn('${overall['losses']}', 'Derrotas', AppColors.error),
-                  _statColumn('${overall['ties']}', 'Empates', AppColors.muted),
-                ],
-              ),
-              if (byPhase.length > 1) ...[
-                const Divider(height: 32),
-                Text(
-                  'Por fase',
-                  style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: AppSizes.spacingS),
-                ...byPhase.map((p) {
-                  final phase = p['phase'] as String?;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingXS),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(kMatchPhaseLabels[phase] ?? phase ?? 'Sin fase'),
-                        Text(
-                          '${p['wins']}V - ${p['losses']}D - ${p['ties']}E · ${p['winRate']}%',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -710,172 +563,34 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             AppSizes.fabBottomPadding,
           ),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacing20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              if (_deck != null) ...[
-                                SpriteAvatarGroup(
-                                  sprite1: _deck!.sprite1,
-                                  sprite2: _deck!.sprite2,
-                                  size: AppSizes.iconNormal,
-                                ),
-                                const SizedBox(width: AppSizes.spacingS),
-                              ],
-                              Expanded(
-                                child: Text(
-                                  [
-                                    _formatDate(tournament.date),
-                                    if (_deck != null) _deck!.name,
-                                  ].join(' · '),
-                                  style: const TextStyle(color: AppColors.textSecondary),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Chip(
-                          label: Text(isFinished ? 'Finalizado' : 'En curso'),
-                          backgroundColor: (isFinished ? AppColors.muted : AppColors.success)
-                              .withValues(alpha: 0.15),
-                          labelStyle: TextStyle(
-                            color: isFinished ? AppColors.muted : AppColors.success,
-                            fontSize: AppSizes.textXS,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.spacingS),
-                    Text(
-                      kTournamentStructureLabels[tournament.structure] ?? tournament.structure ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
-                    ),
-                    if (tournament.location != null && tournament.location!.isNotEmpty) ...[
-                      const SizedBox(height: AppSizes.spacingXS),
-                      Text(tournament.location!, style: const TextStyle(color: AppColors.muted)),
-                    ],
-                    if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty) ...[
-                      const SizedBox(height: AppSizes.spacingS),
-                      Text(
-                        '🏆 ${tournament.finalStanding}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                    if ((kStructurePhases[tournament.structure] ?? [])
-                        .any((p) => kRoundBasedPhases.contains(p))) ...[
-                      const SizedBox(height: AppSizes.spacingS),
-                      InkWell(
-                        onTap: _editFinalStanding,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.emoji_events_outlined, size: AppSizes.iconSmall, color: AppColors.muted),
-                            const SizedBox(width: AppSizes.spacingXS),
-                            Text(
-                              tournament.finalStanding == null || tournament.finalStanding!.isEmpty
-                                  ? 'Añadir posición final'
-                                  : 'Editar posición final',
-                              style: const TextStyle(color: AppColors.muted, decoration: TextDecoration.underline),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (tournament.notes != null && tournament.notes!.isNotEmpty) ...[
-                      const SizedBox(height: AppSizes.spacingS),
-                      Text(tournament.notes!, style: const TextStyle(color: AppColors.textSecondary)),
-                    ],
-                  ],
-                ),
-              ),
+            TournamentHeaderCard(
+              tournament: tournament,
+              deck: _deck,
+              onEditFinalStanding: _editFinalStanding,
             ),
             const SizedBox(height: AppSizes.spacingL),
 
             if (_summary != null) ...[
-              _buildSummaryCard(),
+              TournamentSummaryCard(summary: _summary!),
               const SizedBox(height: AppSizes.spacingL),
             ],
 
             if (tournament.structure == 'league') ...[
-              _buildStandingSection(),
+              TournamentStandingSection(
+                tournament: tournament,
+                onAddSnapshot: _addStandingSnapshot,
+              ),
               const SizedBox(height: AppSizes.spacingL),
             ],
 
             const Text('Partidas', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSizes.spacingS),
 
-            if (_matches.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSizes.spacingM),
-                child: Text(
-                  'Todavía no hay partidas registradas en este torneo',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              )
-            else
-              ...groupedMatches.entries.map((entry) {
-                final phase = entry.key;
-                final matches = entry.value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSizes.spacingM),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        kMatchPhaseLabels[phase] ?? phase,
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: AppSizes.spacingXS),
-                      ...matches.map((match) {
-                        final archetype = _archetypesByName[match.opponentDeck];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: AppSizes.spacingXS),
-                          child: ListTile(
-                            leading: archetype?.sprite1 != null
-                                ? SpriteAvatarGroup(
-                                    sprite1: archetype!.sprite1,
-                                    sprite2: archetype.sprite2,
-                                    size: AppSizes.iconNormal,
-                                  )
-                                : CircleAvatar(
-                                    backgroundColor: _resultColor(match.result).withValues(alpha: 0.15),
-                                    child: Icon(
-                                      match.result == 'win'
-                                          ? Icons.check
-                                          : match.result == 'loss'
-                                              ? Icons.close
-                                              : Icons.remove,
-                                      color: _resultColor(match.result),
-                                    ),
-                                  ),
-                            title: Text('vs ${match.opponentDeck}'),
-                            subtitle: Text(
-                              [
-                                if (match.round != null) 'Ronda ${match.round}',
-                                '${match.userPrizes}-${match.opponentPrizes}',
-                              ].join(' · '),
-                            ),
-                            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-                            onTap: () => _showMatchOptions(match),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                );
-              }),
+            TournamentMatchesList(
+              groupedMatches: groupedMatches,
+              archetypesByName: _archetypesByName,
+              onMatchTap: _showMatchOptions,
+            ),
           ],
         ),
       ),
