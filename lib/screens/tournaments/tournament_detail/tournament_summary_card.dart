@@ -49,7 +49,7 @@ class TournamentSummaryCard extends StatelessWidget {
                 ],
               ),
               if (byPhase.length > 1) ...[
-                const Divider(height: 32),
+                const Divider(height: AppSizes.spacingXL),
                 const Text(
                   'Por fase',
                   style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),

@@ -90,7 +90,7 @@ import 'package:deck_tracker_app/styles.dart';
 
 Si un valor se repite en varias pantallas, añadirlo como token. Para variaciones puntuales de texto, usar `.copyWith()` sobre `AppTextStyles`.
 
-> Nota: algunas pantallas de torneos `hosted` (construidas en un tramo de desarrollo intenso) tienen valores puntuales sin tokenizar (ej. alturas fijas en el bracket) — pendiente de una pasada de limpieza.
+> Nota: el bracket de eliminatoria (`lib/widgets/tournament_bracket/bracket_constants.dart`) mantiene sus propias constantes de tamaño fijas (no en `AppSizes`) a propósito: son medidas específicas de ese árbol, no reutilizadas en otras pantallas.
 
 ## Notas de desarrollo
 
@@ -103,7 +103,7 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 ## TODO
 
 - [x] Ampliar bracket de eliminatoria hasta 64 jugadores (issue #92)
-- [ ] Pasada de limpieza de UI en pantallas de torneos hosted (tokens de estilo)
+- [x] Pasada de limpieza de UI en pantallas de torneos hosted (tokens de estilo)
 - [ ] Editar torneo ya creado en modo tracked (por ahora solo se puede crear, marcar finalizado/en curso o eliminar)
 - [ ] Widget de pantalla de inicio (Android)
 - [ ] Formato cooperativo "Incursiones"

@@ -54,7 +54,7 @@ class TournamentStandingSection extends StatelessWidget {
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 48,
+                        width: AppSizes.columnWidthM,
                         child: Text(
                           _formatSnapshotDate(s.date),
                           style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),

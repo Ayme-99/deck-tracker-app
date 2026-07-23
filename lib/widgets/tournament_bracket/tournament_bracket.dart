@@ -153,7 +153,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
                   left: i * (cardWidth + colGap),
                   top: 0,
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
                     child: Text(
                       kTournamentMatchPhaseLabels[phasesWithMatches[i]] ?? phasesWithMatches[i],
                       style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),

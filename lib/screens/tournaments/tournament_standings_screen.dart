@@ -159,7 +159,7 @@ class _StandingRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 32,
+              width: AppSizes.columnWidthS,
               child: Text(
                 '$position',
                 textAlign: TextAlign.center,

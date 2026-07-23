@@ -29,6 +29,10 @@ class AppSizes {
 
   // Small fixed widths
   static const double badgeWidth = 40.0;
+  // Columna estrecha para un numero corto (posicion, puesto...)
+  static const double columnWidthS = 32.0;
+  // Columna para una fecha corta tipo dd/mm
+  static const double columnWidthM = 48.0;
 
   // Spinner sizes
   static const double spinnerSmall = 20.0;
