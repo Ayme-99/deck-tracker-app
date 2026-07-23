@@ -15,10 +15,11 @@ class StatsScreen extends StatefulWidget {
   State<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStateMixin {
   final _statsService = StatsService();
   final _deckService = DeckService();
   final _archetypeService = OpponentArchetypeService();
+  late final TabController _tabController;
 
   Map<String, dynamic>? _overview;
   List<dynamic> _ranking = [];
@@ -40,7 +41,14 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -368,46 +376,80 @@ class _StatsScreenState extends State<StatsScreen> {
       );
     }
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.spacingM, AppSizes.spacingM, AppSizes.spacingM, 0,
+          ),
+          child: _buildOverviewCard(overview, totalMatches),
+        ),
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Mis mazos'),
+            Tab(text: 'Rivales'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildMyDecksTab(),
+              _buildRivalsTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Resumen global (issue #111: se mantiene visible sobre las dos pestañas,
+  /// ya que no es específico ni de "mis mazos" ni de "rivales").
+  Widget _buildOverviewCard(Map<String, dynamic> overview, dynamic totalMatches) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$totalMatches partidas totales',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _statColumn('${overview['winRate']}%', 'Win rate', AppColors.primaryVariant),
+                _statColumn('${overview['wins']}', 'Victorias', AppColors.success),
+                _statColumn('${overview['losses']}', 'Derrotas', AppColors.error),
+                _statColumn('${overview['ties']}', 'Empates', AppColors.muted),
+              ],
+            ),
+            const Divider(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', AppColors.surface),
+                _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', AppColors.surface),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Pestaña "Mis mazos" (issue #111): ranking propio, con sus controles de
+  /// orden y mínimo de partidas. Antes vivía apilada sobre "Contra cada rival"
+  /// en el mismo ListView.
+  Widget _buildMyDecksTab() {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.spacing20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$totalMatches partidas totales',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _statColumn('${overview['winRate']}%', 'Win rate', AppColors.primaryVariant),
-                      _statColumn('${overview['wins']}', 'Victorias', AppColors.success),
-                      _statColumn('${overview['losses']}', 'Derrotas', AppColors.error),
-                      _statColumn('${overview['ties']}', 'Empates', AppColors.muted),
-                    ],
-                  ),
-                  const Divider(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', AppColors.surface),
-                      _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', AppColors.surface),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSizes.spacingL),
-          const Text('Ranking de mazos', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
-          const SizedBox(height: AppSizes.spacingM),
           _buildRankingControls(),
           const SizedBox(height: AppSizes.spacingM),
           if (_isLoadingRanking)
@@ -482,10 +524,20 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: AppSizes.spacingL),
-          const Text('Contra cada rival', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
-          const SizedBox(height: AppSizes.spacingXS),
+  /// Pestaña "Rivales" (issue #111): historial cruzado contra cada arquetipo
+  /// rival, independientemente de con qué mazo propio se jugó. Antes vivía
+  /// apilada bajo "Ranking de mazos" en el mismo ListView.
+  Widget _buildRivalsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSizes.spacingM),
+        children: [
           Text(
             'Cruzando todos tus mazos, sin importar con cuál jugaste',
             style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
