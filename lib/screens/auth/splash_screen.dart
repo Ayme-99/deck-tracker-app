@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../services/auth_service.dart';
@@ -45,7 +47,13 @@ class _SplashScreenState extends State<SplashScreen> {
   /// widget de acceso rapido solo si la URI que abrio la app es la nuestra
   /// (evita interferir con cualquier otro deep link que se añada en el
   /// futuro).
+  ///
+  /// home_widget solo tiene implementacion nativa en Android/iOS -- en
+  /// cualquier otra plataforma (Windows, web...) el canal no existe y
+  /// lanzaria MissingPluginException, asi que se descarta antes de llamar.
   Future<void> _openQuickRegisterIfLaunchedFromWidget() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+
     final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
     if (uri?.scheme != 'decktracker' || !mounted) return;
     Navigator.of(context).push(

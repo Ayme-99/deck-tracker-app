@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../../models/card_suggestion.dart';
 import '../../models/deck.dart';
+import '../../services/card_catalog_service.dart';
 import '../../services/deck_service.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
@@ -20,6 +22,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   final _deckService = DeckService();
+  final _cardCatalogService = CardCatalogService();
 
   bool get _isEditing => widget.deck != null;
 
@@ -43,6 +46,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                   name: c.name,
                   quantity: c.quantity,
                   category: c.category,
+                  originalCardId: c.cardId,
                 ))
             .toList() ??
         [];
@@ -69,14 +73,23 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     });
 
     try {
-      final cardsData = _cards
-          .map((c) => {
-                'cardId': c.nameController.text.trim().toLowerCase().replaceAll(' ', '-'),
-                'name': c.nameController.text.trim(),
-                'quantity': int.tryParse(c.quantityController.text) ?? 1,
-                'category': c.category,
-              })
-          .toList();
+      final cardsData = _cards.map((c) {
+        final currentName = c.nameController.text.trim();
+        // Prioridad del cardId: 1) uno real elegido del catalogo en esta
+        // sesion, 2) el que ya tenia guardado si el nombre no ha cambiado
+        // (edicion sin tocar esta carta), 3) slug generado a mano como
+        // ultimo recurso (issue #12: solo si el catalogo no encontro nada).
+        final cardId = c.realCardId ??
+            (c.originalCardId != null && currentName == c.originalName
+                ? c.originalCardId!
+                : currentName.toLowerCase().replaceAll(' ', '-'));
+        return {
+          'cardId': cardId,
+          'name': currentName,
+          'quantity': int.tryParse(c.quantityController.text) ?? 1,
+          'category': c.category,
+        };
+      }).toList();
 
       if (_isEditing) {
         await _deckService.updateDeck(widget.deck!.id, {
@@ -205,14 +218,40 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                       children: [
                         Expanded(
                           flex: 3,
-                          child: TextFormField(
-                            controller: card.nameController,
-                            decoration: const InputDecoration(labelText: 'Nombre'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Requerido';
+                          child: Autocomplete<CardSuggestion>(
+                            optionsBuilder: (value) async {
+                              if (value.text.trim().length < 2) return const Iterable<CardSuggestion>.empty();
+                              try {
+                                return await _cardCatalogService.search(value.text.trim());
+                              } catch (_) {
+                                // Catalogo no disponible: se sigue permitiendo escribir a mano (issue #12)
+                                return const Iterable<CardSuggestion>.empty();
                               }
-                              return null;
+                            },
+                            displayStringForOption: (c) => c.label,
+                            onSelected: (selection) {
+                              card.nameController.text = selection.name;
+                              card.realCardId = selection.cardId;
+                            },
+                            fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+                              controller.text = card.nameController.text;
+                              controller.addListener(() {
+                                card.nameController.text = controller.text;
+                                // Nombre tocado a mano: ya no se garantiza que
+                                // corresponda a la carta real seleccionada antes.
+                                card.realCardId = null;
+                              });
+                              return TextFormField(
+                                controller: controller,
+                                focusNode: focusNode,
+                                decoration: const InputDecoration(labelText: 'Nombre'),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Requerido';
+                                  }
+                                  return null;
+                                },
+                              );
                             },
                           ),
                         ),
@@ -284,7 +323,21 @@ class _CardEntry {
   final TextEditingController quantityController;
   String category;
 
-  _CardEntry({String name = '', int quantity = 1, this.category = 'pokemon'})
+  /// Nombre con el que se cargo esta carta (al editar un mazo existente),
+  /// para saber si el usuario ha tocado el campo o no.
+  final String originalName;
+
+  /// cardId ya guardado en el mazo (al editar), se conserva mientras no se
+  /// toque el nombre de esta carta.
+  final String? originalCardId;
+
+  /// cardId real de pokemontcg.io elegido del autocompletado en esta
+  /// sesion (issue #12). Null si es una carta nueva sin elegir sugerencia,
+  /// o si el nombre se ha editado a mano tras elegir una.
+  String? realCardId;
+
+  _CardEntry({String name = '', int quantity = 1, this.category = 'pokemon', this.originalCardId})
       : nameController = TextEditingController(text: name),
-        quantityController = TextEditingController(text: quantity.toString());
+        quantityController = TextEditingController(text: quantity.toString()),
+        originalName = name;
 }

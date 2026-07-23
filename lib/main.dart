@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'screens/auth/splash_screen.dart';
@@ -29,12 +31,18 @@ class _DeckTrackerAppState extends State<DeckTrackerApp> {
     // HomeWidget.initiallyLaunchedFromHomeWidget(), que solo devuelve algo
     // en un arranque en frio -- este stream es el complementario, dispara
     // mientras el motor de Flutter ya esta corriendo.
-    _widgetClickSubscription = HomeWidget.widgetClicked.listen((uri) {
-      if (uri?.scheme != 'decktracker') return;
-      NavigationService.navigatorKey.currentState?.push(
-        MaterialPageRoute(builder: (_) => const QuickRegisterDeckPickerScreen()),
-      );
-    });
+    //
+    // home_widget solo tiene implementacion nativa en Android/iOS -- en
+    // cualquier otra plataforma (Windows, web...) el canal no existe y
+    // suscribirse lanzaria MissingPluginException.
+    if (!kIsWeb && Platform.isAndroid) {
+      _widgetClickSubscription = HomeWidget.widgetClicked.listen((uri) {
+        if (uri?.scheme != 'decktracker') return;
+        NavigationService.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (_) => const QuickRegisterDeckPickerScreen()),
+        );
+      });
+    }
   }
 
   @override
