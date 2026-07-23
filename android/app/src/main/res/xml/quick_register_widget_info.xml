@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configuracion del widget de acceso rapido (issue #10). Tamaño fijo
+     (resizeMode="none"), sin actualizaciones periodicas (updatePeriodMillis=0)
+     porque no muestra datos dinamicos, solo lanza la app. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialLayout="@layout/quick_register_widget"
+    android:minWidth="90dp"
+    android:minHeight="90dp"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="0">
+</appwidget-provider>

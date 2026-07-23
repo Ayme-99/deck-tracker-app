@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nombre mostrado al añadir el widget desde el selector de widgets del móvil (issue #10) -->
+    <string name="quick_register_widget_label">Registrar partida</string>
+</resources>
