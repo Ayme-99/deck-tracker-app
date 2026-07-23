@@ -9,7 +9,7 @@ import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
-import '../../widgets/tournament_bracket.dart';
+import '../../widgets/tournament_bracket/tournament_bracket.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_bracket_screen.dart';
 

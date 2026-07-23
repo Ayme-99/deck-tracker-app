@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
 import '../../services/tournament_service.dart';
-import '../../widgets/tournament_bracket.dart';
+import '../../widgets/tournament_bracket/tournament_bracket.dart';
 
 /// Pantalla independiente del bracket (issue #84): navegable libremente
 /// con pan + zoom (InteractiveViewer), como un mapa.
