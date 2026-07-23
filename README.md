@@ -23,7 +23,7 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ve
   - Bracket de eliminatoria visual, con conectores calculados por datos reales (no por posición), y pantalla independiente con pan/zoom (botón de recentrar) para brackets grandes.
   - Clasificación en vivo: puntos, W-L-D y desempates (diferencial de premios, luego OMW%).
   - Exportar/Importar torneos completos entre usuarios (JSON), preservando todo el historial y resultados ya jugados; al importar, opción de vincular una inscripción a tu propia cuenta y mazo.
-  - Límite actual: 16 jugadores en la primera ronda de eliminatoria (ampliación a 64 en progreso, ver issue #92).
+  - Bracket de eliminatoria: hasta 64 jugadores en la primera ronda (issue #92).
 - **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
 
 ## Estructura del proyecto
@@ -102,7 +102,7 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 
 ## TODO
 
-- [ ] Ampliar bracket de eliminatoria hasta 64 jugadores (issue #92)
+- [x] Ampliar bracket de eliminatoria hasta 64 jugadores (issue #92)
 - [ ] Pasada de limpieza de UI en pantallas de torneos hosted (tokens de estilo)
 - [ ] Editar torneo ya creado en modo tracked (por ahora solo se puede crear, marcar finalizado/en curso o eliminar)
 - [ ] Widget de pantalla de inicio (Android)

@@ -1,3 +1,5 @@
+import 'tournament_match.dart' show kEliminationPhaseOrder;
+
 class StandingSnapshot {
   final DateTime date;
   final int? points;
@@ -114,9 +116,9 @@ const kTournamentStructureLabels = {
 // o no (eliminatoria directa, donde la propia fase ya identifica la partida).
 const kStructurePhases = {
   'swiss': ['swiss'],
-  'elimination': ['round_of_16', 'quarterfinal', 'semifinal', 'final'],
-  'swiss_elimination': ['swiss', 'round_of_16', 'quarterfinal', 'semifinal', 'final'],
-  'groups_elimination': ['group_stage', 'round_of_16', 'quarterfinal', 'semifinal', 'final'],
+  'elimination': [...kEliminationPhaseOrder],
+  'swiss_elimination': ['swiss', ...kEliminationPhaseOrder],
+  'groups_elimination': ['group_stage', ...kEliminationPhaseOrder],
   'league': ['league_round'],
 };
 

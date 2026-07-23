@@ -237,6 +237,64 @@ void main() {
     });
   });
 
+  group('BracketLayout.compute — bracket de 32 y 64 jugadores (issue #92)', () {
+    /// Genera un bracket completo (potencia de 2, sin byes) con las fases
+    /// indicadas, encadenando siempre el ganador de player1 en cada partida.
+    Map<String, List<TournamentMatch>> fullBracket(List<String> phases, int firstRoundPlayers) {
+      final matchesByPhase = <String, List<TournamentMatch>>{};
+      var ids = List.generate(firstRoundPlayers, (i) => 'p${i + 1}');
+
+      for (final phase in phases) {
+        final roundMatches = <TournamentMatch>[];
+        for (var i = 0; i < ids.length; i += 2) {
+          roundMatches.add(match(
+            id: '${phase}_${i ~/ 2}',
+            phase: phase,
+            p1: ids[i],
+            p2: ids[i + 1],
+            winnerId: ids[i],
+          ));
+        }
+        matchesByPhase[phase] = roundMatches;
+        ids = roundMatches.map((m) => m.winnerId!).toList();
+      }
+      return matchesByPhase;
+    }
+
+    test('32 jugadores: round_of_32 -> round_of_16 -> cuartos -> semis -> final', () {
+      const phases = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'final'];
+      final layout = BracketLayout.compute(
+        phaseOrder: kEliminationPhaseOrder,
+        matchesByPhase: fullBracket(phases, 32),
+        cardHeight: cardHeight,
+        leafGap: leafGap,
+      );
+
+      expect(layout.phasesWithMatches, phases);
+      expect(layout.nodesByPhase['round_of_32']!.length, 16);
+      for (final phase in phases.skip(1)) {
+        expect(layout.connectorSourceIndices[phase]!.every((s) => s.length == 2), isTrue);
+      }
+    });
+
+    test('64 jugadores: round_of_64 hasta final, las 6 fases completas', () {
+      const phases = ['round_of_64', 'round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'final'];
+      final layout = BracketLayout.compute(
+        phaseOrder: kEliminationPhaseOrder,
+        matchesByPhase: fullBracket(phases, 64),
+        cardHeight: cardHeight,
+        leafGap: leafGap,
+      );
+
+      expect(layout.phasesWithMatches, phases);
+      expect(layout.nodesByPhase['round_of_64']!.length, 32);
+      expect(layout.nodesByPhase['final']!.length, 1);
+      for (final phase in phases.skip(1)) {
+        expect(layout.connectorSourceIndices[phase]!.every((s) => s.length == 2), isTrue);
+      }
+    });
+  });
+
   group('BracketLayout.compute — ronda previa reducida (bye real, relacion 1:1)', () {
     test('nodo siguiente con un solo jugador conocido (bye) solo tiene 1 fuente conectable', () {
       // p3 recibio un bye y avanza directo a semifinal sin jugar cuartos;
