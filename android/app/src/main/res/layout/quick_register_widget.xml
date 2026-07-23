@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout del widget de acceso rapido (issue #10). Solo RemoteViews validas
+     (nada de widgets Flutter aqui): icono en una insignia circular + texto
+     en 2 lineas, dentro de una tarjeta clicable con degradado y elevacion,
+     que abre la app directamente en "elegir mazo para registrar partida",
+     sin pasar por Mazos > detalle > Registrar partida. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/quick_register_widget_background"
+    android:elevation="4dp"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/widget_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/quick_register_widget_icon_badge"
+        android:contentDescription="@null"
+        android:padding="8dp"
+        android:src="@mipmap/ic_launcher" />
+
+    <TextView
+        android:id="@+id/widget_label_line1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Registrar"
+        android:textColor="#FFFFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_label_line2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="partida"
+        android:textColor="#FFFFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

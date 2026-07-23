@@ -47,6 +47,9 @@ dependencies:
   # Gestión de estado
   provider: ^6.1.0
 
+  # Widget de acceso rápido en la pantalla de inicio del móvil (issue #10)
+  home_widget: ^0.9.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
