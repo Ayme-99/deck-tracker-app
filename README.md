@@ -23,7 +23,7 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ve
   - Bracket de eliminatoria visual, con conectores calculados por datos reales (no por posición), y pantalla independiente con pan/zoom (botón de recentrar) para brackets grandes.
   - Clasificación en vivo: puntos, W-L-D y desempates (diferencial de premios, luego OMW%).
   - Exportar/Importar torneos completos entre usuarios (JSON), preservando todo el historial y resultados ya jugados; al importar, opción de vincular una inscripción a tu propia cuenta y mazo.
-  - Límite actual: 16 jugadores en la primera ronda de eliminatoria (ampliación a 64 en progreso, ver issue #92).
+  - Bracket de eliminatoria: hasta 64 jugadores en la primera ronda (issue #92).
 - **UI**: modo oscuro/claro automático, sprites de Pokémon para mazos y rivales (PokeAPI), aviso de cold start del backend si una carga tarda más de 5 s.
 
 ## Estructura del proyecto
@@ -90,7 +90,7 @@ import 'package:deck_tracker_app/styles.dart';
 
 Si un valor se repite en varias pantallas, añadirlo como token. Para variaciones puntuales de texto, usar `.copyWith()` sobre `AppTextStyles`.
 
-> Nota: algunas pantallas de torneos `hosted` (construidas en un tramo de desarrollo intenso) tienen valores puntuales sin tokenizar (ej. alturas fijas en el bracket) — pendiente de una pasada de limpieza.
+> Nota: el bracket de eliminatoria (`lib/widgets/tournament_bracket/bracket_constants.dart`) mantiene sus propias constantes de tamaño fijas (no en `AppSizes`) a propósito: son medidas específicas de ese árbol, no reutilizadas en otras pantallas.
 
 ## Notas de desarrollo
 
@@ -102,8 +102,8 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 
 ## TODO
 
-- [ ] Ampliar bracket de eliminatoria hasta 64 jugadores (issue #92)
-- [ ] Pasada de limpieza de UI en pantallas de torneos hosted (tokens de estilo)
+- [x] Ampliar bracket de eliminatoria hasta 64 jugadores (issue #92)
+- [x] Pasada de limpieza de UI en pantallas de torneos hosted (tokens de estilo)
 - [ ] Editar torneo ya creado en modo tracked (por ahora solo se puede crear, marcar finalizado/en curso o eliminar)
 - [ ] Widget de pantalla de inicio (Android)
 - [ ] Formato cooperativo "Incursiones"

@@ -9,7 +9,9 @@ import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
-import '../../widgets/tournament_bracket.dart';
+import '../../widgets/tournament_bracket/tournament_bracket.dart';
+import 'tournament_rounds/tournament_rounds_action_bar.dart';
+import 'tournament_rounds/tournament_rounds_tabs.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_bracket_screen.dart';
 
@@ -35,7 +37,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   // combinadas (issue #85), sin perder el arbol completo ni sus conectores.
   final _bracketScrollController = ScrollController();
   TabController? _tabController;
-  List<_TabEntry> _tabEntries = [];
+  List<TournamentRoundsTabEntry> _tabEntries = [];
 
   Tournament? _tournament;
   List<TournamentPlayer> _players = [];
@@ -342,89 +344,6 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
         ));
   }
 
-  Widget _buildActions() {
-    if (_tournament == null) return const SizedBox.shrink();
-    final structure = _tournament!.structure;
-    final buttons = <Widget>[];
-
-    if (structure == 'swiss') {
-      buttons.add(FilledButton.icon(
-        onPressed: _handleGenerateSwissRound,
-        icon: const Icon(Icons.add),
-        label: const Text('Generar ronda swiss'),
-      ));
-    } else if (structure == 'league') {
-      final hasLeagueMatches = _matches.any((m) => m.phase == 'league_round');
-      if (!hasLeagueMatches) {
-        buttons.add(FilledButton.icon(
-          onPressed: _handleGenerateLeague,
-          icon: const Icon(Icons.calendar_month),
-          label: const Text('Generar calendario de liga'),
-        ));
-      }
-    } else if (structure == 'elimination') {
-      if (!_hasEliminationMatches) {
-        buttons.add(FilledButton.icon(
-          onPressed: _handleGenerateBracket,
-          icon: const Icon(Icons.account_tree),
-          label: const Text('Generar bracket'),
-        ));
-      }
-    } else if (structure == 'swiss_elimination') {
-      if (!_hasEliminationMatches) {
-        buttons.add(FilledButton.icon(
-          onPressed: _handleGenerateSwissRound,
-          icon: const Icon(Icons.add),
-          label: const Text('Generar ronda swiss'),
-        ));
-        buttons.add(OutlinedButton.icon(
-          onPressed: _handleClosePhase,
-          icon: const Icon(Icons.flag),
-          label: const Text('Cerrar fase suiza'),
-        ));
-      }
-    } else if (structure == 'groups_elimination') {
-      final hasGroups = _players.any((p) => p.groupName != null);
-      final hasGroupMatches = _matches.any((m) => m.phase == 'group_stage');
-      if (!hasGroups) {
-        buttons.add(FilledButton.icon(
-          onPressed: _handleAssignGroups,
-          icon: const Icon(Icons.groups),
-          label: const Text('Asignar grupos'),
-        ));
-      } else if (!hasGroupMatches) {
-        buttons.add(FilledButton.icon(
-          onPressed: _handleGenerateGroupStage,
-          icon: const Icon(Icons.calendar_month),
-          label: const Text('Generar calendario de grupos'),
-        ));
-      } else if (!_hasEliminationMatches) {
-        buttons.add(OutlinedButton.icon(
-          onPressed: _handleClosePhase,
-          icon: const Icon(Icons.flag),
-          label: const Text('Cerrar fase de grupos'),
-        ));
-      }
-    }
-
-    // Avanzar el bracket: disponible en cualquier estructura con fase
-    // eliminatoria ya iniciada, mientras no se haya llegado a la final
-    if (_hasEliminationMatches && _currentEliminationPhase != null && _currentEliminationPhase != 'final') {
-      buttons.add(FilledButton.icon(
-        onPressed: _handleAdvanceBracket,
-        icon: const Icon(Icons.arrow_forward),
-        label: const Text('Avanzar a la siguiente fase'),
-      ));
-    }
-
-    if (buttons.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.spacingM),
-      child: Wrap(spacing: AppSizes.spacingS, runSpacing: AppSizes.spacingS, children: buttons),
-    );
-  }
-
   /// Construye la lista de pestañas combinadas: una por cada ronda de las
   /// fases con rondas (swiss/liga/grupos) + una por cada fase de
   /// eliminatoria que ya tenga partidas. Reinicializa el TabController si
@@ -432,19 +351,19 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   /// fase avanzada, etc.) -- se llama desde build(), es idempotente si
   /// nada cambio.
   void _ensureTabController() {
-    final entries = <_TabEntry>[];
+    final entries = <TournamentRoundsTabEntry>[];
 
     final roundPhases = _matchesByPhase.keys.where((p) => kRoundBasedPhases.contains(p)).toList();
     for (final phase in roundPhases) {
       final rounds = _matchesByPhase[phase]!.map((m) => m.round ?? 0).toSet().toList()..sort();
       for (final r in rounds) {
-        entries.add(_TabEntry.round(label: 'Ronda $r', phase: phase, round: r));
+        entries.add(TournamentRoundsTabEntry.round(label: 'Ronda $r', phase: phase, round: r));
       }
     }
 
     for (final phase in kEliminationPhaseOrder) {
       if ((_matchesByPhase[phase] ?? []).isNotEmpty) {
-        entries.add(_TabEntry.phase(label: kTournamentMatchPhaseLabels[phase] ?? phase, phase: phase));
+        entries.add(TournamentRoundsTabEntry.phase(label: kTournamentMatchPhaseLabels[phase] ?? phase, phase: phase));
       }
     }
 
@@ -490,90 +409,6 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
         );
       }
     });
-  }
-
-  Widget _buildCombinedTabs() {
-    if (_tabEntries.isEmpty) return const SizedBox.shrink();
-
-    final anyPhaseTab = _tabEntries.any((e) => e.isPhase);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          tabs: [for (final e in _tabEntries) Tab(text: e.label)],
-        ),
-        Expanded(
-          child: Stack(
-            children: [
-              for (int i = 0; i < _tabEntries.length; i++)
-                if (!_tabEntries[i].isPhase)
-                  Offstage(
-                    offstage: _tabController!.index != i,
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingM, vertical: AppSizes.spacingS),
-                      children: _matchesByPhase[_tabEntries[i].phase]!
-                          .where((m) => (m.round ?? 0) == _tabEntries[i].round)
-                          .map(_buildMatchCard)
-                          .toList(),
-                    ),
-                  ),
-              // El bracket se mantiene siempre montado (Offstage, no
-              // eliminado del arbol) para no perder su posicion de scroll
-              // al cambiar entre pestañas de fase.
-              if (anyPhaseTab)
-                Offstage(
-                  offstage: !_tabEntries[_tabController!.index].isPhase,
-                  // FIX: el arbol del bracket solo se desplazaba en horizontal por
-                  // dentro (via scrollController) -- dentro de la caja de altura fija
-                  // de las pestañas, con muchas tarjetas en la primera fase (16, y
-                  // hasta 32 cuando soportemos 64 jugadores) siempre desbordaba
-                  // verticalmente. Se envuelve en un SingleChildScrollView vertical
-                  // para que tambien se pueda desplazar hacia abajo dentro de la caja.
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: TournamentBracket(
-                      phaseOrder: kEliminationPhaseOrder,
-                      matchesByPhase: _matchesByPhase,
-                      playersById: _playersById,
-                      onMatchTap: _handleMatchTap,
-                      // scrollController: _bracketScrollController,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMatchCard(TournamentMatch match) {
-    final p1 = _playersById[match.player1Id];
-    final p2 = match.player2Id != null ? _playersById[match.player2Id] : null;
-    final p1Sprites = _spritesForName(p1?.deckArchetype);
-    final p2Sprites = _spritesForName(p2?.deckArchetype);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
-      child: Card(
-        child: ListTile(
-          onTap: () => _handleMatchTap(match),
-          leading: SpriteAvatarGroup(sprite1: p1Sprites.$1, sprite2: p1Sprites.$2, size: AppSizes.iconNormal),
-          trailing: match.isBye
-              ? null
-              : SpriteAvatarGroup(sprite1: p2Sprites.$1, sprite2: p2Sprites.$2, size: AppSizes.iconNormal),
-          title: Text('${p1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (p2?.name ?? '?')}'),
-          subtitle: Text(
-            match.status == 'completed'
-                ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
-                : 'Sin resultado',
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -649,7 +484,20 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildActions(),
+                TournamentRoundsActionBar(
+                  tournament: _tournament,
+                  matches: _matches,
+                  players: _players,
+                  hasEliminationMatches: _hasEliminationMatches,
+                  currentEliminationPhase: _currentEliminationPhase,
+                  onGenerateSwissRound: _handleGenerateSwissRound,
+                  onGenerateLeague: _handleGenerateLeague,
+                  onGenerateBracket: _handleGenerateBracket,
+                  onAssignGroups: _handleAssignGroups,
+                  onGenerateGroupStage: _handleGenerateGroupStage,
+                  onClosePhase: _handleClosePhase,
+                  onAdvanceBracket: _handleAdvanceBracket,
+                ),
                 if (!hasAnyMatch)
                   const Padding(
                     padding: EdgeInsets.all(AppSizes.spacingL),
@@ -661,7 +509,18 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
                       ),
                     ),
                   ),
-                Expanded(child: _buildCombinedTabs()),
+                Expanded(
+                  child: _tabController == null
+                      ? const SizedBox.shrink()
+                      : TournamentRoundsTabs(
+                          tabController: _tabController!,
+                          tabEntries: _tabEntries,
+                          matchesByPhase: _matchesByPhase,
+                          playersById: _playersById,
+                          spritesForName: _spritesForName,
+                          onMatchTap: _handleMatchTap,
+                        ),
+                ),
               ],
             ),
             if (_isActionRunning)
@@ -674,20 +533,4 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
       ),
     );
   }
-}
-/// Descriptor de una pestaña combinada (issue #85): representa o bien una
-/// ronda concreta de una fase con rondas (swiss/liga/grupos), o bien una
-/// fase de eliminatoria completa (Octavos, Cuartos...). Las de ronda
-/// muestran un listado simple; las de fase desplazan el arbol del bracket
-/// (ya montado de forma persistente) hasta esa columna.
-class _TabEntry {
-  final String label;
-  final bool isPhase;
-  final String phase;
-  final int? round;
-
-  _TabEntry.round({required this.label, required this.phase, required this.round}) : isPhase = false;
-  _TabEntry.phase({required this.label, required this.phase})
-      : isPhase = true,
-        round = null;
 }

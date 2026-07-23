@@ -64,6 +64,8 @@ class TournamentMatch {
 const kTournamentMatchPhaseLabels = {
   'group_stage': 'Fase de grupos',
   'swiss': 'Suiza',
+  'round_of_64': 'Fase de 64',
+  'round_of_32': 'Dieciseisavos',
   'round_of_16': 'Octavos',
   'quarterfinal': 'Cuartos',
   'semifinal': 'Semifinal',
@@ -72,4 +74,5 @@ const kTournamentMatchPhaseLabels = {
 };
 
 // Orden de fases de eliminatoria, de mayor a menor tamaño de bracket
-const kEliminationPhaseOrder = ['round_of_16', 'quarterfinal', 'semifinal', 'final'];
+// (ampliado hasta 64 jugadores, issue #92)
+const kEliminationPhaseOrder = ['round_of_64', 'round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'final'];

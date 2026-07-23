@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
 import '../../services/tournament_service.dart';
-import '../../widgets/tournament_bracket.dart';
+import '../../widgets/tournament_bracket/tournament_bracket.dart';
 
 /// Pantalla independiente del bracket (issue #84): navegable libremente
 /// con pan + zoom (InteractiveViewer), como un mapa.
@@ -104,13 +105,13 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Premios de ${player1?.name ?? 'jugador 1'}'),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spacingS),
               TextField(
                 controller: p2Controller,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Premios de ${player2?.name ?? 'jugador 2'}'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacingM),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Empate'),
@@ -180,12 +181,12 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
         appBar: AppBar(title: const Text('Bracket')),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSizes.spacingM),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text('Error: $_errorMessage', textAlign: TextAlign.center),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spacingM),
                 FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
               ],
             ),
