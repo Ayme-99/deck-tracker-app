@@ -3,11 +3,12 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../models/opponent_archetype.dart';
 import '../../models/tournament_player.dart';
+import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
-import '../../widgets/sprite_avatar_group.dart';
-import '../../widgets/submit_on_enter.dart';
+import 'tournament_players/player_form_dialog.dart';
+import 'tournament_players/player_list_tile.dart';
 import 'tournament_rounds_screen.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_export_screen.dart';
@@ -84,127 +85,31 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
   }
 
   Future<void> _showPlayerForm({TournamentPlayer? player}) async {
-    final nameController = TextEditingController(text: player?.name ?? '');
-    final archetypeController = TextEditingController(text: player?.deckArchetype ?? '');
-    bool isSelf = player?.isOrganizer ?? false;
-    String? selfDeckId = player?.deckId;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          void confirm() {
-            if (nameController.text.trim().isEmpty) return;
-            if (isSelf && selfDeckId == null) return; // no se puede confirmar sin mazo
-            Navigator.of(context).pop(true);
-          }
-
-          return SubmitOnEnter(
-            onSubmit: confirm,
-            child: AlertDialog(
-            title: Text(player == null ? 'Añadir jugador' : 'Editar jugador'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
-                  Autocomplete<String>(
-                    optionsBuilder: (value) {
-                      if (value.text.isEmpty) return _archetypeSuggestions;
-                      return _archetypeSuggestions
-                          .where((s) => s.toLowerCase().contains(value.text.toLowerCase()));
-                    },
-                    onSelected: (selection) => archetypeController.text = selection,
-                    fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                      controller.text = archetypeController.text;
-                      controller.addListener(() => archetypeController.text = controller.text);
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(labelText: 'Mazo / arquetipo (opcional)'),
-                      );
-                    },
-                  ),
-                  // Preview del icono ya guardado para ese nombre. Si el mazo
-                  // es nuevo (sin sprites guardados aun), no se muestra nada.
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: archetypeController,
-                    builder: (context, value, _) {
-                      final sprites = _spritesForName(value.text.trim());
-                      if (sprites.$1 == null && sprites.$2 == null) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSizes.spacingS),
-                        child: Row(
-                          children: [
-                            SpriteAvatarGroup(sprite1: sprites.$1, sprite2: sprites.$2, size: AppSizes.iconNormal),
-                            const SizedBox(width: AppSizes.spacingS),
-                            const Text(
-                              'Icono guardado para este mazo',
-                              style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Soy yo'),
-                    subtitle: const Text('Vincula esta inscripción a un mazo real tuyo'),
-                    value: isSelf,
-                    onChanged: (value) => setDialogState(() => isSelf = value),
-                  ),
-                  if (isSelf) ...[
-                    const SizedBox(height: AppSizes.spacingS),
-                    DropdownButtonFormField<String>(
-                      initialValue: _decks.any((d) => d.id == selfDeckId) ? selfDeckId : null,
-                      decoration: const InputDecoration(labelText: 'Tu mazo real'),
-                      items: _decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
-                      onChanged: (value) => setDialogState(() => selfDeckId = value),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: confirm,
-                child: const Text('Guardar'),
-              ),
-            ],
-            ),
-          );
-        },
-      ),
+    final result = await showPlayerFormDialog(
+      context,
+      player: player,
+      decks: _decks,
+      spriteLookup: _spriteLookup,
+      archetypeSuggestions: _archetypeSuggestions,
     );
 
-    if (result != true || !mounted) return;
+    if (result == null || !mounted) return;
 
     try {
       if (player == null) {
         await _tournamentService.createPlayer(
           widget.tournamentId,
-          name: nameController.text.trim(),
-          deckArchetype: archetypeController.text.trim().isEmpty ? null : archetypeController.text.trim(),
-          isOrganizer: isSelf,
-          deckId: isSelf ? selfDeckId : null,
+          name: result.name,
+          deckArchetype: result.deckArchetype,
+          isOrganizer: result.isOrganizer,
+          deckId: result.deckId,
         );
       } else {
         await _tournamentService.updatePlayer(widget.tournamentId, player.id, {
-          'name': nameController.text.trim(),
-          'deckArchetype': archetypeController.text.trim().isEmpty ? null : archetypeController.text.trim(),
-          'isOrganizer': isSelf,
-          if (isSelf) 'deckId': selfDeckId,
+          'name': result.name,
+          'deckArchetype': result.deckArchetype,
+          'isOrganizer': result.isOrganizer,
+          if (result.isOrganizer) 'deckId': result.deckId,
         });
       }
       _loadData();
@@ -293,24 +198,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     }
   }
 
-  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
-  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
-  (String?, String?) _spritesForName(String name) {
-    if (name.isEmpty) return (null, null);
-    for (final d in _decks) {
-      if (d.name == name) return (d.sprite1, d.sprite2);
-    }
-    for (final a in _archetypes) {
-      if (a.name == name) return (a.sprite1, a.sprite2);
-    }
-    return (null, null);
-  }
-
-  String? _spriteFor(TournamentPlayer player, {required bool first}) {
-    if (player.deckArchetype == null) return null;
-    final sprites = _spritesForName(player.deckArchetype!);
-    return first ? sprites.$1 : sprites.$2;
-  }
+  ArchetypeSpriteLookup get _spriteLookup => ArchetypeSpriteLookup(decks: _decks, archetypes: _archetypes);
 
   @override
   Widget build(BuildContext context) {
@@ -400,39 +288,10 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                           separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingS),
                           itemBuilder: (context, index) {
                             final player = _players[index];
-                            return Card(
-                              child: ListTile(
-                                onTap: () => _showPlayerOptions(player),
-                                leading: SpriteAvatarGroup(
-                                  sprite1: _spriteFor(player, first: true),
-                                  sprite2: _spriteFor(player, first: false),
-                                  size: AppSizes.iconNormal,
-                                ),
-                                title: Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        player.name,
-                                        style: TextStyle(
-                                          decoration: player.dropped ? TextDecoration.lineThrough : null,
-                                          color: player.dropped ? AppColors.muted : null,
-                                        ),
-                                      ),
-                                    ),
-                                    if (player.isOrganizer) ...[
-                                      const SizedBox(width: AppSizes.spacingXS),
-                                      const Icon(Icons.star, size: AppSizes.iconSmall, color: AppColors.primary),
-                                    ],
-                                  ],
-                                ),
-                                subtitle: Text(
-                                  [
-                                    if (player.deckArchetype != null) player.deckArchetype!,
-                                    '${player.wins}V-${player.losses}D-${player.draws}E · ${player.points} pts',
-                                    if (player.dropped) 'Baja',
-                                  ].join(' · '),
-                                ),
-                              ),
+                            return PlayerListTile(
+                              player: player,
+                              spriteLookup: _spriteLookup,
+                              onTap: () => _showPlayerOptions(player),
                             );
                           },
                         ),

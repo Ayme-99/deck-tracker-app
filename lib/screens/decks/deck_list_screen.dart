@@ -1,11 +1,11 @@
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
-import 'package:deck_tracker_app/widgets/sprite_avatar_group.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../services/deck_service.dart';
 import '../../services/stats_service.dart';
 import 'deck_detail_screen.dart';
+import 'deck_list_tile.dart';
 import '../../widgets/slow_loading_indicator.dart';
 
 class DeckListScreen extends StatefulWidget {
@@ -193,6 +193,94 @@ class _DeckListScreenState extends State<DeckListScreen> {
     }
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spacingM,
+        AppSizes.spacingM,
+        AppSizes.spacingM,
+        AppSizes.spacingS,
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar mazo por nombre',
+          prefixIcon: const Icon(Icons.search),
+          border: const OutlineInputBorder(),
+          isDense: true,
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => _searchController.clear(),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortMenu() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spacingM,
+        0,
+        AppSizes.spacingM,
+        AppSizes.spacingS,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          PopupMenuButton<String>(
+            initialValue: _sortBy,
+            onSelected: (value) => setState(() => _sortBy = value),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'activity', child: Text('Actividad reciente')),
+              PopupMenuItem(value: 'name', child: Text('Nombre')),
+              PopupMenuItem(value: 'wins', child: Text('Más victorias')),
+            ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
+                const SizedBox(width: AppSizes.spacingXS),
+                Text(
+                  'Ordenar: $_sortLabel',
+                  style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Estado vacio (sin mazos todavia), con boton directo a crear el primero.
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spacingL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.style_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
+            const SizedBox(height: AppSizes.spacingM),
+            const Text(
+              'Todavía no tienes mazos',
+              style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSizes.spacingS),
+            const Text(
+              'Crea tu primer mazo para empezar a registrar partidas',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -225,90 +313,15 @@ class _DeckListScreenState extends State<DeckListScreen> {
     }
 
     if (_decks.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.spacingL),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.style_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
-              const SizedBox(height: AppSizes.spacingM),
-              const Text(
-                'Todavía no tienes mazos',
-                style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              const Text(
-                'Crea tu primer mazo para empezar a registrar partidas',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.muted),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmptyState();
     }
 
     final filteredDecks = _filteredDecks;
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.spacingM,
-            AppSizes.spacingM,
-            AppSizes.spacingM,
-            AppSizes.spacingS,
-          ),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Buscar mazo por nombre',
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => _searchController.clear(),
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.spacingM,
-            0,
-            AppSizes.spacingM,
-            AppSizes.spacingS,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              PopupMenuButton<String>(
-                initialValue: _sortBy,
-                onSelected: (value) => setState(() => _sortBy = value),
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'activity', child: Text('Actividad reciente')),
-                  PopupMenuItem(value: 'name', child: Text('Nombre')),
-                  PopupMenuItem(value: 'wins', child: Text('Más victorias')),
-                ],
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
-                    const SizedBox(width: AppSizes.spacingXS),
-                    Text(
-                      'Ordenar: $_sortLabel',
-                      style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildSearchBar(),
+        _buildSortMenu(),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadDecks,
@@ -343,58 +356,19 @@ class _DeckListScreenState extends State<DeckListScreen> {
                     itemBuilder: (context, index) {
                       final deck = filteredDecks[index];
                       final overview = _overviews[deck.id];
-                      final wins = overview?['wins'] ?? 0;
-                      final losses = overview?['losses'] ?? 0;
-                      final ties = overview?['ties'] ?? 0;
 
-                      return Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
-                            );
-                            _loadDecks();
-                          },
-                          onLongPress: () => _showDeckOptions(deck),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSizes.spacingM),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                // El sprite escala segun el ancho real de la tarjeta, para que 2 sprites
-                                // quepan sin overflow sin importar cuantas columnas haya en el grid.
-                                final hasTwoSprites = deck.sprite2 != null;
-                                final divisor = hasTwoSprites ? 2.6 : 1.4;
-                                final spriteSize = (constraints.maxWidth / divisor).clamp(AppSizes.iconNormal, AppSizes.iconHuge);
-
-                                return Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SpriteAvatarGroup(
-                                      sprite1: deck.sprite1,
-                                      sprite2: deck.sprite2,
-                                      size: spriteSize,
-                                      centerAlign: true,
-                                    ),
-                                    const SizedBox(height: AppSizes.spacingS),
-                                    Text(
-                                      deck.name,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textS),
-                                    ),
-                                    const SizedBox(height: AppSizes.spacingXS),
-                                    Text(
-                                      '${wins}V-${losses}D-${ties}E',
-                                      style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ),
+                      return DeckListTile(
+                        deck: deck,
+                        wins: overview?['wins'] ?? 0,
+                        losses: overview?['losses'] ?? 0,
+                        ties: overview?['ties'] ?? 0,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
+                          );
+                          _loadDecks();
+                        },
+                        onLongPress: () => _showDeckOptions(deck),
                       );
                     },
                   ),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
-import '../../models/deck.dart';
-import '../../models/opponent_archetype.dart';
 import '../../models/tournament.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
+import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
@@ -42,8 +41,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   Tournament? _tournament;
   List<TournamentPlayer> _players = [];
   List<TournamentMatch> _matches = [];
-  List<Deck> _decks = [];
-  List<OpponentArchetype> _archetypes = [];
+  ArchetypeSpriteLookup _spriteLookup = const ArchetypeSpriteLookup(decks: [], archetypes: []);
   bool _isLoading = true;
   bool _isActionRunning = false;
   String? _errorMessage;
@@ -86,8 +84,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
         _tournament = tournamentResult['tournament'] as Tournament;
         _players = players;
         _matches = matches;
-        _decks = decks;
-        _archetypes = archetypes;
+        _spriteLookup = ArchetypeSpriteLookup(decks: decks, archetypes: archetypes);
         _isLoading = false;
       });
     } catch (e) {
@@ -100,19 +97,6 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   }
 
   Map<String, TournamentPlayer> get _playersById => {for (final p in _players) p.id: p};
-
-  /// Sprites guardados para un nombre de mazo/arquetipo (issue #51): primero
-  /// busca entre los mazos propios y, si no, entre los arquetipos rivales.
-  (String?, String?) _spritesForName(String? name) {
-    if (name == null || name.isEmpty) return (null, null);
-    for (final d in _decks) {
-      if (d.name == name) return (d.sprite1, d.sprite2);
-    }
-    for (final a in _archetypes) {
-      if (a.name == name) return (a.sprite1, a.sprite2);
-    }
-    return (null, null);
-  }
 
   Map<String, List<TournamentMatch>> get _matchesByPhase {
     final map = <String, List<TournamentMatch>>{};
@@ -253,8 +237,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
 
     final player1 = _playersById[match.player1Id];
     final player2 = _playersById[match.player2Id];
-    final player1Sprites = _spritesForName(player1?.deckArchetype);
-    final player2Sprites = _spritesForName(player2?.deckArchetype);
+    final player1Sprites = _spriteLookup.spritesForName(player1?.deckArchetype);
+    final player2Sprites = _spriteLookup.spritesForName(player2?.deckArchetype);
     final p1Controller = TextEditingController(text: match.player1Prizes?.toString() ?? '');
     final p2Controller = TextEditingController(text: match.player2Prizes?.toString() ?? '');
     bool isDraw = match.isDraw;
@@ -517,7 +501,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
                           tabEntries: _tabEntries,
                           matchesByPhase: _matchesByPhase,
                           playersById: _playersById,
-                          spritesForName: _spritesForName,
+                          spritesForName: _spriteLookup.spritesForName,
                           onMatchTap: _handleMatchTap,
                         ),
                 ),
