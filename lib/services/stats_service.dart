@@ -15,6 +15,12 @@ class StatsService {
     return await _api.get('/stats/deck/$deckId/streak');
   }
 
+  /// Evolución del win-rate partida a partida (issue #134): acumulado,
+  /// y medias móviles de las últimas 5 y 10 partidas.
+  Future<List<dynamic>> getDeckTimeline(String deckId) async {
+    return await _api.get('/stats/deck/$deckId/timeline');
+  }
+
   Future<Map<String, dynamic>> getGlobalOverview() async {
     return await _api.get('/stats/global/overview');
   }
