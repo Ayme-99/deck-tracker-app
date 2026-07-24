@@ -5,6 +5,7 @@ import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
 import '../tournaments/tournament_import_screen.dart';
+import '../search/global_search_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../auth/login_screen.dart';
@@ -82,6 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(titles[_currentIndex]),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Buscar',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
+            ),
+          ),
           if (_currentIndex == 2)
             IconButton(
               icon: const Icon(Icons.file_download_outlined),
