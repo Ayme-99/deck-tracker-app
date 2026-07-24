@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../services/deck_service.dart';
+import '../../services/pending_delete_controller.dart';
 import '../../services/stats_service.dart';
 import 'deck_detail_screen.dart';
 import 'deck_list_tile.dart';
@@ -28,6 +29,25 @@ class _DeckListScreenState extends State<DeckListScreen> {
   // 'activity' (por defecto, ultima actividad primero), 'name' (A-Z) o 'wins' (mas victorias primero)
   String _sortBy = 'activity';
 
+  late final _pendingDelete = PendingDeleteController<Deck>(
+    onDelete: (deck) async {
+      try {
+        await _deckService.deleteDeck(deck.id);
+      } catch (e) {
+        // Si el borrado real falla (ej. sin red), se repone el mazo en la
+        // lista -- el usuario ya dio por hecho que se habia ido.
+        if (!mounted) return;
+        setState(() => _decks = [..._decks, deck]);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar "${deck.name}": ${e.toString().replaceFirst('Exception: ', '')}')),
+        );
+      }
+    },
+    onRemoveLocally: (deck) => setState(() => _decks = _decks.where((d) => d.id != deck.id).toList()),
+    onRestoreLocally: (deck) => setState(() => _decks = [..._decks, deck]),
+    buildMessage: (deck) => 'Mazo "${deck.name}" eliminado',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +59,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
   @override
   void dispose() {
+    _pendingDelete.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -67,8 +88,13 @@ class _DeckListScreenState extends State<DeckListScreen> {
         overviewsMap[decks[i].id] = overviewsList[i];
       }
 
+      // Filtra cualquier mazo con un borrado pendiente (SnackBar de
+      // deshacer todavia abierto), para que un reload de fondo no lo haga
+      // "reaparecer" antes de que se resuelva.
+      final pendingIds = _pendingDelete.pendingItems.map((d) => d.id).toSet();
+
       setState(() {
-        _decks = decks;
+        _decks = decks.where((d) => !pendingIds.contains(d.id)).toList();
         _overviews = overviewsMap;
         _isLoading = false;
       });
@@ -163,8 +189,8 @@ class _DeckListScreenState extends State<DeckListScreen> {
           totalMatches > 0
               ? '¿Seguro que quieres eliminar "${deck.name}"? Se eliminarán también '
                   'sus $totalMatches partidas registradas y dejarán de contar en tus '
-                  'estadísticas. Esta acción no se puede deshacer.'
-              : '¿Seguro que quieres eliminar "${deck.name}"? Esta acción no se puede deshacer.',
+                  'estadísticas.'
+              : '¿Seguro que quieres eliminar "${deck.name}"?',
         ),
         actions: [
           TextButton(
@@ -179,18 +205,9 @@ class _DeckListScreenState extends State<DeckListScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    try {
-      await _deckService.deleteDeck(deck.id);
-      if (!mounted) return;
-      _loadDecks();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    _pendingDelete.requestDelete(context, deck);
   }
 
   Widget _buildSearchBar() {
@@ -363,10 +380,19 @@ class _DeckListScreenState extends State<DeckListScreen> {
                         losses: overview?['losses'] ?? 0,
                         ties: overview?['ties'] ?? 0,
                         onTap: () async {
-                          await Navigator.of(context).push(
+                          final result = await Navigator.of(context).push<Object?>(
                             MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
                           );
-                          _loadDecks();
+                          // 'deleted': el mazo se borro desde su propio detalle
+                          // (ver DeckDetailScreen._confirmDelete) -- se registra
+                          // aqui el borrado pendiente con deshacer, en vez de
+                          // recargar (que lo traeria de vuelta del servidor).
+                          if (!context.mounted) return;
+                          if (result == 'deleted') {
+                            _pendingDelete.requestDelete(context, deck);
+                          } else {
+                            _loadDecks();
+                          }
                         },
                         onLongPress: () => _showDeckOptions(deck),
                       );

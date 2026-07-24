@@ -1,5 +1,4 @@
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
-import 'package:deck_tracker_app/services/deck_service.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
@@ -8,6 +7,7 @@ import '../../models/opponent_archetype.dart';
 import '../../services/stats_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
+import '../../services/pending_delete_controller.dart';
 import 'deck_detail/deck_matchups_section.dart';
 import 'deck_detail/deck_overview_card.dart';
 import 'deck_detail/deck_recent_matches_section.dart';
@@ -26,7 +26,6 @@ class DeckDetailScreen extends StatefulWidget {
 class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _statsService = StatsService();
   final _matchService = MatchService();
-  final _deckService = DeckService();
   final _archetypeService = OpponentArchetypeService();
 
   Map<String, dynamic>? _overview;
@@ -36,10 +35,33 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  late final _pendingDeleteMatch = PendingDeleteController<Match>(
+    onDelete: (match) async {
+      try {
+        await _matchService.deleteMatch(match.id);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _recentMatches = [match, ..._recentMatches]);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar la partida: ${e.toString().replaceFirst('Exception: ', '')}')),
+        );
+      }
+    },
+    onRemoveLocally: (m) => setState(() => _recentMatches = _recentMatches.where((x) => x.id != m.id).toList()),
+    onRestoreLocally: (m) => setState(() => _recentMatches = [m, ..._recentMatches]),
+    buildMessage: (m) => 'Partida contra "${m.opponentDeck}" eliminada',
+  );
+
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _pendingDeleteMatch.dispose();
+    super.dispose();
   }
 
   Future<void> _showMatchOptions(Match match) async {
@@ -95,25 +117,23 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    try {
-      await _matchService.deleteMatch(match.id);
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    _pendingDeleteMatch.requestDelete(context, match);
   }
 
+  /// A diferencia del resto de borrados (que quitan el item de una lista
+  /// visible en la misma pantalla), borrar el mazo desde su propio detalle
+  /// hace que la pantalla se cierre. El SnackBar de deshacer no puede vivir
+  /// aqui -- se delega en deck_list_screen.dart devolviendo un resultado
+  /// especial ('deleted') al hacer pop, para que sea la lista quien registre
+  /// el borrado pendiente (ver _DeckListScreenState).
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar mazo'),
-        content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"? Esta acción no se puede deshacer.'),
+        content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -127,18 +147,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       ),
     );
 
-    if (confirmed != true) return;
-
-    try {
-      await _deckService.deleteDeck(widget.deck.id);
-      if (!mounted) return;
-      Navigator.of(context).pop(true); // vuelve al listado para que se refresque
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop('deleted');
   }
 
   Future<void> _loadData() async {
