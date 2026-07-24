@@ -71,4 +71,21 @@ class Deck {
       sprite2: json['sprite2'],
     );
   }
+
+  /// Mismo formato que espera Deck.fromJson (issue #133: cache local),
+  /// para poder guardar/recuperar un mazo sin depender de la API.
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'format': format,
+      'cards': cards.map((c) => c.toJson()).toList(),
+      'wins': wins,
+      'losses': losses,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'sprite1': sprite1,
+      'sprite2': sprite2,
+    };
+  }
 }
