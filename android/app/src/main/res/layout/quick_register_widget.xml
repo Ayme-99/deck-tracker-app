@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout del widget de acceso rapido (issue #10). Solo RemoteViews validas
-     (nada de widgets Flutter aqui): icono en una insignia circular + texto
-     en 2 lineas, dentro de una tarjeta clicable con degradado y elevacion,
-     que abre la app directamente en "elegir mazo para registrar partida",
-     sin pasar por Mazos > detalle > Registrar partida. -->
+<!-- Layout del widget de acceso rapido (issue #10, ampliado en #132). Solo
+     RemoteViews validas (nada de widgets Flutter aqui). Historial de esta
+     pasada de estetica, tras feedback en dispositivo real:
+     - v1: icono grande centrado + "Registrar partida" en 2 lineas, sin
+       datos reales.
+     - v2 (#132 inicial): se añadio una linea de estado (mazo + racha), pero
+       en una sola linea se cortaba con nombres largos.
+     - v3: layout horizontal (icono a la izquierda, texto a la derecha) con
+       insignia "+", etiqueta de marca y racha coloreada.
+     - v4 (esta version): de vuelta a vertical, el widget por defecto es
+       2x2 (mas alto que ancho), asi que un layout horizontal desperdiciaba
+       el espacio vertical disponible y quedaba muy apretado en ancho. Se
+       mantiene la insignia "+", la etiqueta de marca y el color de racha de
+       la v3, pero centrados verticalmente uno debajo de otro. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -14,30 +23,89 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <ImageView
-        android:id="@+id/widget_icon"
+    <FrameLayout
         android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@drawable/quick_register_widget_icon_badge"
-        android:contentDescription="@null"
-        android:padding="8dp"
-        android:src="@mipmap/ic_launcher" />
+        android:layout_height="48dp">
+
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/quick_register_widget_icon_badge"
+            android:contentDescription="@null"
+            android:padding="9dp"
+            android:src="@mipmap/ic_launcher" />
+
+        <!-- Insignia "+": pista visual de "toca para registrar partida",
+             ahora que no hay sitio para el texto explicito. -->
+        <TextView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/quick_register_widget_add_badge"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="+"
+            android:textColor="#FFFFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+    </FrameLayout>
 
     <TextView
-        android:id="@+id/widget_label_line1"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="Registrar"
-        android:textColor="#FFFFFFFF"
-        android:textSize="13sp"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="DECK TRACKER"
+        android:textAllCaps="true"
+        android:textColor="#991E88E5"
+        android:textSize="9sp"
         android:textStyle="bold" />
 
+    <!-- Nivel 2 (issue #132): mazo mas jugado + su racha actual. Vacias/GONE
+         si aun no hay datos sincronizados. maxLines=2 en vez de 1: si el
+         nombre del mazo no cabe, se prefiere que salte de linea a que se
+         corte a la mitad ("Mega-Lucario ex..."). -->
     <TextView
-        android:id="@+id/widget_label_line2"
-        android:layout_width="wrap_content"
+        android:id="@+id/widget_deck_name_line"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="partida"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:textColor="#FFFFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/widget_streak_line"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:textColor="#CCFFFFFF"
+        android:textSize="11sp"
+        android:visibility="gone" />
+
+    <!-- Texto de respaldo cuando aun no hay datos sincronizados (ej.
+         widget recien anadido): mantiene la pista de "toca para registrar"
+         que antes daba el texto fijo. -->
+    <TextView
+        android:id="@+id/widget_placeholder_line"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="Registrar partida"
         android:textColor="#FFFFFFFF"
         android:textSize="13sp"
         android:textStyle="bold" />

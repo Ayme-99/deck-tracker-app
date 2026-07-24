@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../services/auth_service.dart';
+import '../../services/quick_widget_sync_service.dart';
 import '../matches/quick_register_deck_picker_screen.dart';
 import 'login_screen.dart';
 import '../home/home_screen.dart';
@@ -40,7 +42,13 @@ class _SplashScreenState extends State<SplashScreen> {
     // HomeWidget.widgetClicked, que solo dispara mientras el engine ya esta
     // vivo. Si no hay sesion, se ignora: el usuario tiene que iniciar
     // sesion primero, y no hay mazos que elegir todavia.
-    if (isLoggedIn) await _openQuickRegisterIfLaunchedFromWidget();
+    if (isLoggedIn) {
+      await _openQuickRegisterIfLaunchedFromWidget();
+      // Sincroniza el widget de acceso rapido con datos reales (issue #132)
+      // en cada arranque con sesion iniciada. No se espera su resultado:
+      // es un extra decorativo, no debe retrasar la navegacion.
+      unawaited(QuickWidgetSyncService().sync());
+    }
   }
 
   /// Ver comentario de _checkSession: navega al selector de mazo del
