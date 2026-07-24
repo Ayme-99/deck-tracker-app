@@ -53,6 +53,9 @@ dependencies:
   # Compartir texto via el share sheet nativo (issue #130)
   share_plus: ^10.1.4
 
+  # Caché local de mazos/stats para modo offline básico (issue #133)
+  shared_preferences: ^2.3.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
+import '../../services/deck_cache_service.dart';
 import '../../services/deck_service.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/stats_service.dart';
@@ -19,12 +21,18 @@ class DeckListScreen extends StatefulWidget {
 class _DeckListScreenState extends State<DeckListScreen> {
   final _deckService = DeckService();
   final _statsService = StatsService();
+  final _cacheService = DeckCacheService();
   final _searchController = TextEditingController();
 
   List<Deck> _decks = [];
   Map<String, Map<String, dynamic>> _overviews = {};
   bool _isLoading = true;
   String? _errorMessage;
+  // Issue #133: true si lo que se ve en pantalla viene del cache local
+  // (carga inicial antes de que responda la red, o la red fallo tras haber
+  // podido mostrar algo). Nunca se activa si la ultima carga de red tuvo
+  // exito.
+  bool _isShowingCachedData = false;
   String _searchQuery = '';
   // 'activity' (por defecto, ultima actividad primero), 'name' (A-Z) o 'wins' (mas victorias primero)
   String _sortBy = 'activity';
@@ -65,10 +73,26 @@ class _DeckListScreenState extends State<DeckListScreen> {
   }
 
   Future<void> _loadDecks() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    // Issue #133: si es la primera carga (aun no hay nada en pantalla),
+    // intenta mostrar el cache local al instante mientras la red responde,
+    // en vez de dejar solo el spinner. Si ya habia datos (ej. pull-to-refresh),
+    // se dejan como estan hasta que la red responda.
+    if (_decks.isEmpty) {
+      final cached = await _cacheService.load();
+      if (cached != null && mounted) {
+        setState(() {
+          _decks = cached.decks;
+          _overviews = cached.overviews;
+          _isLoading = false;
+          _isShowingCachedData = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+        });
+      }
+    }
 
     try {
       final decks = await _deckService.getDecks();
@@ -92,18 +116,34 @@ class _DeckListScreenState extends State<DeckListScreen> {
       // deshacer todavia abierto), para que un reload de fondo no lo haga
       // "reaparecer" antes de que se resuelva.
       final pendingIds = _pendingDelete.pendingItems.map((d) => d.id).toSet();
+      final finalDecks = decks.where((d) => !pendingIds.contains(d.id)).toList();
 
       setState(() {
-        _decks = decks.where((d) => !pendingIds.contains(d.id)).toList();
+        _decks = finalDecks;
         _overviews = overviewsMap;
         _isLoading = false;
+        _isShowingCachedData = false;
+        _errorMessage = null;
       });
+
+      unawaited(_cacheService.save(finalDecks, overviewsMap));
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
+
+      // Si ya hay algo en pantalla (cache local o una carga anterior), no lo
+      // tapamos con la pantalla de error: se deja visible con el aviso de
+      // "sin conexion" (issue #133).
+      if (_decks.isNotEmpty) {
+        setState(() {
+          _isLoading = false;
+          _isShowingCachedData = true;
+        });
+      } else {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -272,6 +312,32 @@ class _DeckListScreenState extends State<DeckListScreen> {
     );
   }
 
+  /// Aviso de que lo que se ve viene del cache local (issue #133): carga
+  /// inicial antes de que responda la red, o red caida tras haber podido
+  /// mostrar algo previamente.
+  Widget _buildOfflineBanner() {
+    return Container(
+      width: double.infinity,
+      color: AppColors.muted.withValues(alpha: 0.15),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacingM,
+        vertical: AppSizes.spacingS,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined, size: AppSizes.iconSmall, color: AppColors.muted),
+          const SizedBox(width: AppSizes.spacingXS),
+          const Expanded(
+            child: Text(
+              'Sin conexión · mostrando datos guardados',
+              style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Estado vacio (sin mazos todavia), con boton directo a crear el primero.
   Widget _buildEmptyState() {
     return Center(
@@ -337,6 +403,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
     return Column(
       children: [
+        if (_isShowingCachedData) _buildOfflineBanner(),
         _buildSearchBar(),
         _buildSortMenu(),
         Expanded(
