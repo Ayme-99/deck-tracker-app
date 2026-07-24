@@ -6,9 +6,15 @@ import 'package:home_widget/home_widget.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/matches/quick_register_deck_picker_screen.dart';
 import 'config/navigation_service.dart';
+import 'services/theme_preference_service.dart';
 import 'package:deck_tracker_app/styles/theme.dart';
 
-void main() {
+Future<void> main() async {
+  // Necesario para poder leer flutter_secure_storage antes de runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+  // Carga la preferencia de tema guardada (issue #129) antes de arrancar,
+  // para no mostrar un flash del tema por defecto (sistema).
+  await ThemePreferenceService.load();
   runApp(const DeckTrackerApp());
 }
 
@@ -53,14 +59,19 @@ class _DeckTrackerAppState extends State<DeckTrackerApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: NavigationService.navigatorKey,
-      title: 'Deck Tracker',
-      theme: buildAppTheme(Brightness.light),
-      darkTheme: buildAppTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemePreferenceService.themeMode,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          navigatorKey: NavigationService.navigatorKey,
+          title: 'Deck Tracker',
+          theme: buildAppTheme(Brightness.light),
+          darkTheme: buildAppTheme(Brightness.dark),
+          themeMode: mode,
+          debugShowCheckedModeBanner: false,
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
