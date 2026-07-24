@@ -13,7 +13,7 @@ import '../../services/share_text_formatter.dart';
 import 'deck_detail/deck_matchups_section.dart';
 import 'deck_detail/deck_overview_card.dart';
 import 'deck_detail/deck_recent_matches_section.dart';
-import 'deck_detail/deck_winrate_chart.dart';
+import '../../widgets/winrate_chart.dart';
 import '../matches/register_match_screen.dart';
 import '../matches/edit_match_screen.dart';
 
@@ -264,7 +264,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                         streakCount: _streakCount,
                       ),
                       const SizedBox(height: AppSizes.spacingL),
-                      DeckWinrateChart(timeline: _timeline),
+                      WinrateChart(timeline: _timeline),
                       if (_timeline.length >= 2) const SizedBox(height: AppSizes.spacingL),
                       DeckRecentMatchesSection(
                         matches: _recentMatches,
