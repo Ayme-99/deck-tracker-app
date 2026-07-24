@@ -6,6 +6,7 @@ import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../../services/auth_service.dart';
+import '../../services/theme_preference_service.dart';
 import '../auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -87,6 +88,26 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: 'Importar torneo',
               onPressed: _handleImportTournament,
             ),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemePreferenceService.themeMode,
+            builder: (context, mode, _) {
+              return PopupMenuButton<ThemeMode>(
+                icon: Icon(switch (mode) {
+                  ThemeMode.light => Icons.light_mode_outlined,
+                  ThemeMode.dark => Icons.dark_mode_outlined,
+                  ThemeMode.system => Icons.brightness_auto_outlined,
+                }),
+                tooltip: 'Tema',
+                initialValue: mode,
+                onSelected: ThemePreferenceService.setThemeMode,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: ThemeMode.system, child: Text('Automático (sistema)')),
+                  PopupMenuItem(value: ThemeMode.light, child: Text('Claro')),
+                  PopupMenuItem(value: ThemeMode.dark, child: Text('Oscuro')),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _handleLogout,
