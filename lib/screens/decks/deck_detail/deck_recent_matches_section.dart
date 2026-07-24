@@ -7,7 +7,11 @@ import '../../../widgets/sprite_avatar_group.dart';
 /// Ultimas partidas registradas con este mazo (issue #118: promocionada
 /// desde _buildRecentMatchesSection de deck_detail_screen.dart a un widget
 /// de verdad).
-class DeckRecentMatchesSection extends StatelessWidget {
+///
+/// Issue #144: en vez de mostrar siempre toda la lista recibida, empieza
+/// enseñando solo 5 y permite ampliar de 5 en 5 con "Mostrar más"; una vez
+/// ampliada aparece "Ocultar" para volver a colapsarla a 5.
+class DeckRecentMatchesSection extends StatefulWidget {
   final List<Match> matches;
   final Map<String, OpponentArchetype> archetypesByName;
   final void Function(Match match) onMatchTap;
@@ -18,6 +22,15 @@ class DeckRecentMatchesSection extends StatelessWidget {
     required this.archetypesByName,
     required this.onMatchTap,
   });
+
+  @override
+  State<DeckRecentMatchesSection> createState() => _DeckRecentMatchesSectionState();
+}
+
+class _DeckRecentMatchesSectionState extends State<DeckRecentMatchesSection> {
+  static const _pageSize = 5;
+
+  int _visibleCount = _pageSize;
 
   Color _resultColor(String result) {
     switch (result) {
@@ -43,6 +56,11 @@ class DeckRecentMatchesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final matches = widget.matches;
+    final visibleMatches = matches.take(_visibleCount).toList();
+    final hasMore = _visibleCount < matches.length;
+    final isExpanded = _visibleCount > _pageSize;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -50,13 +68,13 @@ class DeckRecentMatchesSection extends StatelessWidget {
         const SizedBox(height: AppSizes.spacingSM),
         if (matches.isEmpty)
           const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
-        else
-          ...matches.map((match) {
-            final archetype = archetypesByName[match.opponentDeck];
+        else ...[
+          ...visibleMatches.map((match) {
+            final archetype = widget.archetypesByName[match.opponentDeck];
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                onTap: () => onMatchTap(match),
+                onTap: () => widget.onMatchTap(match),
                 minLeadingWidth: 0,
                 horizontalTitleGap: AppSizes.spacingS,
                 leading: archetype?.sprite1 != null
@@ -87,6 +105,22 @@ class DeckRecentMatchesSection extends StatelessWidget {
               ),
             );
           }),
+          if (hasMore || isExpanded)
+            Row(
+              children: [
+                if (hasMore)
+                  TextButton(
+                    onPressed: () => setState(() => _visibleCount += _pageSize),
+                    child: const Text('Mostrar más'),
+                  ),
+                if (isExpanded)
+                  TextButton(
+                    onPressed: () => setState(() => _visibleCount = _pageSize),
+                    child: const Text('Ocultar'),
+                  ),
+              ],
+            ),
+        ],
       ],
     );
   }
