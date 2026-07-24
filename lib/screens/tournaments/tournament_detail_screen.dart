@@ -7,6 +7,7 @@ import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
+import '../../services/pending_delete_controller.dart';
 import '../../services/tournament_service.dart';
 import '../matches/edit_match_screen.dart';
 import '../matches/register_match_screen.dart';
@@ -39,10 +40,48 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  late final _pendingDeleteMatch = PendingDeleteController<Match>(
+    onDelete: (match) async {
+      try {
+        await _matchService.deleteMatch(match.id);
+
+        // Si la partida borrada tenia ronda, compactamos: todas las partidas
+        // de la misma fase con ronda mayor bajan un puesto, para que no
+        // queden huecos (ronda 1,3,4 -> 1,2,3) y el conteo automatico de
+        // "siguiente ronda" siga siendo valido.
+        if (match.phase != null && match.round != null) {
+          final toRenumber = _matches
+              .where((m) => m.id != match.id && m.phase == match.phase && (m.round ?? 0) > match.round!)
+              .toList();
+          for (final m in toRenumber) {
+            await _matchService.updateMatch(m.id, {'round': m.round! - 1});
+          }
+        }
+
+        if (mounted) _loadData();
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _matches = [match, ..._matches]);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar la partida: ${e.toString().replaceFirst('Exception: ', '')}')),
+        );
+      }
+    },
+    onRemoveLocally: (m) => setState(() => _matches = _matches.where((x) => x.id != m.id).toList()),
+    onRestoreLocally: (m) => setState(() => _matches = [m, ..._matches]),
+    buildMessage: (m) => 'Partida contra "${m.opponentDeck}" eliminada',
+  );
+
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _pendingDeleteMatch.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -69,10 +108,15 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       final deck = deckFuture != null ? await deckFuture : null;
 
       if (!mounted) return;
+
+      // Filtra partidas con un borrado pendiente (SnackBar de deshacer
+      // todavia abierto), para que este reload no las haga reaparecer.
+      final pendingIds = _pendingDeleteMatch.pendingItems.map((m) => m.id).toSet();
+
       setState(() {
         _tournament = tournament;
         _deck = deck;
-        _matches = matches;
+        _matches = matches.where((m) => !pendingIds.contains(m.id)).toList();
         _archetypesByName = {for (final a in archetypes) a.name: a};
         _summary = summary;
         _isLoading = false;
@@ -209,31 +253,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    try {
-      await _matchService.deleteMatch(match.id);
-
-      // Si la partida borrada tenia ronda, compactamos: todas las partidas
-      // de la misma fase con ronda mayor bajan un puesto, para que no
-      // queden huecos (ronda 1,3,4 -> 1,2,3) y el conteo automatico de
-      // "siguiente ronda" siga siendo valido.
-      if (match.phase != null && match.round != null) {
-        final toRenumber = _matches
-            .where((m) => m.id != match.id && m.phase == match.phase && (m.round ?? 0) > match.round!)
-            .toList();
-        for (final m in toRenumber) {
-          await _matchService.updateMatch(m.id, {'round': m.round! - 1});
-        }
-      }
-
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    _pendingDeleteMatch.requestDelete(context, match);
   }
 
   Future<void> _handleEditTournament() async {
@@ -360,18 +382,13 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    try {
-      await _tournamentService.deleteTournament(_tournament!.id);
-      if (!mounted) return;
-      Navigator.of(context).pop(true); // vuelve al listado para que se refresque
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    // Igual que en deck_detail_screen.dart: borrar el torneo desde su
+    // propio detalle cierra la pantalla, asi que el SnackBar de deshacer
+    // no puede vivir aqui. Se delega en tournaments_screen.dart via un
+    // resultado especial ('deleted') al hacer pop.
+    Navigator.of(context).pop('deleted');
   }
 
   /// Calcula la siguiente ronda disponible en una fase como el maximo

@@ -4,6 +4,7 @@ import '../../models/tournament.dart';
 import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
+import '../../services/pending_delete_controller.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_detail_screen.dart';
 import 'tournament_list_tile.dart';
@@ -27,10 +28,33 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   // 'date' (por defecto), 'position' (1º primero) o 'percentage' (mejor % de ranking primero)
   String _sortBy = 'date';
 
+  late final _pendingDelete = PendingDeleteController<Tournament>(
+    onDelete: (tournament) async {
+      try {
+        await _tournamentService.deleteTournament(tournament.id);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _tournaments = [..._tournaments, tournament]);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar "${tournament.name}": ${e.toString().replaceFirst('Exception: ', '')}')),
+        );
+      }
+    },
+    onRemoveLocally: (t) => setState(() => _tournaments = _tournaments.where((x) => x.id != t.id).toList()),
+    onRestoreLocally: (t) => setState(() => _tournaments = [..._tournaments, t]),
+    buildMessage: (t) => 'Torneo "${t.name}" eliminado',
+  );
+
   @override
   void initState() {
     super.initState();
     _loadTournaments();
+  }
+
+  @override
+  void dispose() {
+    _pendingDelete.dispose();
+    super.dispose();
   }
 
   Future<void> _showTournamentOptions(Tournament tournament) async {
@@ -101,17 +125,9 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    try {
-      await _tournamentService.deleteTournament(tournament.id);
-      _loadTournaments();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
+    _pendingDelete.requestDelete(context, tournament);
   }
 
   Future<void> _loadTournaments() async {
@@ -134,8 +150,13 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       final tournaments = results[0] as List<Tournament>;
       final decks = results[1] as List<Deck>;
 
+      // Filtra torneos con un borrado pendiente (ver deck_list_screen.dart
+      // para el mismo criterio), para que un reload de fondo no los haga
+      // reaparecer antes de que se resuelva el SnackBar de deshacer.
+      final pendingIds = _pendingDelete.pendingItems.map((t) => t.id).toSet();
+
       setState(() {
-        _tournaments = tournaments;
+        _tournaments = tournaments.where((t) => !pendingIds.contains(t.id)).toList();
         _decksById = {for (final d in decks) d.id: d};
         _isLoading = false;
       });
@@ -335,14 +356,23 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                     // Los torneos hosted aun no tienen su propia pantalla
                     // de detalle completa (llegara con #46/#47); por ahora
                     // se entra directamente a gestion de jugadores.
-                    await Navigator.of(context).push(
+                    final result = await Navigator.of(context).push<Object?>(
                       MaterialPageRoute(
                         builder: (_) => tournament.mode == 'hosted'
                             ? TournamentPlayersScreen(tournamentId: tournament.id)
                             : TournamentDetailScreen(tournamentId: tournament.id),
                       ),
                     );
-                    _loadTournaments(); // recarga por si cambio el estado o se elimino
+                    // 'deleted': el torneo se borro desde su propio detalle
+                    // (ver TournamentDetailScreen._confirmDeleteTournament) --
+                    // se registra aqui el borrado pendiente con deshacer, en
+                    // vez de recargar (que lo traeria de vuelta del servidor).
+                    if (!context.mounted) return;
+                    if (result == 'deleted') {
+                      _pendingDelete.requestDelete(context, tournament);
+                    } else {
+                      _loadTournaments(); // recarga por si cambio el estado
+                    }
                   },
                   onLongPress: () => _showTournamentOptions(tournament),
                 );
