@@ -13,6 +13,7 @@ import '../../services/share_text_formatter.dart';
 import 'deck_detail/deck_matchups_section.dart';
 import 'deck_detail/deck_overview_card.dart';
 import 'deck_detail/deck_recent_matches_section.dart';
+import 'deck_detail/deck_winrate_chart.dart';
 import '../matches/register_match_screen.dart';
 import '../matches/edit_match_screen.dart';
 
@@ -33,6 +34,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
+  List<dynamic> _timeline = [];
   List<Match> _recentMatches = [];
   Map<String, OpponentArchetype> _archetypesByName = {};
   String? _streakType;
@@ -176,6 +178,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         _matchService.getMatches(deckId: widget.deck.id, limit: 5),
         _archetypeService.getAll(),
         _statsService.getDeckStreak(widget.deck.id),
+        _statsService.getDeckTimeline(widget.deck.id),
       ]);
 
       final archetypes = results[3] as List<OpponentArchetype>;
@@ -188,6 +191,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         _archetypesByName = {for (final a in archetypes) a.name: a};
         _streakType = streak['streakType'] as String?;
         _streakCount = streak['streakCount'] as int? ?? 0;
+        _timeline = results[5] as List<dynamic>;
         _isLoading = false;
       });
     } catch (e) {
@@ -257,6 +261,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                         streakCount: _streakCount,
                       ),
                       const SizedBox(height: AppSizes.spacingL),
+                      DeckWinrateChart(timeline: _timeline),
+                      if (_timeline.length >= 2) const SizedBox(height: AppSizes.spacingL),
                       DeckMatchupsSection(matchups: _matchups, archetypesByName: _archetypesByName),
                       const SizedBox(height: AppSizes.spacingL),
                       DeckRecentMatchesSection(
