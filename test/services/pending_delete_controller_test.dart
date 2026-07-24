@@ -47,6 +47,9 @@ void main() {
     await tester.pumpWidget(_Harness(controller: controller));
     await tester.tap(find.text('Borrar'));
     await tester.pump();
+    // Deja completar la animacion de entrada del SnackBar antes de
+    // intentar tocar su accion.
+    await tester.pump(const Duration(milliseconds: 750));
 
     expect(removedLocally, isTrue);
     expect(find.text('Elemento "item-1" eliminado'), findsOneWidget);
