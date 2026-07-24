@@ -8,6 +8,8 @@ import '../../services/stats_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/pending_delete_controller.dart';
+import '../../services/share_service.dart';
+import '../../services/share_text_formatter.dart';
 import 'deck_detail/deck_matchups_section.dart';
 import 'deck_detail/deck_overview_card.dart';
 import 'deck_detail/deck_recent_matches_section.dart';
@@ -27,6 +29,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _statsService = StatsService();
   final _matchService = MatchService();
   final _archetypeService = OpponentArchetypeService();
+  final _shareService = ShareService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
@@ -79,6 +82,11 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Compartir partida'),
+              onTap: () => Navigator.of(context).pop('share'),
+            ),
+            ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
               title: const Text('Eliminar partida'),
               onTap: () => Navigator.of(context).pop('delete'),
@@ -95,6 +103,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         MaterialPageRoute(builder: (_) => EditMatchScreen(match: match)),
       );
       if (updated == true) _loadData();
+    } else if (action == 'share') {
+      _shareService.shareText(ShareTextFormatter.formatMatch(match, deckName: widget.deck.name));
     } else if (action == 'delete') {
       _confirmDeleteMatch(match);
     }

@@ -8,6 +8,8 @@ import '../../services/deck_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/pending_delete_controller.dart';
+import '../../services/share_service.dart';
+import '../../services/share_text_formatter.dart';
 import '../../services/tournament_service.dart';
 import '../matches/edit_match_screen.dart';
 import '../matches/register_match_screen.dart';
@@ -31,6 +33,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   final _deckService = DeckService();
   final _archetypeService = OpponentArchetypeService();
   final _matchService = MatchService();
+  final _shareService = ShareService();
 
   Tournament? _tournament;
   Deck? _deck;
@@ -210,6 +213,11 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Compartir partida'),
+              onTap: () => Navigator.of(context).pop('share'),
+            ),
+            ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
               title: const Text('Eliminar partida'),
               onTap: () => Navigator.of(context).pop('delete'),
@@ -229,6 +237,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         MaterialPageRoute(builder: (_) => EditMatchScreen(match: match)),
       );
       if (updated == true) _loadData();
+    } else if (action == 'share') {
+      _shareService.shareText(ShareTextFormatter.formatMatch(match, deckName: _deck?.name));
     } else if (action == 'delete') {
       _confirmDeleteMatch(match);
     }
@@ -555,6 +565,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 _handleEditTournament();
               } else if (value == 'toggle_status') {
                 _toggleStatus();
+              } else if (value == 'share') {
+                _shareService.shareText(ShareTextFormatter.formatTournamentSummary(tournament, _summary!));
               } else if (value == 'delete') {
                 _confirmDeleteTournament();
               }
@@ -565,6 +577,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 value: 'toggle_status',
                 child: Text(isFinished ? 'Marcar como en curso' : 'Marcar como finalizado'),
               ),
+              if (_summary != null)
+                const PopupMenuItem(value: 'share', child: Text('Compartir resumen')),
               const PopupMenuItem(value: 'delete', child: Text('Eliminar torneo')),
             ],
           ),
