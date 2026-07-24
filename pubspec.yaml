@@ -50,6 +50,9 @@ dependencies:
   # Widget de acceso rápido en la pantalla de inicio del móvil (issue #10)
   home_widget: ^0.9.3
 
+  # Compartir texto via el share sheet nativo (issue #130)
+  share_plus: ^10.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
