@@ -25,6 +25,12 @@ class StatsService {
     return await _api.get('/stats/global/overview');
   }
 
+  /// Evolución del win-rate global partida a partida (issue #88/#145),
+  /// cruzando todos los mazos del usuario. Mismo shape que getDeckTimeline.
+  Future<List<dynamic>> getGlobalTimeline() async {
+    return await _api.get('/stats/global/timeline');
+  }
+
   Future<List<dynamic>> getDeckRanking({int minMatches = 3, String sortBy = 'winRate'}) async {
     return await _api.get('/stats/global/ranking?minMatches=$minMatches&sortBy=$sortBy');
   }

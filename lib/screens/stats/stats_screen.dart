@@ -5,6 +5,7 @@ import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/sprite_picker.dart';
+import '../../widgets/winrate_chart.dart';
 import '../decks/deck_detail_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 
@@ -24,6 +25,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   Map<String, dynamic>? _overview;
   List<dynamic> _ranking = [];
   List<dynamic> _opponentMatchups = [];
+  List<dynamic> _timeline = [];
   bool _isLoading = true;
   bool _isLoadingRanking = false;
   String? _errorMessage;
@@ -62,6 +64,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
         _statsService.getGlobalOverview(),
         _statsService.getDeckRanking(minMatches: _minMatches, sortBy: _sortBy),
         _statsService.getOpponentMatchups(),
+        _statsService.getGlobalTimeline(),
       ]);
 
       // Si el widget ya no existe (p. ej. logout durante la carga), descartar el resultado
@@ -71,6 +74,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
         _overview = results[0] as Map<String, dynamic>;
         _ranking = results[1] as List<dynamic>;
         _opponentMatchups = results[2] as List<dynamic>;
+        _timeline = results[3] as List<dynamic>;
         _isLoading = false;
       });
     } catch (e) {
@@ -450,6 +454,8 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       child: ListView(
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
+          WinrateChart(timeline: _timeline, title: 'Evolución del win-rate general'),
+          if (_timeline.length >= 2) const SizedBox(height: AppSizes.spacingL),
           _buildRankingControls(),
           const SizedBox(height: AppSizes.spacingM),
           if (_isLoadingRanking)
