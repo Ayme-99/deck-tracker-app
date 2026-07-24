@@ -32,6 +32,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   List<dynamic> _matchups = [];
   List<Match> _recentMatches = [];
   Map<String, OpponentArchetype> _archetypesByName = {};
+  String? _streakType;
+  int _streakCount = 0;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -163,15 +165,19 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         _statsService.getDeckMatchups(widget.deck.id),
         _matchService.getMatches(deckId: widget.deck.id, limit: 5),
         _archetypeService.getAll(),
+        _statsService.getDeckStreak(widget.deck.id),
       ]);
 
       final archetypes = results[3] as List<OpponentArchetype>;
+      final streak = results[4] as Map<String, dynamic>;
 
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
         _matchups = results[1] as List<dynamic>;
         _recentMatches = results[2] as List<Match>;
         _archetypesByName = {for (final a in archetypes) a.name: a};
+        _streakType = streak['streakType'] as String?;
+        _streakCount = streak['streakCount'] as int? ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -234,7 +240,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                       AppSizes.fabBottomPadding,
                     ),
                     children: [
-                      DeckOverviewCard(overview: _overview!, deckFormat: widget.deck.format),
+                      DeckOverviewCard(
+                        overview: _overview!,
+                        deckFormat: widget.deck.format,
+                        streakType: _streakType,
+                        streakCount: _streakCount,
+                      ),
                       const SizedBox(height: AppSizes.spacingL),
                       DeckMatchupsSection(matchups: _matchups, archetypesByName: _archetypesByName),
                       const SizedBox(height: AppSizes.spacingL),
