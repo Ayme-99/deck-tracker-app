@@ -175,7 +175,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       final results = await Future.wait([
         _statsService.getDeckOverview(widget.deck.id),
         _statsService.getDeckMatchups(widget.deck.id),
-        _matchService.getMatches(deckId: widget.deck.id, limit: 5),
+        // issue #144: se traen de golpe hasta 500 partidas y se paginan de
+        // 5 en 5 en el propio DeckRecentMatchesSection (Mostrar más/Ocultar),
+        // en vez de repetir llamadas de red por cada ampliación.
+        _matchService.getMatches(deckId: widget.deck.id, limit: 500),
         _archetypeService.getAll(),
         _statsService.getDeckStreak(widget.deck.id),
         _statsService.getDeckTimeline(widget.deck.id),
