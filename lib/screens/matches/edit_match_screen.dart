@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/match.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
+import '../../services/quick_widget_sync_service.dart';
 import '../../widgets/sprite_picker.dart';
 
 class EditMatchScreen extends StatefulWidget {
@@ -92,6 +94,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
       if (_sprite1 != null) {
         await _archetypeService.upsert(opponentName, sprite1: _sprite1, sprite2: _sprite2);
       }
+
+      // Resincroniza el widget de acceso rapido (issue #132): esta edicion
+      // puede haber cambiado la racha del mazo mas jugado.
+      unawaited(QuickWidgetSyncService().sync());
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
