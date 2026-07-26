@@ -4,6 +4,11 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ve
 
 **Demo web:** https://deck-tracker-web.onrender.com
 
+## Descargas
+
+- 📱 [Descargar APK (Android)](https://github.com/Ayme-99/deck-tracker-app/releases/download/v1.2.0%2B1/DeckTrackerApp-1.2.0+1.apk)
+- 💻 [Descargar instalador (Windows)](https://github.com/Ayme-99/deck-tracker-app/releases/download/v1.2.0%2B1/DeckTrackerSetup-1.2.0+1.exe)
+
 ## Stack
 
 - Flutter / Dart
