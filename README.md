@@ -2,7 +2,11 @@
 
 Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ver estadísticas y organizar torneos completos: seguimiento del propio historial (**tracked**) o torneos alojados por la app con varios jugadores (**hosted**).
 
-**Demo web:** https://deck-tracker-web.onrender.com
+**Web:** https://deck-tracker-web.onrender.com
+
+## Descargas
+
+Descarga la última versión desde la [página de Releases](https://github.com/Ayme-99/deck-tracker-app/releases/latest).
 
 ## Stack
 
