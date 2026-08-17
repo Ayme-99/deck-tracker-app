@@ -4,6 +4,7 @@ import '../../models/deck.dart';
 import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/submit_on_enter.dart';
 import 'tournament_players_screen.dart';
 import 'tournament_detail_screen.dart';
@@ -341,7 +342,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       appBar: AppBar(title: Text(_isEditing ? 'Editar torneo' : 'Nuevo torneo')),
       body: SafeArea(
         child: _isLoadingDecks
-            ? const Center(child: CircularProgressIndicator())
+            ? const SlowLoadingIndicator()
             : SubmitOnEnter(
                 onSubmit: _handleSubmit,
                 enabled: !_isSubmitting,

@@ -13,6 +13,7 @@ import '../../services/share_text_formatter.dart';
 import 'deck_detail/deck_matchups_section.dart';
 import 'deck_detail/deck_overview_card.dart';
 import 'deck_detail/deck_recent_matches_section.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/winrate_chart.dart';
 import '../matches/register_match_screen.dart';
 import '../matches/edit_match_screen.dart';
@@ -232,7 +233,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SlowLoadingIndicator()
           : _errorMessage != null
               ? Center(
                   child: Padding(

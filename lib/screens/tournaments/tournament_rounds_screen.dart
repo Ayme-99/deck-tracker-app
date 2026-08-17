@@ -7,6 +7,8 @@ import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/deck_shuffle_indicator.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/tournament_bracket/tournament_bracket.dart';
 import 'tournament_rounds/tournament_rounds_action_bar.dart';
@@ -403,7 +405,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
     // con los datos anteriores hasta que llegan los nuevos, para no perder
     // la posicion de scroll (issue #81).
     if (_isLoading && _tournament == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null && _tournament == null) {
@@ -510,7 +512,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
             if (_isActionRunning)
               Container(
                 color: Colors.black26,
-                child: const Center(child: CircularProgressIndicator()),
+                child: const Center(child: DeckShuffleIndicator(size: 48)),
               ),
           ],
         ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../services/auth_service.dart';
 import '../../services/quick_widget_sync_service.dart';
+import '../../widgets/deck_shuffle_indicator.dart';
 import '../matches/quick_register_deck_picker_screen.dart';
 import 'login_screen.dart';
 import '../home/home_screen.dart';
@@ -73,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: CircularProgressIndicator(),
+        child: DeckShuffleIndicator(),
       ),
     );
   }

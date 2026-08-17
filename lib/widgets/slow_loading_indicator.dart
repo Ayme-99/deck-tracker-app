@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import 'deck_shuffle_indicator.dart';
 
 /// Spinner de carga que, tras [slowThreshold] sin resolverse, muestra un mensaje
 /// avisando de que el backend puede estar "despertando" (cold start de Render).
@@ -40,7 +41,7 @@ class _SlowLoadingIndicatorState extends State<SlowLoadingIndicator> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(),
+          const DeckShuffleIndicator(),
           if (_isSlow) ...[
             const SizedBox(height: AppSizes.spacingM),
             Padding(

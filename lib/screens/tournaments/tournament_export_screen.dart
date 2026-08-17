@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 
 /// Exporta un torneo hosted a JSON (issue #76, ver TORNEOS_HOSTED_GDD.md
 /// seccion 7). Se muestra el JSON con opcion de copiarlo al portapapeles,
@@ -67,7 +68,7 @@ class _TournamentExportScreenState extends State<TournamentExportScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Exportar torneo')),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SlowLoadingIndicator()
           : _errorMessage != null
               ? Center(
                   child: Padding(
