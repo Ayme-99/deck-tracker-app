@@ -7,6 +7,7 @@ import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/winrate_chart.dart';
 import '../decks/deck_detail_screen.dart';
+import '../../widgets/deck_shuffle_indicator.dart';
 import '../../widgets/slow_loading_indicator.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -462,7 +463,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSizes.spacingL),
-                child: CircularProgressIndicator(),
+                child: DeckShuffleIndicator(size: 40),
               ),
             )
           else if (_ranking.isEmpty)

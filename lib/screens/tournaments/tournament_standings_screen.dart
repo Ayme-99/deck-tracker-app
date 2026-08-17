@@ -6,6 +6,7 @@ import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/sprite_avatar_group.dart';
 
 /// Clasificacion en vivo de un torneo hosted (issue #47): puntos, W-L-D
@@ -74,7 +75,7 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Clasificación')),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SlowLoadingIndicator()
           : _errorMessage != null
               ? Center(
                   child: Padding(

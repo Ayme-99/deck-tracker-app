@@ -11,6 +11,7 @@ import '../../services/pending_delete_controller.dart';
 import '../../services/share_service.dart';
 import '../../services/share_text_formatter.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../matches/edit_match_screen.dart';
 import '../matches/register_match_screen.dart';
 import 'tournament_detail/tournament_header_card.dart';
@@ -521,7 +522,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null) {

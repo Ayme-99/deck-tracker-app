@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/tournament_bracket/tournament_bracket.dart';
 
 /// Pantalla independiente del bracket (issue #84): navegable libremente
@@ -173,7 +174,7 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null && _players.isEmpty && _matches.isEmpty) {

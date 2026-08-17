@@ -7,6 +7,7 @@ import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_players/player_form_dialog.dart';
 import 'tournament_players/player_list_tile.dart';
 import 'tournament_rounds_screen.dart';
@@ -244,7 +245,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SlowLoadingIndicator()
           : _errorMessage != null
               ? Center(
                   child: Padding(
