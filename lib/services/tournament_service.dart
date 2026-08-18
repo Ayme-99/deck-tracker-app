@@ -23,10 +23,13 @@ class TournamentService {
     };
   }
 
+  // El campo format ya no se pide en el cliente (issue #163): el meta rota
+  // cada año y mantenerlo actualizado en la UI no compensaba. El backend
+  // sigue teniendo el campo (default 'Standard') por si se retoma mas
+  // adelante, simplemente no se envia desde aqui.
   Future<Tournament> createTournament({
     required String name,
     required String mode,
-    String format = 'Standard',
     DateTime? date,
     String? location,
     String? structure,
@@ -39,7 +42,6 @@ class TournamentService {
     final response = await _api.post('/tournaments', {
       'name': name,
       'mode': mode,
-      'format': format,
       if (date != null) 'date': date.toIso8601String(),
       'location': location,
       'structure': structure,

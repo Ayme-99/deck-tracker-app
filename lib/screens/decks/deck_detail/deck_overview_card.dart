@@ -5,7 +5,6 @@ import 'package:deck_tracker_app/styles.dart';
 /// _buildOverviewCard de deck_detail_screen.dart a un widget de verdad).
 class DeckOverviewCard extends StatelessWidget {
   final Map<String, dynamic> overview;
-  final String deckFormat;
 
   /// Racha actual (issue #127): 'win'/'loss'/'tie', o null si no hay
   /// partidas suficientes para determinarla.
@@ -15,7 +14,6 @@ class DeckOverviewCard extends StatelessWidget {
   const DeckOverviewCard({
     super.key,
     required this.overview,
-    required this.deckFormat,
     this.streakType,
     this.streakCount = 0,
   });
@@ -77,7 +75,7 @@ class DeckOverviewCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$deckFormat · $totalMatches partidas',
+              '$totalMatches partidas',
               style: TextStyle(color: AppColors.textSecondary),
             ),
             if (streakType != null && streakCount > 0) ...[

@@ -22,16 +22,18 @@ class DeckService {
     return Deck.fromJson(response);
   }
 
+  // El campo format ya no se pide en el cliente (issue #163): el meta rota
+  // cada año y mantenerlo actualizado en la UI no compensaba. El backend
+  // sigue teniendo el campo (default 'Standard') por si se retoma mas
+  // adelante, simplemente no se envia desde aqui.
   Future<Deck> createDeck(
     String name,
-    String format,
     List<Map<String, dynamic>> cards, {
     String? sprite1,
     String? sprite2,
   }) async {
     final response = await _api.post('/decks', {
       'name': name,
-      'format': format,
       'cards': cards,
       'sprite1': sprite1,
       'sprite2': sprite2,

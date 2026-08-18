@@ -221,12 +221,23 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 if (updated == true && context.mounted) {
                   Navigator.of(context).pop(true);
                 }
+              } else if (value == 'duplicate') {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => DeckFormScreen(duplicateFrom: widget.deck)),
+                );
+                // El mazo duplicado se crea aparte del que se esta viendo,
+                // asi que se refresca el listado de origen (pop(true)) en
+                // vez de recargar este detalle, que sigue igual.
+                if (created == true && context.mounted) {
+                  Navigator.of(context).pop(true);
+                }
               } else if (value == 'delete') {
                 _confirmDelete();
               }
             },
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'edit', child: Text('Editar mazo')),
+              PopupMenuItem(value: 'duplicate', child: Text('Duplicar mazo')),
               PopupMenuItem(value: 'delete', child: Text('Eliminar mazo')),
             ],
           ),
@@ -260,7 +271,6 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                     children: [
                       DeckOverviewCard(
                         overview: _overview!,
-                        deckFormat: widget.deck.format,
                         streakType: _streakType,
                         streakCount: _streakCount,
                       ),

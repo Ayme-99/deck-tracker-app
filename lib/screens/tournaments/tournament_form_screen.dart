@@ -39,7 +39,6 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
   bool get _isEditing => widget.tournament != null;
 
   late String _mode = widget.tournament?.mode ?? 'tracked';
-  late String _format = widget.tournament?.format ?? 'Standard';
   late String _structure = widget.tournament?.structure ?? 'swiss';
   String? _deckId;
   late DateTime _date = widget.tournament?.date ?? DateTime.now();
@@ -133,7 +132,6 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
         tournament = await _tournamentService.createTournament(
           name: _nameController.text.trim(),
           mode: _mode,
-          format: _format,
           date: _date,
           location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
           structure: _structure,
@@ -377,20 +375,6 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                     // (puede haber partidas que dependan de ellos), selects
                     // + configuracion especifica de hosted si se esta creando.
                     _deckAndStructureFields(),
-
-                    DropdownButtonFormField<String>(
-                      initialValue: _format,
-                      decoration: const InputDecoration(
-                        labelText: 'Formato',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Standard', child: Text('Standard')),
-                        DropdownMenuItem(value: 'Expanded', child: Text('Expanded')),
-                      ],
-                      onChanged: (value) => setState(() => _format = value!),
-                    ),
-                    const SizedBox(height: AppSizes.spacingM),
 
                     InkWell(
                       onTap: _pickDate,
