@@ -195,6 +195,11 @@ class _DeckListScreenState extends State<DeckListScreen> {
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Duplicar mazo'),
+              onTap: () => Navigator.of(context).pop('duplicate'),
+            ),
+            ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
               title: const Text('Eliminar mazo'),
               onTap: () => Navigator.of(context).pop('delete'),
@@ -211,6 +216,11 @@ class _DeckListScreenState extends State<DeckListScreen> {
         MaterialPageRoute(builder: (_) => DeckFormScreen(deck: deck)),
       );
       if (updated == true) _loadDecks();
+    } else if (action == 'duplicate') {
+      final created = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => DeckFormScreen(duplicateFrom: deck)),
+      );
+      if (created == true) _loadDecks();
     } else if (action == 'delete') {
       _confirmDeleteDeck(deck);
     }

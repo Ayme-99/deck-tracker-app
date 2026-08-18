@@ -7,12 +7,19 @@ import '../../services/deck_service.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
 
-/// Pantalla unificada para crear y editar mazos.
+/// Pantalla unificada para crear, editar y duplicar mazos.
 /// Si [deck] es null, funciona en modo "crear". Si viene informado, modo "editar".
+///
+/// [duplicateFrom] (issue #161) precarga el formulario con las cartas/sprites
+/// de otro mazo (para partir de una copia y ajustar), pero en modo "crear":
+/// al guardar se hace un POST nuevo, no se toca el mazo original. No puede
+/// combinarse con [deck] (edicion) al mismo tiempo.
 class DeckFormScreen extends StatefulWidget {
   final Deck? deck;
+  final Deck? duplicateFrom;
 
-  const DeckFormScreen({super.key, this.deck});
+  const DeckFormScreen({super.key, this.deck, this.duplicateFrom})
+      : assert(deck == null || duplicateFrom == null, 'No se puede editar y duplicar a la vez');
 
   @override
   State<DeckFormScreen> createState() => _DeckFormScreenState();
@@ -36,10 +43,13 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.deck?.name ?? '');
-    _sprite1 = widget.deck?.sprite1;
-    _sprite2 = widget.deck?.sprite2;
-    _cards = widget.deck?.cards
+    final source = widget.deck ?? widget.duplicateFrom;
+    _nameController = TextEditingController(
+      text: widget.duplicateFrom != null ? '${widget.duplicateFrom!.name} (copia)' : source?.name ?? '',
+    );
+    _sprite1 = source?.sprite1;
+    _sprite2 = source?.sprite2;
+    _cards = source?.cards
             .map((c) => _CardEntry(
                   name: c.name,
                   quantity: c.quantity,
@@ -129,7 +139,9 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar Mazo' : 'Nuevo Mazo')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar Mazo' : (widget.duplicateFrom != null ? 'Duplicar Mazo' : 'Nuevo Mazo')),
+      ),
       body: SafeArea(
         child: SubmitOnEnter(
           onSubmit: _handleSubmit,
