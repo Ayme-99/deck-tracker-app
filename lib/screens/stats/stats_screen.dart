@@ -381,31 +381,36 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       );
     }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.spacingM, AppSizes.spacingM, AppSizes.spacingM, 0,
-          ),
-          child: _buildOverviewCard(overview, totalMatches),
+    // Issue #169: la tarjeta de resumen viaja con el scroll (va dentro del
+    // headerSliverBuilder, NO pinned) y solo el TabBar se queda fijo arriba
+    // al hacer scroll -- antes ambos quedaban fijos, dejando poco hueco
+    // visible para las listas.
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingM, AppSizes.spacingM, 0),
+          sliver: SliverToBoxAdapter(child: _buildOverviewCard(overview, totalMatches)),
         ),
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Mis mazos'),
-            Tab(text: 'Rivales'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildMyDecksTab(),
-              _buildRivalsTab(),
-            ],
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _PinnedTabBarDelegate(
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Mis mazos'),
+                Tab(text: 'Rivales'),
+              ],
+            ),
           ),
         ),
       ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildMyDecksTab(),
+          _buildRivalsTab(),
+        ],
+      ),
     );
   }
 
@@ -584,4 +589,31 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       ),
     );
   }
+}
+
+/// Envuelve el TabBar para poder fijarlo (pinned) dentro del
+/// headerSliverBuilder de un NestedScrollView (issue #169). Da un fondo
+/// solido (Material del tema) para que no se vea el contenido scrolleando
+/// por debajo cuando queda pegado arriba.
+class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _PinnedTabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedTabBarDelegate oldDelegate) => tabBar != oldDelegate.tabBar;
 }
