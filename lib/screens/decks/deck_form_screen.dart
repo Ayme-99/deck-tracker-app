@@ -26,7 +26,6 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
 
   bool get _isEditing => widget.deck != null;
 
-  late String _format;
   String? _sprite1;
   String? _sprite2;
   bool _isLoading = false;
@@ -38,7 +37,6 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.deck?.name ?? '');
-    _format = widget.deck?.format ?? 'Standard';
     _sprite1 = widget.deck?.sprite1;
     _sprite2 = widget.deck?.sprite2;
     _cards = widget.deck?.cards
@@ -94,7 +92,6 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
       if (_isEditing) {
         await _deckService.updateDeck(widget.deck!.id, {
           'name': _nameController.text.trim(),
-          'format': _format,
           'cards': cardsData,
           'sprite1': _sprite1,
           'sprite2': _sprite2,
@@ -102,7 +99,6 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
       } else {
         await _deckService.createDeck(
           _nameController.text.trim(),
-          _format,
           cardsData,
           sprite1: _sprite1,
           sprite2: _sprite2,
@@ -155,20 +151,6 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                   }
                   return null;
                 },
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-
-              DropdownButtonFormField<String>(
-                initialValue: _format,
-                decoration: const InputDecoration(
-                  labelText: 'Formato',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Standard', child: Text('Standard')),
-                  DropdownMenuItem(value: 'Expanded', child: Text('Expanded')),
-                ],
-                onChanged: (value) => setState(() => _format = value!),
               ),
               const SizedBox(height: AppSizes.spacingL),
 

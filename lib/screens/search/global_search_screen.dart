@@ -183,7 +183,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                     margin: const EdgeInsets.only(bottom: 8),
                                     child: ListTile(
                                       title: Text(deck.name),
-                                      subtitle: Text(deck.format),
                                       trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
                                       onTap: () => Navigator.of(context).push(
                                         MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),

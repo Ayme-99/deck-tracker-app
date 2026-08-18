@@ -260,7 +260,6 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                     children: [
                       DeckOverviewCard(
                         overview: _overview!,
-                        deckFormat: widget.deck.format,
                         streakType: _streakType,
                         streakCount: _streakCount,
                       ),
