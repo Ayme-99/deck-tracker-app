@@ -42,6 +42,12 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Registro rapido encadenado (issue #164): copia mutable de widget.round,
+  // para poder incrementarlo tras cada partida encadenada sin depender de
+  // que el widget se reconstruya con un round distinto.
+  late int? _round = widget.round;
+  bool _hasRegisteredAny = false;
+
   String? _sprite1;
   String? _sprite2;
   String? _lastLookedUpName; // evita repetir la consulta si el nombre no cambio
@@ -73,7 +79,12 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     }
   }
 
-  Future<void> _handleSubmit() async {
+  /// [chainAnother] (issue #164): si es true, tras registrar con exito no
+  /// se cierra la pantalla -- se limpia el formulario para registrar la
+  /// siguiente partida seguida (misma fase/torneo, ronda incrementada si
+  /// aplica), evitando volver a navegar por Mazos > detalle > Registrar
+  /// partida en sesiones con varias rondas seguidas.
+  Future<void> _handleSubmit({bool chainAnother = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -94,7 +105,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         result: _needsManualResult ? (_manualResult ?? 'tie') : null,
         tournamentId: widget.tournamentId,
         phase: widget.phase,
-        round: widget.round,
+        round: _round,
       );
 
       // Guarda/actualiza los sprites asociados a este nombre de rival, si se eligio alguno
@@ -107,7 +118,16 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
       unawaited(QuickWidgetSyncService().sync());
 
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+
+      if (chainAnother) {
+        _hasRegisteredAny = true;
+        _resetFormForNextMatch();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Partida registrada. Lista para la siguiente.')),
+        );
+      } else {
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -115,6 +135,22 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _resetFormForNextMatch() {
+    setState(() {
+      _opponentController.clear();
+      _notesController.clear();
+      _userPrizes = 6;
+      _opponentPrizes = 0;
+      _endReason = 'normal';
+      _manualResult = null;
+      _sprite1 = null;
+      _sprite2 = null;
+      _lastLookedUpName = null;
+      if (_round != null) _round = _round! + 1;
+    });
+    _formKey.currentState?.reset();
   }
 
   @override
@@ -156,7 +192,17 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      // Issue #164: si se salio de la pantalla (atras/gesto) tras encadenar
+      // alguna partida sin pasar por el boton normal "Registrar partida",
+      // hay que avisar igualmente a quien nos abrio de que recargue.
+      canPop: !_hasRegisteredAny,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasRegisteredAny) {
+          Navigator.of(context).pop(true);
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(title: Text('Nueva partida · ${widget.deck.name}')),
       body: SafeArea(
         child: SubmitOnEnter(
@@ -181,7 +227,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                       Text(
                         [
                           if (widget.phase != null) kMatchPhaseLabels[widget.phase] ?? widget.phase!,
-                          if (widget.round != null) 'Ronda ${widget.round}',
+                          if (_round != null) 'Ronda $_round',
                         ].join(' · '),
                         style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
                       ),
@@ -331,10 +377,20 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                       )
                     : const Text('Registrar partida'),
               ),
+              const SizedBox(height: AppSizes.spacingS),
+
+              // Registro rapido encadenado (issue #164): registra la partida
+              // sin cerrar la pantalla, lista para meter la siguiente (util
+              // en sesiones con varias rondas seguidas).
+              OutlinedButton(
+                onPressed: _isLoading ? null : () => _handleSubmit(chainAnother: true),
+                child: const Text('Registrar y añadir otra'),
+              ),
             ],
           ),
           ),
         ),
+      ),
       ),
     );
   }
