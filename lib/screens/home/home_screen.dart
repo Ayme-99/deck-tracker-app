@@ -6,6 +6,7 @@ import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
+import '../backup/backup_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../auth/login_screen.dart';
@@ -96,6 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: 'Importar torneo',
               onPressed: _handleImportTournament,
             ),
+          IconButton(
+            icon: const Icon(Icons.settings_backup_restore_outlined),
+            tooltip: 'Copia de seguridad',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BackupScreen()),
+            ),
+          ),
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemePreferenceService.themeMode,
             builder: (context, mode, _) {

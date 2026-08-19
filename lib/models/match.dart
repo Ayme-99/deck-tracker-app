@@ -46,6 +46,26 @@ class Match {
       round: json['round'],
     );
   }
+
+  /// Mismo formato que espera Match.fromJson (issue #165: backup/restore),
+  /// para poder guardar/recuperar una partida sin depender de la API.
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'deckId': deckId,
+      'opponentDeck': opponentDeck,
+      'userPrizes': userPrizes,
+      'opponentPrizes': opponentPrizes,
+      'endReason': endReason,
+      'result': result,
+      'format': format,
+      'notes': notes,
+      'playedAt': playedAt.toIso8601String(),
+      'tournamentId': tournamentId,
+      'phase': phase,
+      'round': round,
+    };
+  }
 }
 
 // Etiquetas legibles para cada fase, reutilizables en toda la seccion de
