@@ -1,12 +1,14 @@
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:deck_tracker_app/styles.dart';
 import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
 import '../backup/backup_screen.dart';
+import '../../services/accent_color_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../auth/login_screen.dart';
@@ -61,6 +63,50 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Selector de color de acento (issue #168): dialogo con un circulo por
+  /// cada color de la paleta fija, marcando el actualmente elegido.
+  Future<void> _showAccentPicker() async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Color de acento'),
+        content: Wrap(
+          spacing: AppSizes.spacingM,
+          runSpacing: AppSizes.spacingM,
+          children: AccentColorService.palette.entries.map((entry) {
+            final isSelected = entry.key == AccentColorService.accentKey.value;
+            return InkWell(
+              borderRadius: BorderRadius.circular(100),
+              onTap: () => Navigator.of(context).pop(entry.key),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.spacingXS),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: entry.value,
+                        shape: BoxShape.circle,
+                        border: isSelected ? Border.all(color: AppColors.textPrimary, width: 3) : null,
+                      ),
+                      child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                    ),
+                    const SizedBox(height: AppSizes.spacingXS),
+                    Text(AccentColorService.labels[entry.key]!, style: const TextStyle(fontSize: AppSizes.textXS)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+
+    if (selected != null) AccentColorService.setAccent(selected);
+  }
+
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
@@ -103,6 +149,28 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const BackupScreen()),
             ),
+          ),
+          ValueListenableBuilder<String>(
+            valueListenable: AccentColorService.accentKey,
+            builder: (context, accentKey, _) {
+              // Muestra el color en un circulo con borde blanco en vez de
+              // teñir el propio icono: en claro la barra ya usa el acento
+              // de fondo, y un icono del mismo color se camuflaba del todo
+              // (issue #168, cuarta ronda de feedback).
+              return IconButton(
+                icon: Container(
+                  width: AppSizes.iconSmall,
+                  height: AppSizes.iconSmall,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AccentColorService.palette[accentKey],
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
+                ),
+                tooltip: 'Color de acento',
+                onPressed: _showAccentPicker,
+              );
+            },
           ),
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemePreferenceService.themeMode,

@@ -6,15 +6,18 @@ import 'package:home_widget/home_widget.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/matches/quick_register_deck_picker_screen.dart';
 import 'config/navigation_service.dart';
+import 'services/accent_color_service.dart';
 import 'services/theme_preference_service.dart';
 import 'package:deck_tracker_app/styles/theme.dart';
 
 Future<void> main() async {
   // Necesario para poder leer flutter_secure_storage antes de runApp.
   WidgetsFlutterBinding.ensureInitialized();
-  // Carga la preferencia de tema guardada (issue #129) antes de arrancar,
-  // para no mostrar un flash del tema por defecto (sistema).
+  // Carga la preferencia de tema y de color de acento guardadas (issues
+  // #129 y #168) antes de arrancar, para no mostrar un flash de los
+  // valores por defecto si el usuario ya habia elegido otros.
   await ThemePreferenceService.load();
+  await AccentColorService.load();
   runApp(const DeckTrackerApp());
 }
 
@@ -62,14 +65,23 @@ class _DeckTrackerAppState extends State<DeckTrackerApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemePreferenceService.themeMode,
       builder: (context, mode, _) {
-        return MaterialApp(
-          navigatorKey: NavigationService.navigatorKey,
-          title: 'Deck Tracker',
-          theme: buildAppTheme(Brightness.light),
-          darkTheme: buildAppTheme(Brightness.dark),
-          themeMode: mode,
-          debugShowCheckedModeBanner: false,
-          home: const SplashScreen(),
+        // Anidado con el de accentKey (issue #168): un cambio de color de
+        // acento tambien tiene que reconstruir el MaterialApp, porque
+        // buildAppTheme lee AppColors.primary (ya actualizado por
+        // AccentColorService antes de notificar) en el momento de construir.
+        return ValueListenableBuilder<String>(
+          valueListenable: AccentColorService.accentKey,
+          builder: (context, accentKey, _) {
+            return MaterialApp(
+              navigatorKey: NavigationService.navigatorKey,
+              title: 'Deck Tracker',
+              theme: buildAppTheme(Brightness.light),
+              darkTheme: buildAppTheme(Brightness.dark),
+              themeMode: mode,
+              debugShowCheckedModeBanner: false,
+              home: const SplashScreen(),
+            );
+          },
         );
       },
     );

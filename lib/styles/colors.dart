@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Colores de marca: se mantienen iguales en claro y oscuro
-  static const Color primary = Color(0xFF1E88E5);
+  // Colores de marca: se mantienen iguales en claro y oscuro.
+  // primary NO es const (issue #168: color de acento personalizable) --
+  // AccentColorService lo reasigna en tiempo de ejecucion segun lo elegido
+  // por el usuario, y el resto de la app lo sigue leyendo tal cual porque
+  // muchos widgets usan AppColors.primary directamente en vez de
+  // Theme.of(context).colorScheme.primary.
+  static Color primary = const Color(0xFF1E88E5);
   static const Color primaryVariant = Color(0xFF1565C0);
   static const Color secondary = Color(0xFFFDD835);
   static const Color error = Color(0xFFB00020);

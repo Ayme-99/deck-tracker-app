@@ -228,14 +228,14 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.emoji_events, size: AppSizes.iconSmall, color: AppColors.primary),
+                      Icon(Icons.emoji_events, size: AppSizes.iconSmall, color: AppColors.primary),
                       const SizedBox(width: AppSizes.spacingS),
                       Text(
                         [
                           if (widget.phase != null) kMatchPhaseLabels[widget.phase] ?? widget.phase!,
                           if (_round != null) 'Ronda $_round',
                         ].join(' · '),
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),

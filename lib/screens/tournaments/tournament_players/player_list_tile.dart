@@ -43,7 +43,7 @@ class PlayerListTile extends StatelessWidget {
             ),
             if (player.isOrganizer) ...[
               const SizedBox(width: AppSizes.spacingXS),
-              const Icon(Icons.star, size: AppSizes.iconSmall, color: AppColors.primary),
+              Icon(Icons.star, size: AppSizes.iconSmall, color: AppColors.primary),
             ],
           ],
         ),
