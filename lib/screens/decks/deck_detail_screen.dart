@@ -9,6 +9,7 @@ import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/file_export_service.dart';
+import '../../services/losing_streak_service.dart';
 import '../../services/match_csv_formatter.dart';
 import '../../services/share_service.dart';
 import '../../services/share_text_formatter.dart';
@@ -35,6 +36,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _archetypeService = OpponentArchetypeService();
   final _shareService = ShareService();
   final _fileExportService = FileExportService();
+  final _losingStreakService = LosingStreakService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
@@ -317,7 +319,10 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           final registered = await Navigator.of(context).push<bool>(
             MaterialPageRoute(builder: (_) => RegisterMatchScreen(deck: widget.deck)),
           );
-          if (registered == true) _loadData();
+          if (registered == true) {
+            await _loadData();
+            if (context.mounted) _losingStreakService.checkAndWarn(context, widget.deck.id);
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Partida'),

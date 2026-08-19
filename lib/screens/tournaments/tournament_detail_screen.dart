@@ -8,6 +8,7 @@ import '../../services/deck_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/file_export_service.dart';
+import '../../services/losing_streak_service.dart';
 import '../../services/match_csv_formatter.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/share_service.dart';
@@ -38,6 +39,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   final _matchService = MatchService();
   final _shareService = ShareService();
   final _fileExportService = FileExportService();
+  final _losingStreakService = LosingStreakService();
 
   Tournament? _tournament;
   Deck? _deck;
@@ -506,7 +508,10 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       ),
     );
 
-    if (registered == true) _loadData();
+    if (registered == true) {
+      await _loadData();
+      if (mounted) _losingStreakService.checkAndWarn(context, _deck!.id);
+    }
   }
 
   /// Agrupa los matches por phase, respetando el orden logico de las fases

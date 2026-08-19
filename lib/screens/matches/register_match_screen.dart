@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../services/losing_streak_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/quick_widget_sync_service.dart';
@@ -34,6 +35,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   final _notesController = TextEditingController();
   final _matchService = MatchService();
   final _archetypeService = OpponentArchetypeService();
+  final _losingStreakService = LosingStreakService();
 
   int _userPrizes = 6;
   int _opponentPrizes = 0;
@@ -125,6 +127,10 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Partida registrada. Lista para la siguiente.')),
         );
+        // Issue #167: al quedarse en esta pantalla (a diferencia del flujo
+        // normal, que cierra y avisa desde la pantalla de origen) es el
+        // sitio natural para el aviso de racha negativa.
+        unawaited(_losingStreakService.checkAndWarn(context, widget.deck.id));
       } else {
         Navigator.of(context).pop(true);
       }
