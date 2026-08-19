@@ -44,6 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Instalador de Windows compilado (Inno Setup) -- solo se versiona el
+# script windows_installer/deck_tracker.iss, no el .exe generado
+windows_installer/output/
+
 # Generated plugin registrants (autogenerados por 'flutter pub get', no editar a mano)
 **/GeneratedPluginRegistrant.swift
 **/GeneratedPluginRegistrant.java
