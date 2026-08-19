@@ -56,6 +56,14 @@ dependencies:
   # Caché local de mazos/stats para modo offline básico (issue #133)
   shared_preferences: ^2.3.3
 
+  # Guardar archivos exportados (CSV) directamente en Descargas (issue #162)
+  file_saver: ^0.2.14
+
+  # Abrir el archivo CSV exportado directamente desde el aviso de éxito
+  # (issue #162): no hay forma portable de "abrir la carpeta" en Android,
+  # abrir el archivo con la app por defecto (Sheets, Excel...) es más fiable.
+  open_filex: ^4.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

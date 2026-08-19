@@ -7,6 +7,8 @@ import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
+import '../../services/file_export_service.dart';
+import '../../services/match_csv_formatter.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/share_service.dart';
 import '../../services/share_text_formatter.dart';
@@ -35,6 +37,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   final _archetypeService = OpponentArchetypeService();
   final _matchService = MatchService();
   final _shareService = ShareService();
+  final _fileExportService = FileExportService();
 
   Tournament? _tournament;
   Deck? _deck;
@@ -276,6 +279,25 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       ),
     );
     if (updated != null) _loadData();
+  }
+
+  Future<void> _exportMatchesCsv(Tournament tournament) async {
+    try {
+      final fileName = 'partidas_${tournament.name.replaceAll(RegExp(r'[^\w\-]+'), '_')}';
+      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(_matches), fileName);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Historial exportado a Descargas'),
+          action: SnackBarAction(label: 'Abrir', onPressed: () => _fileExportService.open(exported)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al exportar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
   }
 
   Future<void> _toggleStatus() async {
@@ -568,6 +590,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
                 _toggleStatus();
               } else if (value == 'share') {
                 _shareService.shareText(ShareTextFormatter.formatTournamentSummary(tournament, _summary!));
+              } else if (value == 'export_csv') {
+                _exportMatchesCsv(tournament);
               } else if (value == 'delete') {
                 _confirmDeleteTournament();
               }
@@ -580,6 +604,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               ),
               if (_summary != null)
                 const PopupMenuItem(value: 'share', child: Text('Compartir resumen')),
+              const PopupMenuItem(value: 'export_csv', child: Text('Exportar partidas a CSV')),
               const PopupMenuItem(value: 'delete', child: Text('Eliminar torneo')),
             ],
           ),
