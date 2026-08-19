@@ -8,6 +8,8 @@ import '../../services/stats_service.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/pending_delete_controller.dart';
+import '../../services/file_export_service.dart';
+import '../../services/match_csv_formatter.dart';
 import '../../services/share_service.dart';
 import '../../services/share_text_formatter.dart';
 import 'deck_detail/deck_matchups_section.dart';
@@ -32,6 +34,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   final _matchService = MatchService();
   final _archetypeService = OpponentArchetypeService();
   final _shareService = ShareService();
+  final _fileExportService = FileExportService();
 
   Map<String, dynamic>? _overview;
   List<dynamic> _matchups = [];
@@ -166,6 +169,25 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
     Navigator.of(context).pop('deleted');
   }
 
+  Future<void> _exportMatchesCsv() async {
+    try {
+      final fileName = 'partidas_${widget.deck.name.replaceAll(RegExp(r'[^\w\-]+'), '_')}';
+      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(_recentMatches), fileName);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Historial exportado a Descargas'),
+          action: SnackBarAction(label: 'Abrir', onPressed: () => _fileExportService.open(exported)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al exportar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
+  }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
@@ -231,6 +253,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 if (created == true && context.mounted) {
                   Navigator.of(context).pop(true);
                 }
+              } else if (value == 'export_csv') {
+                _exportMatchesCsv();
               } else if (value == 'delete') {
                 _confirmDelete();
               }
@@ -238,6 +262,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
             itemBuilder: (context) => const [
               PopupMenuItem(value: 'edit', child: Text('Editar mazo')),
               PopupMenuItem(value: 'duplicate', child: Text('Duplicar mazo')),
+              PopupMenuItem(value: 'export_csv', child: Text('Exportar partidas a CSV')),
               PopupMenuItem(value: 'delete', child: Text('Eliminar mazo')),
             ],
           ),
