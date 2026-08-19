@@ -4,6 +4,7 @@ import '../../models/card_suggestion.dart';
 import '../../models/deck.dart';
 import '../../services/card_catalog_service.dart';
 import '../../services/deck_service.dart';
+import '../../services/tcg_live_deck_parser.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
 
@@ -72,6 +73,81 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     });
   }
 
+  /// Importa una lista de cartas pegada desde Pokémon TCG Live (issue #176),
+  /// sustituyendo la lista actual. El cardId de cada carta importada usa el
+  /// mismo fallback que al escribir a mano (slug del nombre): no se intenta
+  /// casar contra el catalogo automaticamente, porque los codigos de set de
+  /// TCG Live no coinciden con los del catalogo usado aqui (TCGdex). El
+  /// usuario puede refinar cada carta despues con el autocompletado normal.
+  Future<void> _showImportFromTcgLive() async {
+    final controller = TextEditingController();
+
+    final pastedText = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Importar desde Pokémon TCG Live'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_cards.isNotEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSizes.spacingS),
+                  child: Text(
+                    'Esto sustituirá la lista de cartas actual.',
+                    style: TextStyle(color: AppColors.warning),
+                  ),
+                ),
+              TextField(
+                controller: controller,
+                maxLines: 10,
+                decoration: const InputDecoration(
+                  hintText: 'Pega aquí la lista exportada desde TCG Live',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Importar'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+    if (pastedText == null || !mounted) return;
+
+    final parsed = TcgLiveDeckParser.parse(pastedText);
+    if (parsed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se ha reconocido ninguna carta en el texto pegado')),
+      );
+      return;
+    }
+
+    setState(() {
+      for (final card in _cards) {
+        card.nameController.dispose();
+        card.quantityController.dispose();
+        card.focusNode.dispose();
+      }
+      _cards
+        ..clear()
+        ..addAll(parsed.map((c) => _CardEntry(name: c.name, quantity: c.quantity, category: c.category)));
+    });
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -132,6 +208,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     for (final card in _cards) {
       card.nameController.dispose();
       card.quantityController.dispose();
+      card.focusNode.dispose();
     }
     super.dispose();
   }
@@ -149,6 +226,13 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
           child: Form(
           key: _formKey,
           child: ListView(
+            // Evita que Flutter desmonte filas fuera de pantalla mientras
+            // aun hay una busqueda `optionsBuilder` en vuelo para ellas
+            // (causaba un crash al hacer scroll, ver issue de accessibility
+            // announce sobre un widget ya desmontado). Un mazo tiene pocas
+            // decenas de cartas como mucho, asi que mantenerlas todas
+            // montadas es barato.
+            cacheExtent: 3000,
             padding: const EdgeInsets.all(AppSizes.spacingM),
             children: [
               TextFormField(
@@ -182,10 +266,20 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Cartas', style: TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold)),
-                  TextButton.icon(
-                    onPressed: _addCard,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Añadir carta'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: _showImportFromTcgLive,
+                        icon: const Icon(Icons.content_paste_outlined),
+                        tooltip: 'Importar desde Pokémon TCG Live',
+                      ),
+                      TextButton.icon(
+                        onPressed: _addCard,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Añadir carta'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -205,6 +299,11 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 final card = entry.value;
 
                 return Card(
+                  // Identidad estable por _CardEntry: evita que Flutter
+                  // reutilice el Element (y por tanto el controller/estado
+                  // del autocompletado) de una fila para una carta distinta
+                  // cuando se borra una carta que no esta al final.
+                  key: ObjectKey(card),
                   margin: const EdgeInsets.only(bottom: AppSizes.spacingSM),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSizes.spacingSM),
@@ -213,6 +312,15 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                         Expanded(
                           flex: 3,
                           child: Autocomplete<CardSuggestion>(
+                            // Usamos directamente el controller de la carta
+                            // en vez de sincronizar dos controllers a mano:
+                            // eso era lo que provocaba el "setState() called
+                            // during build" al añadir cartas (se reasignaba
+                            // .text en cada build) y ademas pisaba el
+                            // realCardId justo despues de seleccionar una
+                            // sugerencia.
+                            textEditingController: card.nameController,
+                            focusNode: card.focusNode,
                             optionsBuilder: (value) async {
                               if (value.text.trim().length < 2) return const Iterable<CardSuggestion>.empty();
                               try {
@@ -228,17 +336,15 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                               card.realCardId = selection.cardId;
                             },
                             fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                              controller.text = card.nameController.text;
-                              controller.addListener(() {
-                                card.nameController.text = controller.text;
-                                // Nombre tocado a mano: ya no se garantiza que
-                                // corresponda a la carta real seleccionada antes.
-                                card.realCardId = null;
-                              });
                               return TextFormField(
                                 controller: controller,
                                 focusNode: focusNode,
                                 decoration: const InputDecoration(labelText: 'Nombre'),
+                                // Solo se dispara con edicion real del
+                                // usuario (no con asignaciones .text por
+                                // codigo), asi que solo aqui perdemos el
+                                // cardId real seleccionado antes.
+                                onChanged: (_) => card.realCardId = null,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return 'Requerido';
@@ -315,6 +421,12 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
 class _CardEntry {
   final TextEditingController nameController;
   final TextEditingController quantityController;
+  // Autocomplete exige que focusNode y textEditingController se den juntos
+  // o ninguno de los dos (assertion en autocomplete.dart) -- al pasarle
+  // nuestro propio nameController hace falta tambien nuestro propio
+  // focusNode, o lanza "(focusNode == null) == (textEditingController ==
+  // null)' is not true".
+  final FocusNode focusNode;
   String category;
 
   /// Nombre con el que se cargo esta carta (al editar un mazo existente),
@@ -333,5 +445,6 @@ class _CardEntry {
   _CardEntry({String name = '', int quantity = 1, this.category = 'pokemon', this.originalCardId})
       : nameController = TextEditingController(text: name),
         quantityController = TextEditingController(text: quantity.toString()),
+        focusNode = FocusNode(),
         originalName = name;
 }
