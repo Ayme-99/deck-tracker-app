@@ -21,6 +21,15 @@ class StandingSnapshot {
       notes: json['notes'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'points': points,
+      'position': position,
+      'notes': notes,
+    };
+  }
 }
 
 class Tournament {
@@ -87,6 +96,30 @@ class Tournament {
       thirdPlacePlayoff: json['thirdPlacePlayoff'] ?? false,
       leagueDoubleRound: json['leagueDoubleRound'] ?? false,
     );
+  }
+
+  /// Mismo formato que espera Tournament.fromJson (issue #165: backup/
+  /// restore), para poder guardar/recuperar un torneo sin depender de la API.
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'format': format,
+      'date': date.toIso8601String(),
+      'location': location,
+      'mode': mode,
+      'structure': structure,
+      'deckId': deckId,
+      'status': status,
+      'finalStanding': finalStanding,
+      'standingSnapshots': standingSnapshots.map((s) => s.toJson()).toList(),
+      'notes': notes,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'eliminationFormat': eliminationFormat,
+      'thirdPlacePlayoff': thirdPlacePlayoff,
+      'leagueDoubleRound': leagueDoubleRound,
+    };
   }
 }
 
