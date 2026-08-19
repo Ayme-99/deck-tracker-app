@@ -156,7 +156,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
                     padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
                     child: Text(
                       kTournamentMatchPhaseLabels[phasesWithMatches[i]] ?? phasesWithMatches[i],
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
                     ),
                   ),
                 ),
@@ -165,7 +165,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
         ),
         if (thirdPlaceMatch != null) ...[
           const SizedBox(height: AppSizes.spacingL),
-          const Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
+          Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
           const SizedBox(height: AppSizes.spacingXS),
           BracketNodeCard(
             width: cardWidth,

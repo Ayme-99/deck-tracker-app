@@ -48,7 +48,7 @@ class _DeckShufflePainter extends CustomPainter {
 
   _DeckShufflePainter({required this.t});
 
-  static const _cardColors = [
+  static List<Color> get _cardColors => [
     AppColors.primary,
     AppColors.primaryVariant,
     AppColors.secondary,
