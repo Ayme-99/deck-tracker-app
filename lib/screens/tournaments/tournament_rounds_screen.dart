@@ -9,7 +9,7 @@ import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/deck_shuffle_indicator.dart';
 import '../../widgets/slow_loading_indicator.dart';
-import '../../widgets/sprite_avatar_group.dart';
+import '../../widgets/tournament_bracket/match_result_dialog.dart';
 import '../../widgets/tournament_bracket/tournament_bracket.dart';
 import 'tournament_rounds/tournament_rounds_action_bar.dart';
 import 'tournament_rounds/tournament_rounds_tabs.dart';
@@ -239,94 +239,24 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
 
     final player1 = _playersById[match.player1Id];
     final player2 = _playersById[match.player2Id];
-    final player1Sprites = _spriteLookup.spritesForName(player1?.deckArchetype);
-    final player2Sprites = _spriteLookup.spritesForName(player2?.deckArchetype);
-    final p1Controller = TextEditingController(text: match.player1Prizes?.toString() ?? '');
-    final p2Controller = TextEditingController(text: match.player2Prizes?.toString() ?? '');
-    bool isDraw = match.isDraw;
-    String? winnerId = match.winnerId;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SpriteAvatarGroup(sprite1: player1Sprites.$1, sprite2: player1Sprites.$2, size: AppSizes.iconNormal),
-              const SizedBox(width: AppSizes.spacingXS),
-              Flexible(
-                child: Text(
-                  '${player1?.name ?? '?'} vs ${player2?.name ?? '?'}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: AppSizes.spacingXS),
-              SpriteAvatarGroup(sprite1: player2Sprites.$1, sprite2: player2Sprites.$2, size: AppSizes.iconNormal),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: p1Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Premios de ${player1?.name ?? 'jugador 1'}'),
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              TextField(
-                controller: p2Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Premios de ${player2?.name ?? 'jugador 2'}'),
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Empate'),
-                value: isDraw,
-                onChanged: (value) => setDialogState(() => isDraw = value),
-              ),
-              if (!isDraw)
-                RadioGroup<String>(
-                  groupValue: winnerId,
-                  onChanged: (value) => setDialogState(() => winnerId = value),
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('Gana ${player1?.name ?? 'jugador 1'}'),
-                        value: match.player1Id,
-                      ),
-                      RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
-                        value: match.player2Id!,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: (!isDraw && winnerId == null) ? null : () => Navigator.of(context).pop(true),
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
+    final result = await showMatchResultDialog(
+      context,
+      match: match,
+      player1: player1,
+      player2: player2,
+      player1Sprites: _spriteLookup.spritesForName(player1?.deckArchetype),
+      player2Sprites: _spriteLookup.spritesForName(player2?.deckArchetype),
     );
-
-    if (confirmed != true || !mounted) return;
+    if (result == null || !mounted) return;
 
     await _runAction(() => _tournamentService.registerMatchResult(
           widget.tournamentId,
           match.id,
-          player1Prizes: int.tryParse(p1Controller.text),
-          player2Prizes: int.tryParse(p2Controller.text),
-          winnerId: isDraw ? null : winnerId,
-          isDraw: isDraw,
+          player1Prizes: result.player1Prizes,
+          player2Prizes: result.player2Prizes,
+          winnerId: result.winnerId,
+          isDraw: result.isDraw,
         ));
   }
 
