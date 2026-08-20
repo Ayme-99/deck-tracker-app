@@ -146,42 +146,61 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   /// guarda como texto compuesto en finalStanding (unico campo que expone
   /// el backend para esto), parseando el valor previo si sigue el patron
   /// "Nº de M" para poder editarlo de nuevo.
+  // Issue #187: antes se guardaba el texto interpolado sin validar que
+  // fuera numerico (pese a keyboardType: TextInputType.number, eso no
+  // impide pegar/dejar texto invalido). Si no coincidia con el patron que
+  // usa tournaments_screen.dart para ordenar, ese torneo dejaba de
+  // ordenarse bien, en silencio. Ahora "Guardar" exige que ambos campos
+  // esten vacios (borra la posicion) o sean numeros positivos validos.
   Future<void> _editFinalStanding() async {
     final tournament = _tournament!;
-    final match = RegExp(r'^(\d+)º de (\d+)$').firstMatch(tournament.finalStanding ?? '');
-    final positionController = TextEditingController(text: match?.group(1) ?? '');
-    final totalController = TextEditingController(text: match?.group(2) ?? '');
+    final parsed = parseFinalStanding(tournament.finalStanding);
+    final positionController = TextEditingController(text: parsed?.$1.toString() ?? '');
+    final totalController = TextEditingController(text: parsed?.$2.toString() ?? '');
+
+    bool isValid() {
+      final position = positionController.text.trim();
+      final total = totalController.text.trim();
+      if (position.isEmpty && total.isEmpty) return true; // borra la posicion guardada
+      final p = int.tryParse(position);
+      final t = int.tryParse(total);
+      return p != null && p > 0 && t != null && t > 0;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Posición final'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: positionController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Puesto obtenido'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Posición final'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: positionController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Puesto obtenido'),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+              const SizedBox(height: AppSizes.spacingM),
+              TextField(
+                controller: totalController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Nº total de participantes'),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
             ),
-            const SizedBox(height: AppSizes.spacingM),
-            TextField(
-              controller: totalController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Nº total de participantes'),
+            FilledButton(
+              onPressed: isValid() ? () => Navigator.of(context).pop(true) : null,
+              child: const Text('Guardar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Guardar'),
-          ),
-        ],
       ),
     );
 
@@ -193,7 +212,9 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     final position = positionController.text.trim();
     final total = totalController.text.trim();
     // Si se dejan ambos vacios, se borra la posicion final guardada
-    final finalStanding = (position.isEmpty || total.isEmpty) ? null : '$positionº de $total';
+    final finalStanding = (position.isEmpty || total.isEmpty)
+        ? null
+        : formatFinalStanding(int.parse(position), int.parse(total));
 
     try {
       await _tournamentService.updateTournament(tournament.id, {'finalStanding': finalStanding});

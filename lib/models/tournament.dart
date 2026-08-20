@@ -157,3 +157,23 @@ const kStructurePhases = {
 
 // Fases en las que tiene sentido pedir un numero de ronda/jornada
 const kRoundBasedPhases = {'swiss', 'group_stage', 'league_round'};
+
+// Formato de Tournament.finalStanding: "3º de 16". Centralizado aqui (issue
+// #187) -- antes el regex vivia duplicado en tournament_detail_screen.dart
+// (donde se genera) y tournaments_screen.dart (donde se parsea para
+// ordenar), sin validacion de que ambos textos coincidieran.
+final RegExp kFinalStandingPattern = RegExp(r'^(\d+)º de (\d+)$');
+
+/// Devuelve (posicion, total) si [finalStanding] tiene el formato esperado,
+/// o null si es null/vacio/no coincide.
+(int, int)? parseFinalStanding(String? finalStanding) {
+  if (finalStanding == null) return null;
+  final match = kFinalStandingPattern.firstMatch(finalStanding);
+  if (match == null) return null;
+  final position = int.tryParse(match.group(1)!);
+  final total = int.tryParse(match.group(2)!);
+  if (position == null || total == null) return null;
+  return (position, total);
+}
+
+String formatFinalStanding(int position, int total) => '$positionº de $total';

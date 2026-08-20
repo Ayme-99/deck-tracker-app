@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
+import '../prize_counter.dart';
 import '../sprite_avatar_group.dart';
 
 /// Datos introducidos en el dialogo de resultado (issues #185/#195): el
@@ -43,8 +44,12 @@ Future<MatchResultInput?> showMatchResultDialog(
   (String?, String?)? player1Sprites,
   (String?, String?)? player2Sprites,
 }) async {
-  final p1Controller = TextEditingController(text: match.player1Prizes?.toString() ?? '');
-  final p2Controller = TextEditingController(text: match.player2Prizes?.toString() ?? '');
+  // Issue #187 (ampliacion): antes eran TextField de texto libre sin
+  // validar -- se podia escribir "T" y quedaba "guardado" en silencio
+  // (int.tryParse lo convertia en null sin avisar). Un contador 0-6 hace
+  // imposible introducir un valor invalido.
+  int player1Prizes = match.player1Prizes ?? 0;
+  int player2Prizes = match.player2Prizes ?? 0;
   bool isDraw = match.isDraw;
   String? winnerId = match.winnerId;
 
@@ -74,16 +79,20 @@ Future<MatchResultInput?> showMatchResultDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: p1Controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'Premios de ${player1?.name ?? 'jugador 1'}'),
-            ),
-            const SizedBox(height: AppSizes.spacingS),
-            TextField(
-              controller: p2Controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'Premios de ${player2?.name ?? 'jugador 2'}'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                PrizeCounter(
+                  label: 'Premios de ${player1?.name ?? 'jugador 1'}',
+                  value: player1Prizes,
+                  onChanged: (v) => setDialogState(() => player1Prizes = v),
+                ),
+                PrizeCounter(
+                  label: 'Premios de ${player2?.name ?? 'jugador 2'}',
+                  value: player2Prizes,
+                  onChanged: (v) => setDialogState(() => player2Prizes = v),
+                ),
+              ],
             ),
             const SizedBox(height: AppSizes.spacingM),
             SwitchListTile(
@@ -135,8 +144,8 @@ Future<MatchResultInput?> showMatchResultDialog(
   if (confirmed != true) return null;
 
   return MatchResultInput(
-    player1Prizes: int.tryParse(p1Controller.text),
-    player2Prizes: int.tryParse(p2Controller.text),
+    player1Prizes: player1Prizes,
+    player2Prizes: player2Prizes,
     winnerId: isDraw ? null : winnerId,
     isDraw: isDraw,
   );
