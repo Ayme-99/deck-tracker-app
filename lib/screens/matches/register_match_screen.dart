@@ -63,7 +63,16 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
     'deck_out': 'Mazo agotado',
   };
 
+  // Issue #184: se pide resultado manual con CUALQUIER motivo de fin
+  // distinto de "Normal", sin importar el marcador de premios -- una
+  // rendicion, tiempo agotado o mazo agotado pueden dar la victoria a quien
+  // iba perdiendo en premios, asi que el marcador por si solo no basta para
+  // saber quien gano. (EditMatchScreen tenia un criterio distinto, mas
+  // restrictivo -- se alinea aqui con el de esta pantalla, que es el
+  // correcto.)
   bool get _needsManualResult => _endReason != 'normal';
+
+  bool get _canSubmit => !_isLoading && !(_needsManualResult && _manualResult == null);
 
   Future<void> _lookupArchetype(String name) async {
     if (name.isEmpty || name == _lastLookedUpName) return;
@@ -88,6 +97,9 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   /// partida en sesiones con varias rondas seguidas.
   Future<void> _handleSubmit({bool chainAnother = false}) async {
     if (!_formKey.currentState!.validate()) return;
+    // Issue #184: con premios empatados y motivo de fin especial, no se
+    // asume ningun resultado por defecto -- hay que elegirlo a mano.
+    if (_needsManualResult && _manualResult == null) return;
 
     setState(() {
       _isLoading = true;
@@ -104,7 +116,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         opponentPrizes: _opponentPrizes,
         endReason: _endReason,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        result: _needsManualResult ? (_manualResult ?? 'tie') : null,
+        result: _needsManualResult ? _manualResult : null,
         tournamentId: widget.tournamentId,
         phase: widget.phase,
         round: _round,
@@ -213,7 +225,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
       body: SafeArea(
         child: SubmitOnEnter(
           onSubmit: _handleSubmit,
-          enabled: !_isLoading,
+          enabled: _canSubmit,
           child: Form(
           key: _formKey,
           child: ListView(
@@ -324,8 +336,13 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                     ButtonSegment(value: 'tie', label: Text('Empate')),
                     ButtonSegment(value: 'loss', label: Text('Perdí')),
                   ],
-                  selected: {_manualResult ?? 'tie'},
-                  onSelectionChanged: (selection) => setState(() => _manualResult = selection.first),
+                  // Sin preseleccion (issue #184): antes arrancaba en
+                  // "Empate" por defecto y era facil guardar sin darse
+                  // cuenta. Ahora hay que elegir explicitamente.
+                  emptySelectionAllowed: true,
+                  selected: _manualResult == null ? const {} : {_manualResult!},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _manualResult = selection.isEmpty ? null : selection.first),
                 ),
               ] else
                 Center(
@@ -374,7 +391,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               ],
 
               FilledButton(
-                onPressed: _isLoading ? null : _handleSubmit,
+                onPressed: _canSubmit ? _handleSubmit : null,
                 child: _isLoading
                     ? const SizedBox(
                         height: AppSizes.spinnerSmall,
@@ -389,7 +406,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               // sin cerrar la pantalla, lista para meter la siguiente (util
               // en sesiones con varias rondas seguidas).
               OutlinedButton(
-                onPressed: _isLoading ? null : () => _handleSubmit(chainAnother: true),
+                onPressed: _canSubmit ? () => _handleSubmit(chainAnother: true) : null,
                 child: const Text('Registrar y añadir otra'),
               ),
             ],

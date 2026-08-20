@@ -42,7 +42,15 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     'deck_out': 'Mazo agotado',
   };
 
-  bool get _needsManualResult => _userPrizes == _opponentPrizes && _endReason != 'normal';
+  // Issue #184: cualquier motivo de fin distinto de "Normal" puede dar la
+  // victoria a quien iba perdiendo en premios (rendicion, tiempo, mazo
+  // agotado...), asi que el marcador por si solo no basta para saber quien
+  // gano -- se pide siempre, no solo con premios empatados.
+  bool get _needsManualResult => _endReason != 'normal';
+
+  // Issue #184: no asumir "empate" por defecto si hace falta resultado
+  // manual y aun no se ha elegido nada explicitamente.
+  bool get _canSubmit => !_isLoading && !(_needsManualResult && _manualResult == null);
 
   @override
   void initState() {
@@ -73,6 +81,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_needsManualResult && _manualResult == null) return;
 
     setState(() {
       _isLoading = true;
@@ -88,7 +97,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
         'opponentPrizes': _opponentPrizes,
         'endReason': _endReason,
         'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        if (_needsManualResult) 'result': _manualResult ?? 'tie',
+        if (_needsManualResult) 'result': _manualResult,
       });
 
       if (_sprite1 != null) {
@@ -215,8 +224,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                     ButtonSegment(value: 'tie', label: Text('Empate')),
                     ButtonSegment(value: 'loss', label: Text('Perdí')),
                   ],
-                  selected: {_manualResult ?? 'tie'},
-                  onSelectionChanged: (selection) => setState(() => _manualResult = selection.first),
+                  emptySelectionAllowed: true,
+                  selected: _manualResult == null ? const {} : {_manualResult!},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _manualResult = selection.isEmpty ? null : selection.first),
                 ),
               ] else
                 Center(
@@ -265,7 +276,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
               ],
 
               FilledButton(
-                onPressed: _isLoading ? null : _handleSave,
+                onPressed: _canSubmit ? _handleSave : null,
                 child: _isLoading
                     ? const SizedBox(
                         height: AppSizes.spinnerSmall,
