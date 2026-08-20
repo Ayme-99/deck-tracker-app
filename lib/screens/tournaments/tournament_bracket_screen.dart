@@ -4,6 +4,7 @@ import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../widgets/tournament_bracket/match_result_dialog.dart';
 import '../../widgets/tournament_bracket/tournament_bracket.dart';
 
 /// Pantalla independiente del bracket (issue #84): navegable libremente
@@ -88,79 +89,18 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
 
     final player1 = _playersById[match.player1Id];
     final player2 = match.player2Id != null ? _playersById[match.player2Id] : null;
-    final p1Controller = TextEditingController(text: match.player1Prizes?.toString() ?? '');
-    final p2Controller = TextEditingController(text: match.player2Prizes?.toString() ?? '');
-    bool isDraw = match.isDraw;
-    String? winnerId = match.winnerId;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('${player1?.name ?? '?'} vs ${player2?.name ?? '?'}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: p1Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Premios de ${player1?.name ?? 'jugador 1'}'),
-              ),
-              const SizedBox(height: AppSizes.spacingS),
-              TextField(
-                controller: p2Controller,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Premios de ${player2?.name ?? 'jugador 2'}'),
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Empate'),
-                value: isDraw,
-                onChanged: (value) => setDialogState(() => isDraw = value),
-              ),
-              if (!isDraw)
-                RadioGroup<String>(
-                  groupValue: winnerId,
-                  onChanged: (value) => setDialogState(() => winnerId = value),
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('Gana ${player1?.name ?? 'jugador 1'}'),
-                        value: match.player1Id,
-                      ),
-                      RadioListTile<String>(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
-                        value: match.player2Id!,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: (!isDraw && winnerId == null) ? null : () => Navigator.of(context).pop(true),
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
+    final result = await showMatchResultDialog(context, match: match, player1: player1, player2: player2);
+    if (result == null || !mounted) return;
 
     try {
       await _tournamentService.registerMatchResult(
         widget.tournamentId,
         match.id,
-        player1Prizes: int.tryParse(p1Controller.text),
-        player2Prizes: int.tryParse(p2Controller.text),
-        winnerId: isDraw ? null : winnerId,
-        isDraw: isDraw,
+        player1Prizes: result.player1Prizes,
+        player2Prizes: result.player2Prizes,
+        winnerId: result.winnerId,
+        isDraw: result.isDraw,
       );
       await _loadData();
     } catch (e) {
