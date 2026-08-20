@@ -5,6 +5,7 @@ import '../../models/match.dart';
 import '../../services/match_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/quick_widget_sync_service.dart';
+import '../../widgets/prize_counter.dart';
 import '../../widgets/sprite_picker.dart';
 
 class EditMatchScreen extends StatefulWidget {
@@ -126,36 +127,6 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     super.dispose();
   }
 
-  Widget _prizeCounter(String label, int value, ValueChanged<int> onChanged) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        const SizedBox(height: AppSizes.spacingS),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: value > 0 ? () => onChanged(value - 1) : null,
-            ),
-            SizedBox(
-              width: AppSizes.badgeWidth,
-              child: Text(
-                '$value',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: AppSizes.textXL, fontWeight: FontWeight.bold),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: value < 6 ? () => onChanged(value + 1) : null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,8 +176,8 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _prizeCounter('Tus premios', _userPrizes, (v) => setState(() => _userPrizes = v)),
-                  _prizeCounter('Premios rival', _opponentPrizes, (v) => setState(() => _opponentPrizes = v)),
+                  PrizeCounter(label: 'Tus premios', value: _userPrizes, onChanged: (v) => setState(() => _userPrizes = v)),
+                  PrizeCounter(label: 'Premios rival', value: _opponentPrizes, onChanged: (v) => setState(() => _opponentPrizes = v)),
                 ],
               ),
               const SizedBox(height: AppSizes.spacingS),

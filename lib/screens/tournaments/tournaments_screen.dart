@@ -169,16 +169,6 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
   }
 
-  /// Extrae (puesto, total_participantes) del texto guardado en
-  /// finalStanding (formato "Nº de M", ver TournamentDetailScreen).
-  /// Devuelve null si no hay standing o no sigue ese patron.
-  (int, int)? _parseStanding(String? finalStanding) {
-    if (finalStanding == null) return null;
-    final match = RegExp(r'^(\d+)º de (\d+)$').firstMatch(finalStanding);
-    if (match == null) return null;
-    return (int.parse(match.group(1)!), int.parse(match.group(2)!));
-  }
-
   String get _sortLabel {
     switch (_sortBy) {
       case 'position':
@@ -197,8 +187,8 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     switch (_sortBy) {
       case 'position':
         list.sort((a, b) {
-          final pa = _parseStanding(a.finalStanding)?.$1;
-          final pb = _parseStanding(b.finalStanding)?.$1;
+          final pa = parseFinalStanding(a.finalStanding)?.$1;
+          final pb = parseFinalStanding(b.finalStanding)?.$1;
           if (pa == null && pb == null) return 0;
           if (pa == null) return 1;
           if (pb == null) return -1;
@@ -207,8 +197,8 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
         break;
       case 'percentage':
         list.sort((a, b) {
-          final sa = _parseStanding(a.finalStanding);
-          final sb = _parseStanding(b.finalStanding);
+          final sa = parseFinalStanding(a.finalStanding);
+          final sb = parseFinalStanding(b.finalStanding);
           final pa = sa != null ? sa.$1 / sa.$2 : null;
           final pb = sb != null ? sb.$1 / sb.$2 : null;
           if (pa == null && pb == null) return 0;
