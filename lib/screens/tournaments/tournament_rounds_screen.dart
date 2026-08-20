@@ -139,21 +139,32 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
     }
   }
 
+  // Issue #186: "Continuar" ahora se deshabilita mientras el texto no sea
+  // un numero valido -- antes se podia pulsar igualmente con el campo vacio
+  // o con texto invalido, y el dialogo se cerraba sin hacer nada ni avisar
+  // (int.tryParse devolvia null y onConfirm nunca se llamaba).
   Future<void> _askNumber(String title, String label, void Function(int) onConfirm) async {
     final controller = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: label),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: label),
+            autofocus: true,
+            onChanged: (_) => setDialogState(() {}),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: int.tryParse(controller.text) == null ? null : () => Navigator.of(context).pop(true),
+              child: const Text('Continuar'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Continuar')),
-        ],
       ),
     );
     final value = int.tryParse(controller.text);
