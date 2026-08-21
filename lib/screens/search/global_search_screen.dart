@@ -53,10 +53,15 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    // Issue #193: si ya habia datos (recarga al volver de un detalle), no
+    // se pisan con el spinner -- se dejan como estan hasta que la red
+    // responda, igual que ya hace DeckListScreen._loadDecks.
+    if (_decks.isEmpty && _tournaments.isEmpty && _archetypes.isEmpty) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final results = await Future.wait([
@@ -100,6 +105,16 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
             : TournamentDetailScreen(tournamentId: tournament.id),
       ),
     );
+    // Issue #193: al volver, recarga por si se edito o elimino algo desde
+    // el detalle -- igual que ya hacen DeckListScreen/TournamentsScreen.
+    if (mounted) _loadData();
+  }
+
+  Future<void> _openDeck(Deck deck) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
+    );
+    if (mounted) _loadData();
   }
 
   void _showArchetypeInfo(OpponentArchetype archetype) {
@@ -184,9 +199,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                     child: ListTile(
                                       title: Text(deck.name),
                                       trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-                                      onTap: () => Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
-                                      ),
+                                      onTap: () => _openDeck(deck),
                                     ),
                                   )),
                             ],
