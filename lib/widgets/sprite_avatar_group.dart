@@ -27,12 +27,20 @@ class SpriteAvatarGroup extends StatelessWidget {
     this.centerAlign = false,
   });
 
-  Widget _sprite(String url) {
+  Widget _sprite(String url, double devicePixelRatio) {
+    // Issue #201: en Flutter Web (CanvasKit), decodificar la imagen a su
+    // resolucion original (los sprites de PokeAPI son 475x475) para
+    // mostrarla en una miniatura pequeña puede saturar el decode/compositing
+    // y pintar el circulo en negro solido en vez del sprite. Al pedir el
+    // tamaño real de pantalla, se decodifica ya reducido.
+    final cacheSize = (size * devicePixelRatio).round();
     return ClipOval(
       child: CachedNetworkImage(
         imageUrl: url,
         width: size,
         height: size,
+        memCacheWidth: cacheSize,
+        memCacheHeight: cacheSize,
         fit: BoxFit.cover,
         placeholder: (context, url) => SizedBox(
           width: size,
@@ -65,13 +73,14 @@ class SpriteAvatarGroup extends StatelessWidget {
         child: Icon(Icons.catching_pokemon, size: size, color: AppColors.muted),
       );
     } else {
+      final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
       content = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _sprite(sprite1!),
+          _sprite(sprite1!, devicePixelRatio),
           if (sprite2 != null) ...[
             const SizedBox(width: AppSizes.spacingXS),
-            _sprite(sprite2!),
+            _sprite(sprite2!, devicePixelRatio),
           ],
         ],
       );
