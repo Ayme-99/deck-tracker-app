@@ -7,6 +7,7 @@ import '../../services/opponent_archetype_service.dart';
 import '../../services/quick_widget_sync_service.dart';
 import '../../widgets/prize_counter.dart';
 import '../../widgets/sprite_picker.dart';
+import '../../widgets/submit_on_enter.dart';
 
 class EditMatchScreen extends StatefulWidget {
   final Match match;
@@ -51,12 +52,15 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
   // Issue #184: no asumir "empate" por defecto si hace falta resultado
   // manual y aun no se ha elegido nada explicitamente.
-  bool get _canSubmit => !_isLoading && !(_needsManualResult && _manualResult == null);
+  bool get _canSubmit =>
+      !_isLoading && !(_needsManualResult && _manualResult == null);
 
   @override
   void initState() {
     super.initState();
-    _opponentController = TextEditingController(text: widget.match.opponentDeck);
+    _opponentController = TextEditingController(
+      text: widget.match.opponentDeck,
+    );
     _notesController = TextEditingController(text: widget.match.notes ?? '');
     _userPrizes = widget.match.userPrizes;
     _opponentPrizes = widget.match.opponentPrizes;
@@ -67,7 +71,9 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
   Future<void> _loadExistingSprites() async {
     try {
-      final archetype = await _archetypeService.getByName(widget.match.opponentDeck);
+      final archetype = await _archetypeService.getByName(
+        widget.match.opponentDeck,
+      );
       if (!mounted) return;
       setState(() {
         _sprite1 = archetype.sprite1;
@@ -97,12 +103,18 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
         'userPrizes': _userPrizes,
         'opponentPrizes': _opponentPrizes,
         'endReason': _endReason,
-        'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        'notes': _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         if (_needsManualResult) 'result': _manualResult,
       });
 
       if (_sprite1 != null) {
-        await _archetypeService.upsert(opponentName, sprite1: _sprite1, sprite2: _sprite2);
+        await _archetypeService.upsert(
+          opponentName,
+          sprite1: _sprite1,
+          sprite2: _sprite2,
+        );
       }
 
       // Resincroniza el widget de acceso rapido (issue #132): esta edicion
@@ -132,131 +144,161 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Editar partida')),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(AppSizes.spacingM),
-            children: [
-              TextFormField(
-                controller: _opponentController,
-                decoration: const InputDecoration(
-                  labelText: 'Mazo rival',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Introduce el mazo rival';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-
-              if (_loadingSprites)
-                const Center(
-                  child: SizedBox(
-                    height: AppSizes.spinnerSmall,
-                    width: AppSizes.spinnerSmall,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+        child: SubmitOnEnter(
+          onSubmit: _handleSave,
+          enabled: _canSubmit,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(AppSizes.spacingM),
+              children: [
+                TextFormField(
+                  controller: _opponentController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mazo rival',
+                    border: OutlineInputBorder(),
                   ),
-                )
-              else
-                SpritePicker(
-                  sprite1: _sprite1,
-                  sprite2: _sprite2,
-                  onChanged: (sprites) {
-                    setState(() {
-                      _sprite1 = sprites[0];
-                      _sprite2 = sprites[1];
-                    });
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Introduce el mazo rival';
+                    }
+                    return null;
                   },
                 ),
-              const SizedBox(height: AppSizes.spacingL),
+                const SizedBox(height: AppSizes.spacingM),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  PrizeCounter(label: 'Tus premios', value: _userPrizes, onChanged: (v) => setState(() => _userPrizes = v)),
-                  PrizeCounter(label: 'Premios rival', value: _opponentPrizes, onChanged: (v) => setState(() => _opponentPrizes = v)),
-                ],
-              ),
-              const SizedBox(height: AppSizes.spacingS),
+                if (_loadingSprites)
+                  const Center(
+                    child: SizedBox(
+                      height: AppSizes.spinnerSmall,
+                      width: AppSizes.spinnerSmall,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  SpritePicker(
+                    sprite1: _sprite1,
+                    sprite2: _sprite2,
+                    onChanged: (sprites) {
+                      setState(() {
+                        _sprite1 = sprites[0];
+                        _sprite2 = sprites[1];
+                      });
+                    },
+                  ),
+                const SizedBox(height: AppSizes.spacingL),
 
-              if (_needsManualResult) ...[
-                const Text(
-                  'Premios empatados con fin de partida especial: indica quién ganó',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    PrizeCounter(
+                      label: 'Tus premios',
+                      value: _userPrizes,
+                      onChanged: (v) => setState(() => _userPrizes = v),
+                    ),
+                    PrizeCounter(
+                      label: 'Premios rival',
+                      value: _opponentPrizes,
+                      onChanged: (v) => setState(() => _opponentPrizes = v),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSizes.spacingS),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'win', label: Text('Gané')),
-                    ButtonSegment(value: 'tie', label: Text('Empate')),
-                    ButtonSegment(value: 'loss', label: Text('Perdí')),
-                  ],
-                  emptySelectionAllowed: true,
-                  selected: _manualResult == null ? const {} : {_manualResult!},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _manualResult = selection.isEmpty ? null : selection.first),
-                ),
-              ] else
-                Center(
-                  child: Text(
-                    _userPrizes > _opponentPrizes
-                        ? '🏆 Victoria'
-                        : _userPrizes < _opponentPrizes
-                            ? '❌ Derrota'
-                            : '🤝 Empate',
-                    style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
+
+                if (_needsManualResult) ...[
+                  const Text(
+                    'Premios empatados con fin de partida especial: indica quién ganó',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppSizes.textS,
+                      color: AppColors.warning,
+                    ),
                   ),
-                ),
-              const SizedBox(height: AppSizes.spacingL),
+                  const SizedBox(height: AppSizes.spacingS),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'win', label: Text('Gané')),
+                      ButtonSegment(value: 'tie', label: Text('Empate')),
+                      ButtonSegment(value: 'loss', label: Text('Perdí')),
+                    ],
+                    emptySelectionAllowed: true,
+                    selected: _manualResult == null
+                        ? const {}
+                        : {_manualResult!},
+                    onSelectionChanged: (selection) => setState(
+                      () => _manualResult = selection.isEmpty
+                          ? null
+                          : selection.first,
+                    ),
+                  ),
+                ] else
+                  Center(
+                    child: Text(
+                      _userPrizes > _opponentPrizes
+                          ? '🏆 Victoria'
+                          : _userPrizes < _opponentPrizes
+                          ? '❌ Derrota'
+                          : '🤝 Empate',
+                      style: const TextStyle(
+                        fontSize: AppSizes.textM,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: AppSizes.spacingL),
 
-              DropdownButtonFormField<String>(
-                initialValue: _endReason,
-                decoration: const InputDecoration(
-                  labelText: 'Motivo de fin de partida',
-                  border: OutlineInputBorder(),
-                ),
-                items: _endReasonLabels.entries
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-                    .toList(),
-                onChanged: (value) => setState(() => _endReason = value!),
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-
-              if (_errorMessage != null) ...[
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  textAlign: TextAlign.center,
+                DropdownButtonFormField<String>(
+                  initialValue: _endReason,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo de fin de partida',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _endReasonLabels.entries
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e.key,
+                          child: Text(e.value),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _endReason = value!),
                 ),
                 const SizedBox(height: AppSizes.spacingM),
-              ],
 
-              FilledButton(
-                onPressed: _canSubmit ? _handleSave : null,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: AppSizes.spinnerSmall,
-                        width: AppSizes.spinnerSmall,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Guardar cambios'),
-              ),
-            ],
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notas (opcional)',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: AppSizes.spacingM),
+
+                if (_errorMessage != null) ...[
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSizes.spacingM),
+                ],
+
+                FilledButton(
+                  onPressed: _canSubmit ? _handleSave : null,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: AppSizes.spinnerSmall,
+                          width: AppSizes.spinnerSmall,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar cambios'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
