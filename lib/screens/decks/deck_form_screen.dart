@@ -362,6 +362,16 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                             controller: card.quantityController,
                             decoration: const InputDecoration(labelText: 'Cant.'),
                             keyboardType: TextInputType.number,
+                            // Issue #188: sin validador, un campo vacio o con
+                            // texto no numerico se guardaba en silencio como
+                            // cantidad 1 (int.tryParse(...) ?? 1).
+                            validator: (value) {
+                              final parsed = int.tryParse(value ?? '');
+                              if (parsed == null || parsed < 1) {
+                                return 'Nº entero > 0';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: AppSizes.spacingS),
