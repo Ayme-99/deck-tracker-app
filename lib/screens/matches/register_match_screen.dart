@@ -304,7 +304,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
               if (_needsManualResult) ...[
                 const Text(
-                  'Este motivo de fin de partida puede no coincidir con el marcador de premios: indica el resultado real',
+                  'Selecciona quién ganó realmente: no se calcula a partir de los premios, y este resultado es el que se guarda en tus estadísticas',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
                 ),
