@@ -55,12 +55,14 @@ class _QuickRegisterDeckPickerScreenState extends State<QuickRegisterDeckPickerS
   }
 
   Future<void> _selectDeck(Deck deck) async {
-    await Navigator.of(context).push(
+    final registered = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => RegisterMatchScreen(deck: deck)),
     );
-    // Tras registrar (o cancelar), vuelve al flujo normal de la app en vez
-    // de quedarse en este selector de un solo uso.
-    if (mounted) Navigator.of(context).pop();
+    // Issue #191: solo abandona este selector si de verdad se registro
+    // una partida. Si el usuario elige el mazo equivocado y cancela desde
+    // RegisterMatchScreen, debe volver aqui para poder elegir otro mazo,
+    // no quedar expulsado del flujo del widget de acceso rapido.
+    if (registered == true && mounted) Navigator.of(context).pop();
   }
 
   @override
