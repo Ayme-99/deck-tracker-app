@@ -207,7 +207,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
                 if (_needsManualResult) ...[
                   const Text(
-                    'Premios empatados con fin de partida especial: indica quién ganó',
+                    'Selecciona quién ganó realmente: no se calcula a partir de los premios, y este resultado es el que se guarda en tus estadísticas',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: AppSizes.textS,
