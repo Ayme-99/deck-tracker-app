@@ -45,14 +45,19 @@ Future<PlayerFormResult?> showPlayerFormDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) {
+        // Issue #190: antes confirm() cortaba en seco sin avisar -- el boton
+        // nunca se deshabilitaba ni se mostraba ningun error, asi que pulsar
+        // "Guardar" con datos invalidos no hacia nada visible.
+        bool isValid() => nameController.text.trim().isNotEmpty && (!isSelf || selfDeckId != null);
+
         void confirm() {
-          if (nameController.text.trim().isEmpty) return;
-          if (isSelf && selfDeckId == null) return; // no se puede confirmar sin mazo
+          if (!isValid()) return;
           Navigator.of(context).pop(true);
         }
 
         return SubmitOnEnter(
           onSubmit: confirm,
+          enabled: isValid(),
           child: AlertDialog(
             title: Text(player == null ? 'Añadir jugador' : 'Editar jugador'),
             content: SingleChildScrollView(
@@ -63,6 +68,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                   TextField(
                     controller: nameController,
                     decoration: const InputDecoration(labelText: 'Nombre'),
+                    onChanged: (_) => setDialogState(() {}),
                   ),
                   const SizedBox(height: AppSizes.spacingM),
                   Autocomplete<String>(
@@ -116,7 +122,10 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                     const SizedBox(height: AppSizes.spacingS),
                     DropdownButtonFormField<String>(
                       initialValue: decks.any((d) => d.id == selfDeckId) ? selfDeckId : null,
-                      decoration: const InputDecoration(labelText: 'Tu mazo real'),
+                      decoration: InputDecoration(
+                        labelText: 'Tu mazo real',
+                        errorText: selfDeckId == null ? 'Elige un mazo' : null,
+                      ),
                       items: decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
                       onChanged: (value) => setDialogState(() => selfDeckId = value),
                     ),
@@ -130,7 +139,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                 child: const Text('Cancelar'),
               ),
               FilledButton(
-                onPressed: confirm,
+                onPressed: isValid() ? confirm : null,
                 child: const Text('Guardar'),
               ),
             ],
