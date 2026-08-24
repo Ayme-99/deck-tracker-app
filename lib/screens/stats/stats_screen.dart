@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/stats_service.dart';
 import '../../services/deck_service.dart';
-import '../../services/opponent_archetype_service.dart';
+import '../../widgets/opponent_options_sheet.dart';
 import '../../widgets/sprite_avatar_group.dart';
-import '../../widgets/sprite_picker.dart';
 import '../../widgets/winrate_chart.dart';
 import '../decks/deck_detail_screen.dart';
 import '../../widgets/deck_shuffle_indicator.dart';
@@ -20,7 +19,6 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStateMixin {
   final _statsService = StatsService();
   final _deckService = DeckService();
-  final _archetypeService = OpponentArchetypeService();
   late final TabController _tabController;
 
   Map<String, dynamic>? _overview;
@@ -143,140 +141,14 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   }
 
   Future<void> _showOpponentOptions(Map<String, dynamic> matchup) async {
-    final name = matchup['opponentDeck'] as String;
-
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar rival'),
-              onTap: () => Navigator.of(context).pop('edit'),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar historial de este rival'),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
-        ),
-      ),
+    await showOpponentOptionsSheet(
+      context,
+      name: matchup['opponentDeck'] as String,
+      sprite1: matchup['sprite1'] as String?,
+      sprite2: matchup['sprite2'] as String?,
+      totalMatches: matchup['totalMatches'] as int?,
+      onChanged: _loadData,
     );
-
-    if (!mounted) return;
-
-    if (action == 'edit') {
-      await _editOpponent(name, matchup['sprite1'] as String?, matchup['sprite2'] as String?);
-    } else if (action == 'delete') {
-      await _confirmDeleteOpponent(name, matchup);
-    }
-  }
-
-  Future<void> _editOpponent(String name, String? sprite1, String? sprite2) async {
-    final nameController = TextEditingController(text: name);
-    String? editedSprite1 = sprite1;
-    String? editedSprite2 = sprite2;
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Editar rival'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: AppSizes.spacingM),
-                SpritePicker(
-                  sprite1: editedSprite1,
-                  sprite2: editedSprite2,
-                  onChanged: (sprites) => setDialogState(() {
-                    editedSprite1 = sprites[0];
-                    editedSprite2 = sprites[1];
-                  }),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final newName = nameController.text.trim();
-    nameController.dispose();
-
-    if (saved != true || !mounted || newName.isEmpty) return;
-
-    try {
-      await _archetypeService.update(
-        name,
-        newName: newName != name ? newName : null,
-        sprite1: editedSprite1,
-        sprite2: editedSprite2,
-      );
-      if (!mounted) return;
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al editar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
-  }
-
-  Future<void> _confirmDeleteOpponent(String name, Map<String, dynamic> matchup) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar mazo rival'),
-        content: Text(
-          '¿Seguro que quieres eliminar "$name"? Se eliminarán también sus '
-          '${matchup['totalMatches']} partidas registradas y dejarán de contar en tus '
-          'estadísticas. Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await _archetypeService.delete(name);
-      if (!mounted) return;
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
   }
 
   Widget _statColumn(String value, String label, Color color) {

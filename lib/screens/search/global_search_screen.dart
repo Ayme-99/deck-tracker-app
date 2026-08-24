@@ -6,6 +6,7 @@ import '../../models/tournament.dart';
 import '../../services/deck_service.dart';
 import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
+import '../../widgets/opponent_options_sheet.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../decks/deck_detail_screen.dart';
 import '../tournaments/tournament_detail_screen.dart';
@@ -117,25 +118,16 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
     if (mounted) _loadData();
   }
 
-  void _showArchetypeInfo(OpponentArchetype archetype) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(archetype.name),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SpriteAvatarGroup(sprite1: archetype.sprite1, sprite2: archetype.sprite2, size: AppSizes.iconLarge),
-            const SizedBox(width: AppSizes.spacingM),
-            const Expanded(
-              child: Text('Consulta su historial completo en la pestaña Rivales de Estadísticas.'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cerrar')),
-        ],
-      ),
+  // Issue #198: antes solo mostraba un dialogo informativo sin ninguna
+  // accion real -- se reutiliza el mismo bottom sheet de editar/eliminar
+  // que ya existia en stats_screen.dart (pestaña Rivales).
+  Future<void> _showArchetypeInfo(OpponentArchetype archetype) async {
+    await showOpponentOptionsSheet(
+      context,
+      name: archetype.name,
+      sprite1: archetype.sprite1,
+      sprite2: archetype.sprite2,
+      onChanged: _loadData,
     );
   }
 
