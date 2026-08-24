@@ -38,9 +38,12 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   final _rivalSearchController = TextEditingController();
   String _rivalSearchQuery = '';
 
+  // Issue #196: alineado con las opciones de DeckListScreen (Nombre, Más
+  // victorias) para que ambos menus de ordenar ofrezcan el mismo conjunto.
   final _sortByLabels = const {
     'winRate': 'Win rate',
     'totalMatches': 'Partidas',
+    'wins': 'Más victorias',
     'deckName': 'Nombre',
   };
 

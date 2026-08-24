@@ -153,9 +153,23 @@ class _DeckListScreenState extends State<DeckListScreen> {
         return 'Nombre';
       case 'wins':
         return 'Más victorias';
+      case 'winRate':
+        return 'Win rate';
       default:
         return 'Actividad reciente';
     }
+  }
+
+  // Issue #196: win rate de un mazo a partir de su overview ya cargado
+  // (wins/losses/ties), 0 si aun no tiene overview u partidas.
+  double _winRateOf(Deck deck) {
+    final overview = _overviews[deck.id];
+    if (overview == null) return 0;
+    final wins = (overview['wins'] ?? 0) as num;
+    final losses = (overview['losses'] ?? 0) as num;
+    final ties = (overview['ties'] ?? 0) as num;
+    final total = wins + losses + ties;
+    return total == 0 ? 0 : wins / total;
   }
 
   List<Deck> get _filteredDecks {
@@ -174,6 +188,9 @@ class _DeckListScreenState extends State<DeckListScreen> {
           final winsB = _overviews[b.id]?['wins'] ?? 0;
           return (winsB as num).compareTo(winsA as num);
         });
+        break;
+      case 'winRate':
+        sorted.sort((a, b) => _winRateOf(b).compareTo(_winRateOf(a)));
         break;
       default:
         // Ultima actividad (updatedAt, o createdAt si no existe), mas reciente primero
@@ -304,6 +321,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
               PopupMenuItem(value: 'activity', child: Text('Actividad reciente')),
               PopupMenuItem(value: 'name', child: Text('Nombre')),
               PopupMenuItem(value: 'wins', child: Text('Más victorias')),
+              PopupMenuItem(value: 'winRate', child: Text('Win rate')),
             ],
             child: Row(
               mainAxisSize: MainAxisSize.min,
