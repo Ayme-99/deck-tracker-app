@@ -59,14 +59,32 @@ class _BackupScreenState extends State<BackupScreen> {
     final bytes = result?.files.single.bytes;
     if (bytes == null || !mounted) return;
 
+    // Issue #197: se parsea el JSON ANTES del dialogo de confirmacion para
+    // poder mostrar cuantas entidades contiene -- antes no habia forma de
+    // detectar un archivo equivocado o corrupto hasta despues de restaurar.
+    late final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El archivo no es un backup válido (JSON corrupto)')),
+      );
+      return;
+    }
+
+    final deckCount = (data['decks'] as List?)?.length ?? 0;
+    final matchCount = (data['matches'] as List?)?.length ?? 0;
+    final tournamentCount = (data['tournaments'] as List?)?.length ?? 0;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Restaurar backup'),
-        content: const Text(
-          'Esto añadirá los mazos, partidas y torneos del backup a tu cuenta actual como '
-          'entidades nuevas -- no sobrescribe ni borra nada de lo que ya tengas. Si restauras '
-          'el mismo backup dos veces, tendrás los mazos duplicados.',
+        content: Text(
+          'Vas a añadir $deckCount mazos, $matchCount partidas y $tournamentCount torneos a tu '
+          'cuenta actual como entidades nuevas -- no sobrescribe ni borra nada de lo que ya '
+          'tengas. Si restauras el mismo backup dos veces, tendrás los mazos duplicados.',
         ),
         actions: [
           TextButton(
@@ -84,7 +102,6 @@ class _BackupScreenState extends State<BackupScreen> {
 
     setState(() => _isRestoring = true);
     try {
-      final data = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
       final summary = await _backupService.restoreBackup(data);
 
       if (!mounted) return;
