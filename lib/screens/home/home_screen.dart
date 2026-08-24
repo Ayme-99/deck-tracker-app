@@ -26,6 +26,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Key _deckListKey = UniqueKey();
   Key _statsKey = UniqueKey();
   Key _tournamentsKey = UniqueKey();
+  String? _username;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  // Issue #202: nombre de usuario mostrado en el menu de usuario. Si falla
+  // (ej. sin red al arrancar), simplemente no se muestra -- no es critico
+  // para el resto de la pantalla.
+  Future<void> _loadUsername() async {
+    try {
+      final me = await _authService.getMe();
+      if (!mounted) return;
+      setState(() => _username = me['username'] as String?);
+    } catch (_) {
+      // sin username no pasa nada, el menu funciona igual
+    }
+  }
 
   Future<void> _handleLogout() async {
     await _authService.logout();
@@ -107,6 +127,41 @@ class _HomeScreenState extends State<HomeScreen> {
     if (selected != null) AccentColorService.setAccent(selected);
   }
 
+  /// Selector de tema (issue #202): mismo patron de dialogo que el color de
+  /// acento, para que ambos vivan como entradas del menu de usuario en vez
+  /// de icon buttons sueltos.
+  Future<void> _showThemePicker() async {
+    final selected = await showDialog<ThemeMode>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Tema'),
+        children: [
+          for (final mode in ThemeMode.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(mode),
+              child: Row(
+                children: [
+                  Icon(switch (mode) {
+                    ThemeMode.system => Icons.brightness_auto_outlined,
+                    ThemeMode.light => Icons.light_mode_outlined,
+                    ThemeMode.dark => Icons.dark_mode_outlined,
+                  }),
+                  const SizedBox(width: AppSizes.spacingM),
+                  Text(switch (mode) {
+                    ThemeMode.system => 'Automático (sistema)',
+                    ThemeMode.light => 'Claro',
+                    ThemeMode.dark => 'Oscuro',
+                  }),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (selected != null) ThemePreferenceService.setThemeMode(selected);
+  }
+
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
@@ -143,58 +198,69 @@ class _HomeScreenState extends State<HomeScreen> {
               tooltip: 'Importar torneo',
               onPressed: _handleImportTournament,
             ),
-          IconButton(
-            icon: const Icon(Icons.settings_backup_restore_outlined),
-            tooltip: 'Copia de seguridad',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BackupScreen()),
-            ),
-          ),
-          ValueListenableBuilder<String>(
-            valueListenable: AccentColorService.accentKey,
-            builder: (context, accentKey, _) {
-              // Muestra el color en un circulo con borde blanco en vez de
-              // teñir el propio icono: en claro la barra ya usa el acento
-              // de fondo, y un icono del mismo color se camuflaba del todo
-              // (issue #168, cuarta ronda de feedback).
-              return IconButton(
-                icon: Container(
-                  width: AppSizes.iconSmall,
-                  height: AppSizes.iconSmall,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AccentColorService.palette[accentKey],
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
+          // Issue #202: copia de seguridad, color de acento, tema y cerrar
+          // sesion vivian como icon buttons sueltos que se iban acumulando
+          // en la AppBar segun se añadian funciones -- se agrupan en un
+          // unico menu de usuario (primer paso hacia una futura pantalla de
+          // perfil/ajustes).
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Usuario',
+            itemBuilder: (context) => [
+              if (_username != null) ...[
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Text(_username!, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                tooltip: 'Color de acento',
-                onPressed: _showAccentPicker,
-              );
+                const PopupMenuDivider(),
+              ],
+              const PopupMenuItem(
+                value: 'backup',
+                child: ListTile(
+                  leading: Icon(Icons.settings_backup_restore_outlined),
+                  title: Text('Copia de seguridad'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'accent',
+                child: ListTile(
+                  leading: Icon(Icons.palette_outlined),
+                  title: Text('Color de acento'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'theme',
+                child: ListTile(
+                  leading: Icon(Icons.brightness_6_outlined),
+                  title: Text('Tema'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('Cerrar sesión'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              switch (value) {
+                case 'backup':
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const BackupScreen()),
+                  );
+                case 'accent':
+                  _showAccentPicker();
+                case 'theme':
+                  _showThemePicker();
+                case 'logout':
+                  _handleLogout();
+              }
             },
-          ),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: ThemePreferenceService.themeMode,
-            builder: (context, mode, _) {
-              return PopupMenuButton<ThemeMode>(
-                icon: Icon(switch (mode) {
-                  ThemeMode.light => Icons.light_mode_outlined,
-                  ThemeMode.dark => Icons.dark_mode_outlined,
-                  ThemeMode.system => Icons.brightness_auto_outlined,
-                }),
-                tooltip: 'Tema',
-                initialValue: mode,
-                onSelected: ThemePreferenceService.setThemeMode,
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: ThemeMode.system, child: Text('Automático (sistema)')),
-                  PopupMenuItem(value: ThemeMode.light, child: Text('Claro')),
-                  PopupMenuItem(value: ThemeMode.dark, child: Text('Oscuro')),
-                ],
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleLogout,
           ),
         ],
       ),
