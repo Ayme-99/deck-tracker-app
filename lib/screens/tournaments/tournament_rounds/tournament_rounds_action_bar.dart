@@ -20,6 +20,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
   final VoidCallback onGenerateGroupStage;
   final VoidCallback onClosePhase;
   final VoidCallback onAdvanceBracket;
+  final VoidCallback onFinishTournament;
 
   const TournamentRoundsActionBar({
     super.key,
@@ -35,6 +36,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
     required this.onGenerateGroupStage,
     required this.onClosePhase,
     required this.onAdvanceBracket,
+    required this.onFinishTournament,
   });
 
   @override
@@ -110,6 +112,17 @@ class TournamentRoundsActionBar extends StatelessWidget {
         onPressed: onAdvanceBracket,
         icon: const Icon(Icons.arrow_forward),
         label: const Text('Avanzar a la siguiente fase'),
+      ));
+    }
+
+    // Issue #207: antes "Finalizar torneo" solo vivia en el menu de la
+    // lista de Torneos (otra pantalla) -- una vez se llega a la final, se
+    // ofrece tambien aqui mismo, donde se esta jugando.
+    if (hasEliminationMatches && currentEliminationPhase == 'final' && tournament!.status != 'finished') {
+      buttons.add(FilledButton.icon(
+        onPressed: onFinishTournament,
+        icon: const Icon(Icons.emoji_events),
+        label: const Text('Finalizar torneo'),
       ));
     }
 

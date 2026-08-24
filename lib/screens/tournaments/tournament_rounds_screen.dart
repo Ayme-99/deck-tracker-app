@@ -240,6 +240,13 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
     });
   }
 
+  // Issue #207: "Finalizar torneo" solo era accesible desde la lista de
+  // Torneos (long-press), sin ningun enlace desde Rondas -- donde realmente
+  // se juega y se ve cuando ya no queda nada pendiente.
+  Future<void> _handleFinishTournament() async {
+    await _runAction(() => _tournamentService.updateTournament(widget.tournamentId, {'status': 'finished'}));
+  }
+
   Future<void> _handleMatchTap(TournamentMatch match) async {
     if (match.isBye) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -424,6 +431,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
                   onGenerateGroupStage: _handleGenerateGroupStage,
                   onClosePhase: _handleClosePhase,
                   onAdvanceBracket: _handleAdvanceBracket,
+                  onFinishTournament: _handleFinishTournament,
                 ),
                 if (!hasAnyMatch)
                   const Padding(
