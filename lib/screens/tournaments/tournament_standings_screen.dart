@@ -33,6 +33,21 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  // Issue #205: en fase de grupos, se agrupa la clasificacion por grupo
+  // (tarjetas tipo sorteo de Mundial) en vez de un ranking global unico --
+  // antes no habia ningun sitio donde consultar la composicion de cada
+  // grupo.
+  bool get _hasGroups => _standings.any((e) => e['groupName'] != null);
+
+  Map<String, List<Map<String, dynamic>>> get _standingsByGroup {
+    final map = <String, List<Map<String, dynamic>>>{};
+    for (final entry in _standings) {
+      final group = entry['groupName'] as String? ?? 'Sin grupo';
+      map.putIfAbsent(group, () => []).add(entry);
+    }
+    return map;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +83,60 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  // Issue #205: tarjetas por grupo (una por cada grupo, con su ranking
+  // interno), como un sorteo de fase de grupos -- reutiliza _StandingRow
+  // para no duplicar el formato de cada fila.
+  Widget _buildGroupsView() {
+    final groupsByName = _standingsByGroup;
+    final groupNames = groupsByName.keys.toList()..sort();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSizes.spacingM),
+      child: Wrap(
+        spacing: AppSizes.spacingM,
+        runSpacing: AppSizes.spacingM,
+        children: groupNames.map((groupName) {
+          final entries = groupsByName[groupName]!;
+          return SizedBox(
+            width: 320,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacingM,
+                      vertical: AppSizes.spacingS,
+                    ),
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      groupName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacingS),
+                    child: Column(
+                      children: entries.map((entry) {
+                        final sprites = _spriteLookup.spritesForName(entry['deckArchetype'] as String?);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
+                          child: _StandingRow(entry: entry, sprite1: sprites.$1, sprite2: sprites.$2),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   @override
@@ -108,16 +177,18 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
                             ],
                           ),
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(AppSizes.spacingM),
-                          itemCount: _standings.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingXS),
-                          itemBuilder: (context, index) {
-                            final entry = _standings[index];
-                            final sprites = _spriteLookup.spritesForName(entry['deckArchetype'] as String?);
-                            return _StandingRow(entry: entry, sprite1: sprites.$1, sprite2: sprites.$2);
-                          },
-                        ),
+                      : _hasGroups
+                          ? _buildGroupsView()
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(AppSizes.spacingM),
+                              itemCount: _standings.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: AppSizes.spacingXS),
+                              itemBuilder: (context, index) {
+                                final entry = _standings[index];
+                                final sprites = _spriteLookup.spritesForName(entry['deckArchetype'] as String?);
+                                return _StandingRow(entry: entry, sprite1: sprites.$1, sprite2: sprites.$2);
+                              },
+                            ),
                 ),
     );
   }
