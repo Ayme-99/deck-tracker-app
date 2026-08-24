@@ -33,6 +33,11 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   String _sortBy = 'winRate';
   int _minMatches = 3;
 
+  // Issue #199: filtro por nombre en la pestaña Rivales, mismo patron que
+  // ya usa deck_list_screen.dart para mazos.
+  final _rivalSearchController = TextEditingController();
+  String _rivalSearchQuery = '';
+
   final _sortByLabels = const {
     'winRate': 'Win rate',
     'totalMatches': 'Partidas',
@@ -44,11 +49,15 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+    _rivalSearchController.addListener(() {
+      setState(() => _rivalSearchQuery = _rivalSearchController.text.trim().toLowerCase());
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _rivalSearchController.dispose();
     super.dispose();
   }
 
@@ -417,6 +426,14 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   /// rival, independientemente de con qué mazo propio se jugó. Antes vivía
   /// apilada bajo "Ranking de mazos" en el mismo ListView.
   Widget _buildRivalsTab() {
+    final filteredMatchups = _rivalSearchQuery.isEmpty
+        ? _opponentMatchups
+        : _opponentMatchups
+            .where((m) => ((m as Map<String, dynamic>)['opponentDeck'] as String? ?? '')
+                .toLowerCase()
+                .contains(_rivalSearchQuery))
+            .toList();
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
@@ -427,13 +444,35 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
             style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
           ),
           const SizedBox(height: AppSizes.spacingM),
+          if (_opponentMatchups.isNotEmpty)
+            TextField(
+              controller: _rivalSearchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar rival por nombre',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: _rivalSearchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _rivalSearchController.clear(),
+                      )
+                    : null,
+              ),
+            ),
+          if (_opponentMatchups.isNotEmpty) const SizedBox(height: AppSizes.spacingM),
           if (_opponentMatchups.isEmpty)
             const Text(
               'Registra partidas para ver tu historial contra cada rival',
               style: TextStyle(color: AppColors.muted),
             )
+          else if (filteredMatchups.isEmpty)
+            Text(
+              'Ningún rival coincide con "$_rivalSearchQuery"',
+              style: const TextStyle(color: AppColors.muted),
+            )
           else
-            ..._opponentMatchups.map((matchup) {
+            ...filteredMatchups.map((matchup) {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
