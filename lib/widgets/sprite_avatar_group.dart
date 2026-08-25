@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:deck_tracker_app/styles.dart';
@@ -28,11 +29,33 @@ class SpriteAvatarGroup extends StatelessWidget {
   });
 
   Widget _sprite(String url, double devicePixelRatio) {
-    // Issue #201: en Flutter Web (CanvasKit), decodificar la imagen a su
-    // resolucion original (los sprites de PokeAPI son 475x475) para
-    // mostrarla en una miniatura pequeña puede saturar el decode/compositing
-    // y pintar el circulo en negro solido en vez del sprite. Al pedir el
-    // tamaño real de pantalla, se decodifica ya reducido.
+    // Issue #232 (segunda vuelta de la #201): la consola mostraba "WebGL:
+    // INVALID_VALUE: texImage2D: no image" -- CanvasKit intentando subir una
+    // textura de un decode que fallo en silencio (frame invalido), no un
+    // problema de tamaño de cache. memCacheWidth/memCacheHeight (intento
+    // anterior) fuerza un resize en el decode que es justo el patron con
+    // bugs conocidos en cached_network_image sobre Flutter Web + CanvasKit.
+    // En vez de forzar el resize, en web se evita del todo el gestor de
+    // cache de cached_network_image (que es donde esta el bug) y se usa
+    // Image.network, cuyo decode nativo del navegador no lo sufre. En
+    // movil/escritorio se mantiene CachedNetworkImage por el cache en disco
+    // real que aporta ahi.
+    if (kIsWeb) {
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.catching_pokemon,
+            size: size,
+            color: AppColors.muted,
+          ),
+        ),
+      );
+    }
+
     final cacheSize = (size * devicePixelRatio).round();
     return ClipOval(
       child: CachedNetworkImage(
