@@ -18,4 +18,4 @@ assignees: ''
 **Prioridad:**
 - [ ] Nice to have
 - [ ] Bastante útil
-- [ ] Importante para v1.3.0
+- [ ] Importante para la última release
