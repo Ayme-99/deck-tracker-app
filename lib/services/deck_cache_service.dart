@@ -34,6 +34,15 @@ class DeckCacheService {
     await prefs.setString(_key, payload);
   }
 
+  /// Borra el snapshot guardado (logout, issue #234: sin esto, al iniciar
+  /// sesion con otra cuenta se veian brevemente los mazos del usuario
+  /// anterior mientras la red respondia, porque la clave del cache no
+  /// distingue de quien es).
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
+  }
+
   /// Devuelve null si no hay nada guardado o si el JSON esta corrupto (ej.
   /// cambio de formato entre versiones de la app).
   Future<DeckListSnapshot?> load() async {
