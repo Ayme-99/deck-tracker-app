@@ -1,9 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
+import 'deck_cache_service.dart';
 
 class AuthService {
   final _api = ApiService();
   final _storage = const FlutterSecureStorage();
+  final _deckCacheService = DeckCacheService();
 
   Future<Map<String, dynamic>> register(String username, String password) async {
     final response = await _api.post('/auth/register', {
@@ -38,5 +40,10 @@ class AuthService {
 
   Future<void> logout() async {
     await _storage.delete(key: 'token');
+    // Issue #234: sin esto, al iniciar sesion con otra cuenta se veian
+    // brevemente los mazos del usuario anterior (el cache local no
+    // distingue de quien es, y DeckListScreen lo muestra al instante
+    // mientras espera la respuesta de red).
+    await _deckCacheService.clear();
   }
 }
