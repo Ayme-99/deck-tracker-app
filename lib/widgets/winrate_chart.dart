@@ -1,6 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 
+// Issue #243: paso entre lineas divisorias verticales, adaptado al numero
+// de partidas mostradas (N) en vez de un valor fijo. Se elige el multiplo
+// de 5 mas cercano a N/4 (apuntando a ~3-4 divisiones); en empate exacto
+// (N/4 equidista de dos multiplos de 5) se elige el multiplo par de 5, sin
+// una razon especial mas alla de dar un resultado deterministico. No existe
+// una formula limpia que reproduzca cualquier ejemplo manual imaginable
+// (ver discusion en la issue) -- esta es la mas simple que cuadra con la
+// inmensa mayoria de los casos razonables.
+int winrateChartGridStep(int n) {
+  final raw = n / 4;
+  final lowMult = (raw / 5).floor() * 5;
+  if (lowMult <= 0) return 5;
+  final highMult = lowMult + 5;
+  final distLow = raw - lowMult;
+  final distHigh = highMult - raw;
+  if (distLow < distHigh) return lowMult;
+  if (distHigh < distLow) return highMult;
+  return (lowMult ~/ 5).isEven ? lowMult : highMult;
+}
+
+/// Posiciones (en nº de partida, 1..N) donde dibujar las lineas divisorias:
+/// multiplos del paso, sin incluir la propia N.
+List<int> winrateChartGridLines(int n) {
+  if (n <= 0) return const [];
+  final step = winrateChartGridStep(n);
+  final lines = <int>[];
+  for (var line = step; line < n; line += step) {
+    lines.add(line);
+  }
+  return lines;
+}
+
 /// Evolución del win-rate a lo largo del tiempo (issue #134 para un mazo
 /// concreto, issue #88/#145 para el agregado global): una línea por
 /// win-rate acumulado, últimas 5 y últimas 10 partidas. Se dibuja con un
@@ -198,10 +230,18 @@ class _WinrateChartPainter extends CustomPainter {
   // solapen con el trazado de las lineas.
   static const _axisLabelWidth = 30.0;
 
+  // Issue #243: margen reservado abajo para el numero de partida de cada
+  // linea divisoria vertical.
+  static const _bottomLabelHeight = 14.0;
+
   /// Rect real donde se dibujan las lineas, descontando el margen de las
-  /// etiquetas a izquierda y derecha.
-  Rect _chartRect(Size size) =>
-      Rect.fromLTRB(_axisLabelWidth, 0, size.width - _axisLabelWidth, size.height);
+  /// etiquetas a izquierda, derecha y abajo.
+  Rect _chartRect(Size size) => Rect.fromLTRB(
+        _axisLabelWidth,
+        0,
+        size.width - _axisLabelWidth,
+        size.height - _bottomLabelHeight,
+      );
 
   List<Offset> _points(Rect chartRect, String key) {
     final n = timeline.length;
@@ -273,6 +313,19 @@ class _WinrateChartPainter extends CustomPainter {
     painter.paint(canvas, Offset(size.width - _axisLabelWidth + 4, labelY));
   }
 
+  // Issue #243: numero de partida centrado debajo de cada linea divisoria.
+  void _drawGridLineLabel(Canvas canvas, double x, double bottom, int line) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: '$line',
+        style: const TextStyle(color: AppColors.muted, fontSize: 9),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(canvas, Offset(x - painter.width / 2, bottom + 2));
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final chartRect = _chartRect(size);
@@ -285,6 +338,20 @@ class _WinrateChartPainter extends CustomPainter {
       final y = chartRect.height * fraction;
       canvas.drawLine(Offset(chartRect.left, y), Offset(chartRect.right, y), gridPaint);
       _drawAxisLabel(canvas, size, y, (100 - fraction * 100).round());
+    }
+
+    // Issue #243: lineas divisorias verticales sutiles, para orientarse de
+    // un vistazo en cuantas partidas se esta mirando sin tener que contar
+    // puntos. El numero de partida se etiqueta debajo de cada linea.
+    final n = timeline.length;
+    for (final line in winrateChartGridLines(n)) {
+      // Misma escala que _points (x = left + width*i/(n-1)): la partida
+      // numero `line` es el punto de indice `line-1`, para que la linea
+      // caiga justo sobre el punto de datos correspondiente, no en un
+      // punto intermedio arbitrario (n en vez de n-1).
+      final x = n == 1 ? chartRect.left : chartRect.left + chartRect.width * (line - 1) / (n - 1);
+      canvas.drawLine(Offset(x, chartRect.top), Offset(x, chartRect.bottom), gridPaint);
+      _drawGridLineLabel(canvas, x, chartRect.bottom, line);
     }
 
     if (!hidden.contains('last10WinRate')) {
