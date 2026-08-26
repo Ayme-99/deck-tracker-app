@@ -2,28 +2,27 @@ import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/update_check_service.dart';
-import '../decks/deck_list_screen.dart';
-import '../stats/stats_screen.dart';
-import '../tournaments/tournaments_screen.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
 import '../profile/profile_screen.dart';
 
+/// Shell de las 3 pestañas principales (issue #238: cada una vive en su
+/// propia ruta con URL real -- /decks, /stats, /tournaments -- via
+/// StatefulShellRoute, que mantiene el estado de cada pestaña vivo al
+/// cambiar entre ellas, igual que hacia antes el IndexedStack manual).
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final StatefulNavigationShell navigationShell;
+
+  const HomeScreen({super.key, required this.navigationShell});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  Key _deckListKey = UniqueKey();
-  Key _statsKey = UniqueKey();
-  Key _tournamentsKey = UniqueKey();
-
   @override
   void initState() {
     super.initState();
@@ -73,7 +72,9 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const DeckFormScreen()),
     );
     if (created == true) {
-      setState(() => _deckListKey = UniqueKey());
+      // initialLocation: true resetea la pestaña a su ruta inicial,
+      // forzando su recarga -- mismo efecto que antes tenia el UniqueKey.
+      widget.navigationShell.goBranch(0, initialLocation: true);
     }
   }
 
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const TournamentFormScreen()),
     );
     if (created != null) {
-      setState(() => _tournamentsKey = UniqueKey());
+      widget.navigationShell.goBranch(2, initialLocation: true);
     }
   }
 
@@ -91,32 +92,25 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const TournamentImportScreen()),
     );
     if (imported != null) {
-      setState(() => _tournamentsKey = UniqueKey());
+      widget.navigationShell.goBranch(2, initialLocation: true);
     }
   }
 
   void _onTabSelected(int index) {
-    setState(() {
-      _currentIndex = index;
-      if (index == 1) {
-        _statsKey = UniqueKey(); // fuerza recarga de stats cada vez que se visita la pestaña
-      }
-    });
+    // La pestaña de Stats siempre se recarga al seleccionarla (mismo
+    // comportamiento previo al UniqueKey); Mazos/Torneos preservan su
+    // estado al volver a ellas.
+    widget.navigationShell.goBranch(index, initialLocation: index == 1);
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = widget.navigationShell.currentIndex;
     final titles = ['Mis Mazos', 'Estadísticas', 'Torneos'];
-
-    final screens = [
-      DeckListScreen(key: _deckListKey),
-      StatsScreen(key: _statsKey),
-      TournamentsScreen(key: _tournamentsKey),
-    ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_currentIndex]),
+        title: Text(titles[currentIndex]),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -125,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
             ),
           ),
-          if (_currentIndex == 2)
+          if (currentIndex == 2)
             IconButton(
               icon: const Icon(Icons.file_download_outlined),
               tooltip: 'Importar torneo',
@@ -144,17 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
-      floatingActionButton: _currentIndex == 0
+      body: widget.navigationShell,
+      floatingActionButton: currentIndex == 0
           ? FloatingActionButton.extended(
               onPressed: _handleCreateDeck,
               icon: const Icon(Icons.add),
               label: const Text('Añadir mazo'),
             )
-          : _currentIndex == 2
+          : currentIndex == 2
               ? FloatingActionButton.extended(
                   onPressed: _handleCreateTournament,
                   icon: const Icon(Icons.add),
@@ -162,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               : null,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: _onTabSelected,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.style), label: 'Mazos'),

@@ -74,6 +74,11 @@ dependencies:
   # Abrir el enlace a la pagina de releases de GitHub (issue #233)
   url_launcher: ^6.3.1
 
+  # Rutas con URL real por pantalla en web (issue #238). Alcance inicial:
+  # solo las 3 pestañas principales (Mazos/Stats/Torneos); el resto de
+  # pantallas sigue con Navigator.push imperativo sobre el mismo Navigator.
+  go_router: ^14.6.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
