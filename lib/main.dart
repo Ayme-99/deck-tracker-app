@@ -3,8 +3,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
-import 'screens/auth/splash_screen.dart';
 import 'screens/matches/quick_register_deck_picker_screen.dart';
+import 'config/app_router.dart';
 import 'config/navigation_service.dart';
 import 'services/accent_color_service.dart';
 import 'services/theme_preference_service.dart';
@@ -72,14 +72,13 @@ class _DeckTrackerAppState extends State<DeckTrackerApp> {
         return ValueListenableBuilder<String>(
           valueListenable: AccentColorService.accentKey,
           builder: (context, accentKey, _) {
-            return MaterialApp(
-              navigatorKey: NavigationService.navigatorKey,
+            return MaterialApp.router(
+              routerConfig: appRouter,
               title: 'Deck Tracker',
               theme: buildAppTheme(Brightness.light),
               darkTheme: buildAppTheme(Brightness.dark),
               themeMode: mode,
               debugShowCheckedModeBanner: false,
-              home: const SplashScreen(),
             );
           },
         );

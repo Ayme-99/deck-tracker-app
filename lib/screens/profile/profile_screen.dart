@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/accent_color_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
-import '../auth/login_screen.dart';
 import '../backup/backup_screen.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
@@ -47,10 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _handleLogout() async {
     await _authService.logout();
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    context.go('/login');
   }
 
   /// Selector de color de acento (issue #168): dialogo con un circulo por

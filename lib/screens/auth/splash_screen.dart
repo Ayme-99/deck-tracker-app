@@ -2,13 +2,12 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:home_widget/home_widget.dart';
 import '../../services/auth_service.dart';
 import '../../services/quick_widget_sync_service.dart';
 import '../../widgets/deck_shuffle_indicator.dart';
 import '../matches/quick_register_deck_picker_screen.dart';
-import 'login_screen.dart';
-import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,11 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => isLoggedIn ? const HomeScreen() : const LoginScreen(),
-      ),
-    );
+    context.go(isLoggedIn ? '/decks' : '/login');
 
     // Si la sesion es valida, comprueba si la app se abrio desde el widget
     // de acceso rapido (issue #10) con la app previamente cerrada -- el
