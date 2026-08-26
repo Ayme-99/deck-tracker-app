@@ -67,6 +67,13 @@ dependencies:
   # Elegir el archivo JSON a restaurar en el backup de cuenta (issue #165)
   file_picker: ^8.1.6
 
+  # Version/build actual de la app, para compararla con la ultima release
+  # publicada en GitHub (issue #233)
+  package_info_plus: ^8.1.2
+
+  # Abrir el enlace a la pagina de releases de GitHub (issue #233)
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
