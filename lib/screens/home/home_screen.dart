@@ -1,6 +1,9 @@
 import 'package:deck_tracker_app/screens/decks/deck_form_screen.dart';
 import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../services/update_check_service.dart';
 import '../decks/deck_list_screen.dart';
 import '../stats/stats_screen.dart';
 import '../tournaments/tournaments_screen.dart';
@@ -20,6 +23,50 @@ class _HomeScreenState extends State<HomeScreen> {
   Key _deckListKey = UniqueKey();
   Key _statsKey = UniqueKey();
   Key _tournamentsKey = UniqueKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForUpdate();
+  }
+
+  // Issue #233: aviso de nueva version disponible. En web no tiene sentido
+  // "instalar" nada (bastaria con recargar la pagina, ver notas de alcance
+  // de la issue) -- se deja fuera de alcance por ahora y solo se comprueba
+  // en movil/escritorio.
+  //
+  // AlertDialog en vez de un banner: mas visual, y no bloquea de verdad el
+  // uso de la app -- showDialog es dismissible por defecto (tocar fuera lo
+  // cierra), sin necesidad de pulsar ningun boton.
+  Future<void> _checkForUpdate() async {
+    if (kIsWeb) return;
+    final update = await UpdateCheckService().checkForUpdate();
+    if (update == null || !mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nueva versión disponible'),
+        content: Text(
+          'Tienes la versión ${update.currentVersion} instalada. '
+          'Ya está disponible la ${update.latestVersion}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Ahora no'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              launchUrl(Uri.parse(update.releaseUrl), mode: LaunchMode.externalApplication);
+            },
+            child: const Text('Actualizar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _handleCreateDeck() async {
     final created = await Navigator.of(context).push<bool>(
