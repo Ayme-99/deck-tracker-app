@@ -20,7 +20,11 @@ final appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
     GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) =>
+          LoginScreen(sessionExpired: state.uri.queryParameters['reason'] == 'expired'),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => HomeScreen(navigationShell: navigationShell),
       branches: [

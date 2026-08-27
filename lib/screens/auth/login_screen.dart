@@ -8,7 +8,12 @@ import '../../widgets/password_form_field.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  // Issue #96: si se llega aqui por caducidad de sesion (JWT expirado,
+  // ver ApiService._handleSessionExpired), se muestra un mensaje especifico
+  // en vez de dejar el formulario en blanco sin explicacion.
+  final bool sessionExpired;
+
+  const LoginScreen({super.key, this.sessionExpired = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -24,6 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isSlow = false;
   Timer? _slowTimer;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sessionExpired) {
+      _errorMessage = 'Tu sesión ha caducado, inicia sesión de nuevo';
+    }
+  }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
