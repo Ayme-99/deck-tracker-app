@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter/material.dart';
 import '../config/api_config.dart';
-import '../config/navigation_service.dart';
-import '../screens/auth/login_screen.dart';
+import '../config/app_router.dart';
 
 class ApiService {
   final _storage = const FlutterSecureStorage();
@@ -109,13 +107,11 @@ class ApiService {
     if (_redirectingToLogin) return;
     _redirectingToLogin = true;
 
-    final navigator = NavigationService.navigatorKey.currentState;
-    if (navigator != null) {
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    // Issue #238: tras migrar a go_router, hay que navegar via el router
+    // (no con un Navigator.push imperativo) para que la URL/ubicacion
+    // interna se mantenga consistente. reason=expired hace que LoginScreen
+    // muestre el aviso especifico de sesion caducada (issue #96).
+    appRouter.go('/login?reason=expired');
 
     // Libera el guard pasado un margen, por si en el futuro hay una caducidad real tras re-login
     Future.delayed(const Duration(seconds: 2), () => _redirectingToLogin = false);
