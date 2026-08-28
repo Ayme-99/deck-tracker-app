@@ -475,7 +475,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                         losses: overview?['losses'] ?? 0,
                         ties: overview?['ties'] ?? 0,
                         onTap: () async {
-                          final result = await Navigator.of(context).push<Object?>(
+                          final result = await Navigator.of(context, rootNavigator: true).push<Object?>(
                             MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
                           );
                           // 'deleted': el mazo se borro desde su propio detalle
