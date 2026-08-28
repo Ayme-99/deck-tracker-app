@@ -8,6 +8,7 @@ import '../../services/update_check_service.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../widgets/update/update_dialog.dart';
 
 /// Shell de las 3 pestañas principales (issue #238: cada una vive en su
 /// propia ruta con URL real -- /decks, /stats, /tournaments -- via
@@ -29,43 +30,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkForUpdate();
   }
 
-  // Issue #233: aviso de nueva version disponible. En web no tiene sentido
-  // "instalar" nada (bastaria con recargar la pagina, ver notas de alcance
-  // de la issue) -- se deja fuera de alcance por ahora y solo se comprueba
-  // en movil/escritorio.
-  //
-  // AlertDialog en vez de un banner: mas visual, y no bloquea de verdad el
-  // uso de la app -- showDialog es dismissible por defecto (tocar fuera lo
-  // cierra), sin necesidad de pulsar ningun boton.
-  Future<void> _checkForUpdate() async {
-    if (kIsWeb) return;
-    final update = await UpdateCheckService().checkForUpdate();
-    if (update == null || !mounted) return;
+// Reemplaza el metodo _checkForUpdate existente en home_screen.dart por
+// este (issue #248), y añade el import:
+//
+// import '../update/update_dialog.dart';
+//
+// El resto del archivo (HomeScreen, _handleCreateDeck, build, etc.) no
+// cambia.
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva versión disponible'),
-        content: Text(
-          'Tienes la versión ${update.currentVersion} instalada. '
-          'Ya está disponible la ${update.latestVersion}.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Ahora no'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              launchUrl(Uri.parse(update.releaseUrl), mode: LaunchMode.externalApplication);
-            },
-            child: const Text('Actualizar'),
-          ),
-        ],
-      ),
-    );
-  }
+Future<void> _checkForUpdate() async {
+  if (kIsWeb) return;
+  final update = await UpdateCheckService().checkForUpdate();
+  if (update == null || !mounted) return;
+
+  showDialog(
+    context: context,
+    builder: (context) => UpdateDialog(update: update),
+  );
+}
 
   Future<void> _handleCreateDeck() async {
     final created = await Navigator.of(context).push<bool>(
