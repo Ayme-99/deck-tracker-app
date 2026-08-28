@@ -8,6 +8,7 @@ import '../../services/update_check_service.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../widgets/update/update_dialog.dart';
 
 /// Shell de las 3 pestañas principales (issue #238: cada una vive en su
 /// propia ruta con URL real -- /decks, /stats, /tournaments -- via
