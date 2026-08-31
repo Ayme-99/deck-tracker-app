@@ -228,13 +228,16 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
     if (!mounted) return;
 
+    // rootNavigator: true (issue #238): esta pantalla vive dentro de la
+    // rama /decks del StatefulShellRoute, con su propio Navigator anidado
+    // -- mismo bug que el corregido en 482e466.
     if (action == 'edit') {
-      final updated = await Navigator.of(context).push<bool>(
+      final updated = await Navigator.of(context, rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (_) => DeckFormScreen(deck: deck)),
       );
       if (updated == true) _loadDecks();
     } else if (action == 'duplicate') {
-      final created = await Navigator.of(context).push<bool>(
+      final created = await Navigator.of(context, rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (_) => DeckFormScreen(duplicateFrom: deck)),
       );
       if (created == true) _loadDecks();
@@ -409,7 +412,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
               const SizedBox(height: AppSizes.spacingM),
               FilledButton.icon(
                 onPressed: () async {
-                  final created = await Navigator.of(context).push<bool>(
+                  final created = await Navigator.of(context, rootNavigator: true).push<bool>(
                     MaterialPageRoute(builder: (_) => const DeckFormScreen()),
                   );
                   if (created == true) _loadDecks();

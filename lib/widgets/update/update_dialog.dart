@@ -18,10 +18,10 @@ class UpdateDialog extends StatefulWidget {
   const UpdateDialog({super.key, required this.update});
 
   @override
-  State<UpdateDialog> createState() => _UpdateDialogState_();
+  State<UpdateDialog> createState() => _UpdateDialogWidgetState();
 }
 
-class _UpdateDialogState_ extends State<UpdateDialog> {
+class _UpdateDialogWidgetState extends State<UpdateDialog> {
   final _downloadService = UpdateDownloadService();
 
   _UpdateDialogState _state = _UpdateDialogState.idle;

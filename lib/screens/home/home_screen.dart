@@ -3,7 +3,6 @@ import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/update_check_service.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
@@ -30,24 +29,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkForUpdate();
   }
 
-// Reemplaza el metodo _checkForUpdate existente en home_screen.dart por
-// este (issue #248), y añade el import:
-//
-// import '../update/update_dialog.dart';
-//
-// El resto del archivo (HomeScreen, _handleCreateDeck, build, etc.) no
-// cambia.
+  // Issue #233/#248: aviso de nueva version disponible. En web no tiene
+  // sentido "instalar" nada -- se omite la comprobacion.
+  Future<void> _checkForUpdate() async {
+    if (kIsWeb) return;
+    final update = await UpdateCheckService().checkForUpdate();
+    if (update == null || !mounted) return;
 
-Future<void> _checkForUpdate() async {
-  if (kIsWeb) return;
-  final update = await UpdateCheckService().checkForUpdate();
-  if (update == null || !mounted) return;
-
-  showDialog(
-    context: context,
-    builder: (context) => UpdateDialog(update: update),
-  );
-}
+    showDialog(
+      context: context,
+      builder: (context) => UpdateDialog(update: update),
+    );
+  }
 
   Future<void> _handleCreateDeck() async {
     final created = await Navigator.of(context).push<bool>(
