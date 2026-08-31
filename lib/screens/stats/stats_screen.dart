@@ -136,7 +136,12 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       final deck = await _deckService.getDeckById(deckId);
       if (!mounted) return;
 
-      await Navigator.of(context).push(
+      // rootNavigator: true (issue #238): esta pantalla vive dentro de la
+      // rama /stats del StatefulShellRoute, con su propio Navigator anidado
+      // -- sin esto, DeckDetailScreen quedaria empujado dentro del Scaffold
+      // de HomeScreen en vez de a pantalla completa (mismo bug que en
+      // DeckListScreen, ver 482e466).
+      await Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(builder: (_) => DeckDetailScreen(deck: deck)),
       );
 

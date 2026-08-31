@@ -346,7 +346,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                     // Los torneos hosted aun no tienen su propia pantalla
                     // de detalle completa (llegara con #46/#47); por ahora
                     // se entra directamente a gestion de jugadores.
-                    final result = await Navigator.of(context).push<Object?>(
+                    //
+                    // rootNavigator: true (issue #238): esta pantalla vive
+                    // dentro de la rama /tournaments del StatefulShellRoute,
+                    // con su propio Navigator anidado -- mismo bug que en
+                    // DeckListScreen (ver 482e466).
+                    final result = await Navigator.of(context, rootNavigator: true).push<Object?>(
                       MaterialPageRoute(
                         builder: (_) => tournament.mode == 'hosted'
                             ? TournamentPlayersScreen(tournamentId: tournament.id)
