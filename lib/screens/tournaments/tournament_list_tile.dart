@@ -10,14 +10,18 @@ class TournamentListTile extends StatelessWidget {
   final Tournament tournament;
   final Deck? deck;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
+  // Issue #257: false para un torneo hosted donde participo como invitado
+  // (server#102) -- se distingue visualmente de los que organizo yo.
+  final bool isOwned;
 
   const TournamentListTile({
     super.key,
     required this.tournament,
     required this.deck,
     required this.onTap,
-    required this.onLongPress,
+    this.onLongPress,
+    this.isOwned = true,
   });
 
   String _formatDate(DateTime date) {
@@ -66,11 +70,29 @@ class TournamentListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      tournament.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            tournament.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!isOwned) ...[
+                          const SizedBox(width: AppSizes.spacingXS),
+                          const Icon(Icons.group_outlined, size: AppSizes.iconSmall, color: AppColors.muted),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: AppSizes.spacingXS),
+                    if (!isOwned) ...[
+                      const Text(
+                        'Invitado',
+                        style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS, fontStyle: FontStyle.italic),
+                      ),
+                      const SizedBox(height: AppSizes.spacingXS),
+                    ],
                     Text(
                       [
                         _formatDate(tournament.date),

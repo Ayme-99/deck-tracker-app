@@ -26,6 +26,7 @@ Match _match({
 Tournament _tournament({String? finalStanding}) {
   return Tournament(
     id: 'tournament-1',
+    userId: 'user-1',
     name: 'Liga Local Marzo',
     format: 'Standard',
     date: DateTime(2026, 3, 1),
