@@ -13,6 +13,10 @@ class TournamentPlayer {
   final bool isOrganizer;
   final String? deckId;
   final String? groupName;
+  // Issue #94/#242: si esta inscripcion esta vinculada a la cuenta de un
+  // amigo (via invitacion aceptada), y su rol (admin/guest).
+  final String? linkedUserId;
+  final String? role;
 
   TournamentPlayer({
     required this.id,
@@ -29,6 +33,8 @@ class TournamentPlayer {
     required this.isOrganizer,
     this.deckId,
     this.groupName,
+    this.linkedUserId,
+    this.role,
   });
 
   factory TournamentPlayer.fromJson(Map<String, dynamic> json) {
@@ -47,6 +53,8 @@ class TournamentPlayer {
       isOrganizer: json['isOrganizer'] ?? false,
       deckId: json['deckId'],
       groupName: json['groupName'],
+      linkedUserId: json['linkedUserId'],
+      role: json['role'],
     );
   }
 }

@@ -45,6 +45,19 @@ class PlayerListTile extends StatelessWidget {
               const SizedBox(width: AppSizes.spacingXS),
               Icon(Icons.star, size: AppSizes.iconSmall, color: AppColors.primary),
             ],
+            // Issue #242: distingue visualmente las inscripciones vinculadas
+            // a la cuenta de un amigo (via invitacion aceptada) de las que
+            // no tienen cuenta, mostrando su rol.
+            if (player.linkedUserId != null) ...[
+              const SizedBox(width: AppSizes.spacingXS),
+              Chip(
+                label: Text(player.role == 'admin' ? 'Admin' : 'Invitado'),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelStyle: const TextStyle(fontSize: AppSizes.textXS),
+              ),
+            ],
           ],
         ),
         subtitle: Text(

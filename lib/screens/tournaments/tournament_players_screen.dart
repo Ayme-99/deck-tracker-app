@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
+import '../../models/friend.dart';
 import '../../models/opponent_archetype.dart';
 import '../../models/tournament_player.dart';
 import '../../services/archetype_sprite_lookup.dart';
 import '../../services/deck_service.dart';
+import '../../services/friend_service.dart';
 import '../../services/opponent_archetype_service.dart';
+import '../../services/tournament_invite_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_players/player_form_dialog.dart';
@@ -31,6 +34,8 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
   final _tournamentService = TournamentService();
   final _deckService = DeckService();
   final _archetypeService = OpponentArchetypeService();
+  final _friendService = FriendService();
+  final _inviteService = TournamentInviteService();
 
   List<TournamentPlayer> _players = [];
   List<Deck> _decks = [];
@@ -83,6 +88,95 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
       ..._archetypes.map((a) => a.name),
     };
     return names.toList()..sort();
+  }
+
+  // Issue #242: invitar a un amigo al torneo (server#95). El amigo debe
+  // aceptar y elegir su propio mazo desde su cuenta -- este dialogo solo
+  // envia la invitacion, no crea ningun TournamentPlayer todavia.
+  Future<void> _showInviteFriendDialog() async {
+    List<Friend> friends;
+    try {
+      friends = await _friendService.listFriends();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cargar amigos: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    if (friends.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Todavía no tienes amigos añadidos')),
+      );
+      return;
+    }
+
+    final selectedFriend = await showDialog<Friend>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Elegir amigo'),
+        children: friends
+            .map((f) => SimpleDialogOption(
+                  onPressed: () => Navigator.of(context).pop(f),
+                  child: Text(f.username),
+                ))
+            .toList(),
+      ),
+    );
+
+    if (selectedFriend == null || !mounted) return;
+
+    String role = 'guest';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Invitar a ${selectedFriend.username}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Rol dentro del torneo:'),
+              const SizedBox(height: AppSizes.spacingS),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'guest', label: Text('Invitado')),
+                  ButtonSegment(value: 'admin', label: Text('Admin')),
+                ],
+                selected: {role},
+                onSelectionChanged: (selection) => setDialogState(() => role = selection.first),
+              ),
+              const SizedBox(height: AppSizes.spacingS),
+              const Text(
+                'Invitado: solo tú registras sus resultados. Admin: podrá registrar sus propias partidas en el futuro.',
+                style: TextStyle(fontSize: AppSizes.textXS, color: AppColors.muted),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Enviar invitación')),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _inviteService.sendInvite(widget.tournamentId, userId: selectedFriend.id, role: role);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invitación enviada a ${selectedFriend.username}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+      );
+    }
   }
 
   Future<void> _showPlayerForm({TournamentPlayer? player}) async {
@@ -297,10 +391,26 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                           },
                         ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showPlayerForm(),
-        icon: const Icon(Icons.add),
-        label: const Text('Jugador'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Issue #242: invitar a un amigo (invitacion real, con
+          // aceptacion y vinculacion a sus stats), junto al alta manual.
+          FloatingActionButton.extended(
+            heroTag: 'invite_friend',
+            onPressed: _showInviteFriendDialog,
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Amigo'),
+          ),
+          const SizedBox(height: AppSizes.spacingS),
+          FloatingActionButton.extended(
+            heroTag: 'add_player',
+            onPressed: () => _showPlayerForm(),
+            icon: const Icon(Icons.add),
+            label: const Text('Jugador'),
+          ),
+        ],
       ),
     );
   }
