@@ -10,7 +10,7 @@
 ;   4. El .exe resultante sale en windows_installer\output\
 
 #define MyAppName "Deck Tracker"
-#define MyAppVersion "1.4.2+1"
+#define MyAppVersion "1.5.0+1"
 #define MyAppPublisher "Ayme-99"
 #define MyAppExeName "deck_tracker_app.exe"
 #define MyAppId "{{B7A2C9E4-5F3D-4A1B-9C6E-8D2F1A0B3C7E}"
