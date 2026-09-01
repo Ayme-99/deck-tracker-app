@@ -6,6 +6,7 @@ import 'package:home_widget/home_widget.dart';
 import 'screens/matches/quick_register_deck_picker_screen.dart';
 import 'config/app_router.dart';
 import 'config/navigation_service.dart';
+import 'l10n/app_localizations.dart';
 import 'services/accent_color_service.dart';
 import 'services/theme_preference_service.dart';
 import 'package:deck_tracker_app/styles/theme.dart';
@@ -79,6 +80,9 @@ class _DeckTrackerAppState extends State<DeckTrackerApp> {
               darkTheme: buildAppTheme(Brightness.dark),
               themeMode: mode,
               debugShowCheckedModeBanner: false,
+              // Issue #261: textos centralizados en lib/l10n/app_es.arb.
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
             );
           },
         );

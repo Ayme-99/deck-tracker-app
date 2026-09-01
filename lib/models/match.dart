@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 class Match {
   final String id;
   final String deckId;
@@ -70,12 +72,12 @@ class Match {
 
 // Etiquetas legibles para cada fase, reutilizables en toda la seccion de
 // Torneos (detalle, formulario de partida...)
-const kMatchPhaseLabels = {
-  'group_stage': 'Fase de grupos',
-  'swiss': 'Suiza',
-  'round_of_16': 'Octavos',
-  'quarterfinal': 'Cuartos',
-  'semifinal': 'Semifinal',
-  'final': 'Final',
-  'league_round': 'Jornada',
+Map<String, String> matchPhaseLabels(AppLocalizations l10n) => {
+  'group_stage': l10n.matchPhaseGroupStage,
+  'swiss': l10n.matchPhaseSwiss,
+  'round_of_16': l10n.matchPhaseRoundOf16,
+  'quarterfinal': l10n.matchPhaseQuarterfinal,
+  'semifinal': l10n.matchPhaseSemifinal,
+  'final': l10n.matchPhaseFinal,
+  'league_round': l10n.matchPhaseLeagueRound,
 };

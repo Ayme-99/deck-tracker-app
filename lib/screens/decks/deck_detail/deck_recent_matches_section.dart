@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../../models/match.dart';
 import '../../../models/opponent_archetype.dart';
 import '../../../widgets/sprite_avatar_group.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Ultimas partidas registradas con este mazo (issue #118: promocionada
 /// desde _buildRecentMatchesSection de deck_detail_screen.dart a un widget
@@ -43,19 +44,20 @@ class _DeckRecentMatchesSectionState extends State<DeckRecentMatchesSection> {
     }
   }
 
-  String _resultLabel(String result) {
+  String _resultLabel(AppLocalizations l10n, String result) {
     switch (result) {
       case 'win':
-        return 'Victoria';
+        return l10n.matchResultWin;
       case 'loss':
-        return 'Derrota';
+        return l10n.matchResultLoss;
       default:
-        return 'Empate';
+        return l10n.matchResultTie;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final matches = widget.matches;
     final visibleMatches = matches.take(_visibleCount).toList();
     final hasMore = _visibleCount < matches.length;
@@ -64,10 +66,10 @@ class _DeckRecentMatchesSectionState extends State<DeckRecentMatchesSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Partidas recientes', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        Text(l10n.recentMatchesSectionTitle, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSizes.spacingSM),
         if (matches.isEmpty)
-          const Text('Todavía no hay partidas registradas', style: TextStyle(color: Colors.grey))
+          Text(l10n.noMatchesRegisteredYet, style: const TextStyle(color: Colors.grey))
         else ...[
           ...visibleMatches.map((match) {
             final archetype = widget.archetypesByName[match.opponentDeck];
@@ -94,9 +96,9 @@ class _DeckRecentMatchesSectionState extends State<DeckRecentMatchesSection> {
                           color: _resultColor(match.result),
                         ),
                       ),
-                title: Text('vs ${match.opponentDeck}'),
+                title: Text(l10n.matchVsOpponent(match.opponentDeck)),
                 subtitle: Text(
-                  '${_resultLabel(match.result)} · ${match.userPrizes}-${match.opponentPrizes}',
+                  l10n.matchResultAndPrizes(_resultLabel(l10n, match.result), match.userPrizes, match.opponentPrizes),
                 ),
                 trailing: Text(
                   '${match.playedAt.day}/${match.playedAt.month}',
@@ -111,12 +113,12 @@ class _DeckRecentMatchesSectionState extends State<DeckRecentMatchesSection> {
                 if (hasMore)
                   TextButton(
                     onPressed: () => setState(() => _visibleCount += _pageSize),
-                    child: const Text('Mostrar más'),
+                    child: Text(l10n.showMoreAction),
                   ),
                 if (isExpanded)
                   TextButton(
                     onPressed: () => setState(() => _visibleCount = _pageSize),
-                    child: const Text('Ocultar'),
+                    child: Text(l10n.hideAction),
                   ),
               ],
             ),

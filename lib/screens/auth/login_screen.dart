@@ -5,6 +5,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/submit_on_enter.dart';
 import '../../widgets/password_form_field.dart';
+import '../../l10n/app_localizations.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,13 +30,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isSlow = false;
   Timer? _slowTimer;
   String? _errorMessage;
+  bool _showSessionExpired = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.sessionExpired) {
-      _errorMessage = 'Tu sesión ha caducado, inicia sesión de nuevo';
-    }
+    _showSessionExpired = widget.sessionExpired;
   }
 
   Future<void> _handleLogin() async {
@@ -79,6 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (_showSessionExpired) {
+      _showSessionExpired = false;
+      _errorMessage = l10n.loginSessionExpired;
+    }
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -96,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Icon(Icons.style, size: AppSizes.iconHuge),
                     const SizedBox(height: AppSizes.spacingM),
                     Text(
-                      'Deck Tracker',
+                      l10n.appTitle,
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -105,13 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _usernameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Usuario',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.usernameLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Introduce tu usuario';
+                          return l10n.loginUsernameRequired;
                         }
                         return null;
                       },
@@ -120,11 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     PasswordFormField(
                       controller: _passwordController,
-                      labelText: 'Contraseña',
+                      labelText: l10n.passwordLabel,
                       textInputAction: TextInputAction.done,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Introduce tu contraseña';
+                          return l10n.loginPasswordRequired;
                         }
                         return null;
                       },
@@ -148,12 +153,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Entrar'),
+                        : Text(l10n.loginSubmitButton),
                   ),
                   if (_isSlow) ...[
                     const SizedBox(height: AppSizes.spacingS),
                     Text(
-                      'Despertando el servidor, puede tardar unos segundos...',
+                      l10n.loginServerWakingUp,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
                     ),
@@ -166,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         MaterialPageRoute(builder: (_) => const RegisterScreen()),
                       );
                     },
-                    child: const Text('¿No tienes cuenta? Regístrate'),
+                    child: Text(l10n.loginRegisterLink),
                   ),
                 ],
               ),

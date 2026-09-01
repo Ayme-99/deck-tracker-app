@@ -10,6 +10,7 @@ import '../../services/quick_widget_sync_service.dart';
 import '../../widgets/prize_counter.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
+import '../../l10n/app_localizations.dart';
 
 class RegisterMatchScreen extends StatefulWidget {
   final Deck deck;
@@ -56,12 +57,12 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
   String? _lastLookedUpName; // evita repetir la consulta si el nombre no cambio
   FocusNode? _attachedFocusNode; // evita añadir el listener mas de una vez en rebuilds
 
-  final _endReasonLabels = const {
-    'normal': 'Normal (premios completos)',
-    'concession': 'Rendición',
-    'no_pokemon': 'Sin Pokémon en banca',
-    'time': 'Tiempo agotado',
-    'deck_out': 'Mazo agotado',
+  Map<String, String> _endReasonLabels(AppLocalizations l10n) => {
+    'normal': l10n.endReasonNormal,
+    'concession': l10n.endReasonConcession,
+    'no_pokemon': l10n.endReasonNoPokemon,
+    'time': l10n.endReasonTime,
+    'deck_out': l10n.endReasonDeckOut,
   };
 
   // Issue #184: se pide resultado manual con CUALQUIER motivo de fin
@@ -138,7 +139,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         _hasRegisteredAny = true;
         _resetFormForNextMatch();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Partida registrada. Lista para la siguiente.')),
+          SnackBar(content: Text(AppLocalizations.of(context).registerMatchReadyForNext)),
         );
         // Issue #167: al quedarse en esta pantalla (a diferencia del flujo
         // normal, que cierra y avisa desde la pantalla de origen) es el
@@ -181,6 +182,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return PopScope(
       // Issue #164: si se salio de la pantalla (atras/gesto) tras encadenar
       // alguna partida sin pasar por el boton normal "Registrar partida",
@@ -192,7 +194,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(title: Text('Nueva partida · ${widget.deck.name}')),
+      appBar: AppBar(title: Text(l10n.newMatchTitle(widget.deck.name))),
       body: SafeArea(
         child: SubmitOnEnter(
           onSubmit: _handleSubmit,
@@ -215,8 +217,8 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                       const SizedBox(width: AppSizes.spacingS),
                       Text(
                         [
-                          if (widget.phase != null) kMatchPhaseLabels[widget.phase] ?? widget.phase!,
-                          if (_round != null) 'Ronda $_round',
+                          if (widget.phase != null) matchPhaseLabels(l10n)[widget.phase] ?? widget.phase!,
+                          if (_round != null) l10n.roundLabel(_round!),
                         ].join(' · '),
                         style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
                       ),
@@ -257,14 +259,14 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                   return TextFormField(
                     controller: controller,
                     focusNode: focusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Mazo rival',
-                      border: OutlineInputBorder(),
-                      helperText: 'Empieza a escribir para ver sugerencias',
+                    decoration: InputDecoration(
+                      labelText: l10n.opponentDeckLabel,
+                      border: const OutlineInputBorder(),
+                      helperText: l10n.opponentDeckHelper,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Introduce el mazo rival';
+                        return l10n.opponentDeckRequired;
                       }
                       return null;
                     },
@@ -289,12 +291,12 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   PrizeCounter(
-                    label: 'Tus premios',
+                    label: l10n.yourPrizesLabel,
                     value: _userPrizes,
                     onChanged: (v) => setState(() => _userPrizes = v),
                   ),
                   PrizeCounter(
-                    label: 'Premios rival',
+                    label: l10n.opponentPrizesLabel,
                     value: _opponentPrizes,
                     onChanged: (v) => setState(() => _opponentPrizes = v),
                   ),
@@ -303,17 +305,17 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               const SizedBox(height: AppSizes.spacingS),
 
               if (_needsManualResult) ...[
-                const Text(
-                  'Selecciona quién ganó realmente: no se calcula a partir de los premios, y este resultado es el que se guarda en tus estadísticas',
+                Text(
+                  l10n.manualResultWarning,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
+                  style: const TextStyle(fontSize: AppSizes.textS, color: AppColors.warning),
                 ),
                 const SizedBox(height: AppSizes.spacingS),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'win', label: Text('Gané')),
-                    ButtonSegment(value: 'tie', label: Text('Empate')),
-                    ButtonSegment(value: 'loss', label: Text('Perdí')),
+                  segments: [
+                    ButtonSegment(value: 'win', label: Text(l10n.manualResultWin)),
+                    ButtonSegment(value: 'tie', label: Text(l10n.manualResultTie)),
+                    ButtonSegment(value: 'loss', label: Text(l10n.manualResultLoss)),
                   ],
                   // Sin preseleccion (issue #184): antes arrancaba en
                   // "Empate" por defecto y era facil guardar sin darse
@@ -327,10 +329,10 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                 Center(
                   child: Text(
                     _userPrizes > _opponentPrizes
-                        ? '🏆 Victoria'
+                        ? l10n.resultVictoryEmoji
                         : _userPrizes < _opponentPrizes
-                            ? '❌ Derrota'
-                            : '🤝 Empate',
+                            ? l10n.resultDefeatEmoji
+                            : l10n.resultTieEmoji,
                     style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -338,11 +340,11 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
               DropdownButtonFormField<String>(
                 initialValue: _endReason,
-                decoration: const InputDecoration(
-                  labelText: 'Motivo de fin de partida',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.matchEndReasonLabel,
+                  border: const OutlineInputBorder(),
                 ),
-                items: _endReasonLabels.entries
+                items: _endReasonLabels(l10n).entries
                     .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                     .toList(),
                 onChanged: (value) => setState(() => _endReason = value!),
@@ -351,9 +353,9 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
 
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.notesOptionalLabel,
+                  border: const OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
                 maxLines: 3,
@@ -377,7 +379,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
                         width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Registrar partida'),
+                    : Text(l10n.registerMatchButton),
               ),
               const SizedBox(height: AppSizes.spacingS),
 
@@ -386,7 +388,7 @@ class _RegisterMatchScreenState extends State<RegisterMatchScreen> {
               // en sesiones con varias rondas seguidas).
               OutlinedButton(
                 onPressed: _canSubmit ? () => _handleSubmit(chainAnother: true) : null,
-                child: const Text('Registrar y añadir otra'),
+                child: Text(l10n.registerAndAddAnother),
               ),
             ],
           ),

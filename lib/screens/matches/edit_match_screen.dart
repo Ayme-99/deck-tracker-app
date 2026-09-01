@@ -8,6 +8,7 @@ import '../../services/quick_widget_sync_service.dart';
 import '../../widgets/prize_counter.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
+import '../../l10n/app_localizations.dart';
 
 class EditMatchScreen extends StatefulWidget {
   final Match match;
@@ -36,12 +37,12 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
   String? _sprite2;
   bool _loadingSprites = true;
 
-  final _endReasonLabels = const {
-    'normal': 'Normal (premios completos)',
-    'concession': 'Rendición',
-    'no_pokemon': 'Sin Pokémon en banca',
-    'time': 'Tiempo agotado',
-    'deck_out': 'Mazo agotado',
+  Map<String, String> _endReasonLabels(AppLocalizations l10n) => {
+    'normal': l10n.endReasonNormal,
+    'concession': l10n.endReasonConcession,
+    'no_pokemon': l10n.endReasonNoPokemon,
+    'time': l10n.endReasonTime,
+    'deck_out': l10n.endReasonDeckOut,
   };
 
   // Issue #184: cualquier motivo de fin distinto de "Normal" puede dar la
@@ -141,8 +142,9 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar partida')),
+      appBar: AppBar(title: Text(l10n.editMatchTitle)),
       body: SafeArea(
         child: SubmitOnEnter(
           onSubmit: _handleSave,
@@ -154,13 +156,13 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
               children: [
                 TextFormField(
                   controller: _opponentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mazo rival',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.opponentDeckLabel,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Introduce el mazo rival';
+                      return l10n.opponentDeckRequired;
                     }
                     return null;
                   },
@@ -192,12 +194,12 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     PrizeCounter(
-                      label: 'Tus premios',
+                      label: l10n.yourPrizesLabel,
                       value: _userPrizes,
                       onChanged: (v) => setState(() => _userPrizes = v),
                     ),
                     PrizeCounter(
-                      label: 'Premios rival',
+                      label: l10n.opponentPrizesLabel,
                       value: _opponentPrizes,
                       onChanged: (v) => setState(() => _opponentPrizes = v),
                     ),
@@ -206,20 +208,20 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                 const SizedBox(height: AppSizes.spacingS),
 
                 if (_needsManualResult) ...[
-                  const Text(
-                    'Selecciona quién ganó realmente: no se calcula a partir de los premios, y este resultado es el que se guarda en tus estadísticas',
+                  Text(
+                    l10n.manualResultWarning,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: AppSizes.textS,
                       color: AppColors.warning,
                     ),
                   ),
                   const SizedBox(height: AppSizes.spacingS),
                   SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'win', label: Text('Gané')),
-                      ButtonSegment(value: 'tie', label: Text('Empate')),
-                      ButtonSegment(value: 'loss', label: Text('Perdí')),
+                    segments: [
+                      ButtonSegment(value: 'win', label: Text(l10n.manualResultWin)),
+                      ButtonSegment(value: 'tie', label: Text(l10n.manualResultTie)),
+                      ButtonSegment(value: 'loss', label: Text(l10n.manualResultLoss)),
                     ],
                     emptySelectionAllowed: true,
                     selected: _manualResult == null
@@ -235,10 +237,10 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                   Center(
                     child: Text(
                       _userPrizes > _opponentPrizes
-                          ? '🏆 Victoria'
+                          ? l10n.resultVictoryEmoji
                           : _userPrizes < _opponentPrizes
-                          ? '❌ Derrota'
-                          : '🤝 Empate',
+                          ? l10n.resultDefeatEmoji
+                          : l10n.resultTieEmoji,
                       style: const TextStyle(
                         fontSize: AppSizes.textM,
                         fontWeight: FontWeight.bold,
@@ -249,11 +251,11 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
                 DropdownButtonFormField<String>(
                   initialValue: _endReason,
-                  decoration: const InputDecoration(
-                    labelText: 'Motivo de fin de partida',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.matchEndReasonLabel,
+                    border: const OutlineInputBorder(),
                   ),
-                  items: _endReasonLabels.entries
+                  items: _endReasonLabels(l10n).entries
                       .map(
                         (e) => DropdownMenuItem(
                           value: e.key,
@@ -267,9 +269,9 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
 
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notas (opcional)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.notesOptionalLabel,
+                    border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
                   maxLines: 3,
@@ -295,7 +297,7 @@ class _EditMatchScreenState extends State<EditMatchScreen> {
                           width: AppSizes.spinnerSmall,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Guardar cambios'),
+                      : Text(l10n.saveChangesAction),
                 ),
               ],
             ),

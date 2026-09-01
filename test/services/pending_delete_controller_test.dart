@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:deck_tracker_app/services/pending_delete_controller.dart';
+import 'package:deck_tracker_app/l10n/app_localizations.dart';
 
 /// Host minimo con un boton para disparar requestDelete y otro para
 /// disparar la accion "Deshacer" del ultimo SnackBar mostrado (el propio
@@ -18,6 +19,8 @@ class _HarnessState extends State<_Harness> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Builder(
           builder: (context) => ElevatedButton(

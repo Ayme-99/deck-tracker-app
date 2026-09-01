@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../../models/match.dart';
 import '../../../models/tournament.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Dialogo para elegir en que fase se juega una partida nueva, respetando
 /// las fases validas para la structure del torneo (issue #256: extraido de
@@ -15,6 +16,7 @@ Future<String?> showSelectMatchPhaseDialog(
   required int Function(String phase) nextRoundFor,
 }) async {
   String selectedPhase = validPhases.first;
+  final l10n = AppLocalizations.of(context);
 
   final confirmed = await showDialog<bool>(
     context: context,
@@ -22,31 +24,31 @@ Future<String?> showSelectMatchPhaseDialog(
       builder: (context, setDialogState) {
         final needsRound = kRoundBasedPhases.contains(selectedPhase);
         return AlertDialog(
-          title: const Text('¿En qué fase se juega?'),
+          title: Text(l10n.selectMatchPhaseTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
                 initialValue: selectedPhase,
-                decoration: const InputDecoration(labelText: 'Fase'),
+                decoration: InputDecoration(labelText: l10n.matchPhaseLabel),
                 items: validPhases
-                    .map((p) => DropdownMenuItem(value: p, child: Text(kMatchPhaseLabels[p] ?? p)))
+                    .map((p) => DropdownMenuItem(value: p, child: Text(matchPhaseLabels(l10n)[p] ?? p)))
                     .toList(),
                 onChanged: (value) => setDialogState(() => selectedPhase = value!),
               ),
               if (needsRound) ...[
                 const SizedBox(height: AppSizes.spacingM),
                 Text(
-                  'Ronda ${nextRoundFor(selectedPhase)}',
+                  l10n.roundLabel(nextRoundFor(selectedPhase)),
                   style: const TextStyle(color: AppColors.muted),
                 ),
               ],
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Continuar')),
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.continueAction)),
           ],
         );
       },

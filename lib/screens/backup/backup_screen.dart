@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/backup_service.dart';
 import '../../services/file_export_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Backup/restore completo de la cuenta (issue #165): mazos + partidas +
 /// torneos tracked, en un unico JSON. Torneos hosted quedan fuera de
@@ -23,6 +24,7 @@ class _BackupScreenState extends State<BackupScreen> {
   bool _isRestoring = false;
 
   Future<void> _handleExport() async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _isExporting = true);
     try {
       final backup = await _backupService.buildBackup();
@@ -36,14 +38,14 @@ class _BackupScreenState extends State<BackupScreen> {
       final matches = (backup['matches'] as List).length;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Backup exportado: $decks mazos, $tournaments torneos, $matches partidas'),
-          action: SnackBarAction(label: 'Abrir', onPressed: () => _fileExportService.open(exported)),
+          content: Text(l10n.backupExportedSnackbar(decks, tournaments, matches)),
+          action: SnackBarAction(label: l10n.backupOpenAction, onPressed: () => _fileExportService.open(exported)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al exportar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.backupExportError(e.toString().replaceFirst('Exception: ', '')))),
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -51,6 +53,7 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Future<void> _handleRestore() async {
+    final l10n = AppLocalizations.of(context);
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
@@ -68,7 +71,7 @@ class _BackupScreenState extends State<BackupScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El archivo no es un backup válido (JSON corrupto)')),
+        SnackBar(content: Text(l10n.backupInvalidFile)),
       );
       return;
     }
@@ -80,20 +83,16 @@ class _BackupScreenState extends State<BackupScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Restaurar backup'),
-        content: Text(
-          'Vas a añadir $deckCount mazos, $matchCount partidas y $tournamentCount torneos a tu '
-          'cuenta actual como entidades nuevas -- no sobrescribe ni borra nada de lo que ya '
-          'tengas. Si restauras el mismo backup dos veces, tendrás los mazos duplicados.',
-        ),
+        title: Text(l10n.backupRestoreDialogTitle),
+        content: Text(l10n.backupRestoreDialogContent(deckCount, matchCount, tournamentCount)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Restaurar'),
+            child: Text(l10n.backupRestoreAction),
           ),
         ],
       ),
@@ -107,15 +106,13 @@ class _BackupScreenState extends State<BackupScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Restaurado: ${summary.decks} mazos, ${summary.tournaments} torneos, ${summary.matches} partidas',
-          ),
+          content: Text(l10n.backupRestoredSnackbar(summary.decks, summary.tournaments, summary.matches)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al restaurar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.backupRestoreError(e.toString().replaceFirst('Exception: ', '')))),
       );
     } finally {
       if (mounted) setState(() => _isRestoring = false);
@@ -124,17 +121,17 @@ class _BackupScreenState extends State<BackupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Copia de seguridad')),
+      appBar: AppBar(title: Text(l10n.backupScreenTitle)),
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.spacingM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Exporta todos tus mazos, partidas y torneos seguidos (no alojados) a un único '
-              'archivo, para migrar de cuenta o tener una copia de seguridad manual.',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              l10n.backupDescription,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSizes.spacingL),
             FilledButton.icon(
@@ -146,7 +143,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.upload_outlined),
-              label: const Text('Exportar backup'),
+              label: Text(l10n.backupExportButton),
             ),
             const SizedBox(height: AppSizes.spacingM),
             OutlinedButton.icon(
@@ -158,7 +155,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.download_outlined),
-              label: const Text('Restaurar desde archivo'),
+              label: Text(l10n.backupRestoreButton),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import '../backup/backup_screen.dart';
 import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
 /// pantalla de perfil completa (gestion de amigos, stats de cuenta...),
@@ -56,10 +57,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Selector de color de acento (issue #168): dialogo con un circulo por
   /// cada color de la paleta fija, marcando el actualmente elegido.
   Future<void> _showAccentPicker() async {
+    final l10n = AppLocalizations.of(context);
+    final labels = AccentColorService.labelsFor(l10n);
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Color de acento'),
+        title: Text(l10n.accentColorPickerTitle),
         content: Wrap(
           spacing: AppSizes.spacingM,
           runSpacing: AppSizes.spacingM,
@@ -84,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
                     ),
                     const SizedBox(height: AppSizes.spacingXS),
-                    Text(AccentColorService.labels[entry.key]!, style: const TextStyle(fontSize: AppSizes.textXS)),
+                    Text(labels[entry.key]!, style: const TextStyle(fontSize: AppSizes.textXS)),
                   ],
                 ),
               ),
@@ -100,10 +103,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Selector de tema (issue #202): mismo patron de dialogo que el color de
   /// acento.
   Future<void> _showThemePicker() async {
+    final l10n = AppLocalizations.of(context);
     final selected = await showDialog<ThemeMode>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Tema'),
+        title: Text(l10n.themePickerTitle),
         children: [
           for (final mode in ThemeMode.values)
             SimpleDialogOption(
@@ -117,9 +121,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }),
                   const SizedBox(width: AppSizes.spacingM),
                   Text(switch (mode) {
-                    ThemeMode.system => 'Automático (sistema)',
-                    ThemeMode.light => 'Claro',
-                    ThemeMode.dark => 'Oscuro',
+                    ThemeMode.system => l10n.themeModeSystem,
+                    ThemeMode.light => l10n.themeModeLight,
+                    ThemeMode.dark => l10n.themeModeDark,
                   }),
                 ],
               ),
@@ -132,6 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showSettingsMenu() async {
+    final l10n = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -140,22 +145,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.settings_backup_restore_outlined),
-              title: const Text('Copia de seguridad'),
+              title: Text(l10n.backupSettingsAction),
               onTap: () => Navigator.of(context).pop('backup'),
             ),
             ListTile(
               leading: const Icon(Icons.palette_outlined),
-              title: const Text('Color de acento'),
+              title: Text(l10n.accentColorSettingsAction),
               onTap: () => Navigator.of(context).pop('accent'),
             ),
             ListTile(
               leading: const Icon(Icons.brightness_6_outlined),
-              title: const Text('Tema'),
+              title: Text(l10n.themeSettingsAction),
               onTap: () => Navigator.of(context).pop('theme'),
             ),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Cerrar sesión'),
+              title: Text(l10n.logoutAction),
               onTap: () => Navigator.of(context).pop('logout'),
             ),
           ],
@@ -181,13 +186,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi perfil'),
+        title: Text(l10n.myProfileTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Ajustes',
+            tooltip: l10n.settingsTooltip,
             onPressed: _showSettingsMenu,
           ),
         ],
@@ -206,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: AppSizes.spacingM),
                     Text(
-                      _username ?? 'Usuario',
+                      _username ?? l10n.defaultUsername,
                       style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: AppSizes.spacingL),
@@ -221,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
                           leading: const Icon(Icons.people_outline),
-                          title: const Text('Amigos'),
+                          title: Text(l10n.friendsMenuAction),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const FriendsScreen()),
@@ -237,7 +243,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
                           leading: const Icon(Icons.mail_outline),
-                          title: const Text('Invitaciones a torneos'),
+                          title: Text(l10n.tournamentInvitesMenuAction),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const TournamentInvitesScreen()),

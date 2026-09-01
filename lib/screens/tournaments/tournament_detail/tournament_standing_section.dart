@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../../models/tournament.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Historial manual de posición/puntos (solo aplica a torneos 'league',
 /// issue #115: extraida de tournament_detail_screen.dart).
@@ -20,6 +21,7 @@ class TournamentStandingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final snapshots = [...tournament.standingSnapshots]..sort((a, b) => b.date.compareTo(a.date));
 
     return Card(
@@ -31,20 +33,20 @@ class TournamentStandingSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Clasificación', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
+                Text(l10n.standingsSectionTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
                 TextButton.icon(
                   onPressed: onAddSnapshot,
                   icon: const Icon(Icons.add),
-                  label: const Text('Añadir'),
+                  label: Text(l10n.addAction),
                 ),
               ],
             ),
             if (snapshots.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS),
                 child: Text(
-                  'Registra tu posición y puntos cuando quieras hacer seguimiento',
-                  style: TextStyle(color: AppColors.muted),
+                  l10n.trackStandingHint,
+                  style: const TextStyle(color: AppColors.muted),
                 ),
               )
             else
@@ -63,8 +65,8 @@ class TournamentStandingSection extends StatelessWidget {
                       Expanded(
                         child: Text(
                           [
-                            if (s.position != null) '${s.position}º puesto',
-                            if (s.points != null) '${s.points} pts',
+                            if (s.position != null) l10n.positionOrdinal(s.position!),
+                            if (s.points != null) l10n.pointsAbbreviation(s.points!),
                             if (s.notes != null && s.notes!.isNotEmpty) s.notes!,
                           ].join(' · '),
                         ),

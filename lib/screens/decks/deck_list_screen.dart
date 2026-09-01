@@ -11,6 +11,7 @@ import '../../services/tab_refresh_signals.dart';
 import 'deck_detail_screen.dart';
 import 'deck_list_tile.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 class DeckListScreen extends StatefulWidget {
   const DeckListScreen({super.key});
@@ -48,13 +49,13 @@ class _DeckListScreenState extends State<DeckListScreen> {
         if (!mounted) return;
         setState(() => _decks = [..._decks, deck]);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar "${deck.name}": ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: Text(AppLocalizations.of(context).deckDeleteError(deck.name, e.toString().replaceFirst('Exception: ', '')))),
         );
       }
     },
     onRemoveLocally: (deck) => setState(() => _decks = _decks.where((d) => d.id != deck.id).toList()),
     onRestoreLocally: (deck) => setState(() => _decks = [..._decks, deck]),
-    buildMessage: (deck) => 'Mazo "${deck.name}" eliminado',
+    buildMessage: (deck) => AppLocalizations.of(context).deckDeletedSnackbar(deck.name),
   );
 
   @override
@@ -153,16 +154,16 @@ class _DeckListScreenState extends State<DeckListScreen> {
     }
   }
 
-  String get _sortLabel {
+  String _sortLabel(AppLocalizations l10n) {
     switch (_sortBy) {
       case 'name':
-        return 'Nombre';
+        return l10n.sortByName;
       case 'wins':
-        return 'Más victorias';
+        return l10n.sortByMostWins;
       case 'winRate':
-        return 'Win rate';
+        return l10n.sortByWinRate;
       default:
-        return 'Actividad reciente';
+        return l10n.sortByRecentActivity;
     }
   }
 
@@ -206,6 +207,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
   }
 
   Future<void> _showDeckOptions(Deck deck) async {
+    final l10n = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -214,17 +216,17 @@ class _DeckListScreenState extends State<DeckListScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar mazo'),
+              title: Text(l10n.editDeckAction),
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
               leading: const Icon(Icons.copy_outlined),
-              title: const Text('Duplicar mazo'),
+              title: Text(l10n.duplicateDeckAction),
               onTap: () => Navigator.of(context).pop('duplicate'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar mazo'),
+              title: Text(l10n.deleteDeckAction),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],
@@ -253,6 +255,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
   }
 
   Future<void> _confirmDeleteDeck(Deck deck) async {
+    final l10n = AppLocalizations.of(context);
     final overview = _overviews[deck.id];
     final totalMatches =
         (overview?['wins'] ?? 0) + (overview?['losses'] ?? 0) + (overview?['ties'] ?? 0);
@@ -260,22 +263,20 @@ class _DeckListScreenState extends State<DeckListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar mazo'),
+        title: Text(l10n.deleteDeckAction),
         content: Text(
           totalMatches > 0
-              ? '¿Seguro que quieres eliminar "${deck.name}"? Se eliminarán también '
-                  'sus $totalMatches partidas registradas y dejarán de contar en tus '
-                  'estadísticas.'
-              : '¿Seguro que quieres eliminar "${deck.name}"?',
+              ? l10n.deleteDeckConfirmWithMatches(deck.name, totalMatches)
+              : l10n.deleteDeckConfirmSimple(deck.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -286,7 +287,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
     _pendingDelete.requestDelete(context, deck);
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.spacingM,
@@ -297,7 +298,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Buscar mazo por nombre',
+          hintText: l10n.deckSearchHint,
           prefixIcon: const Icon(Icons.search),
           border: const OutlineInputBorder(),
           isDense: true,
@@ -312,7 +313,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
     );
   }
 
-  Widget _buildSortMenu() {
+  Widget _buildSortMenu(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.spacingM,
@@ -326,11 +327,11 @@ class _DeckListScreenState extends State<DeckListScreen> {
           PopupMenuButton<String>(
             initialValue: _sortBy,
             onSelected: (value) => setState(() => _sortBy = value),
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'activity', child: Text('Actividad reciente')),
-              PopupMenuItem(value: 'name', child: Text('Nombre')),
-              PopupMenuItem(value: 'wins', child: Text('Más victorias')),
-              PopupMenuItem(value: 'winRate', child: Text('Win rate')),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'activity', child: Text(l10n.sortByRecentActivity)),
+              PopupMenuItem(value: 'name', child: Text(l10n.sortByName)),
+              PopupMenuItem(value: 'wins', child: Text(l10n.sortByMostWins)),
+              PopupMenuItem(value: 'winRate', child: Text(l10n.sortByWinRate)),
             ],
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -338,7 +339,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                 const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
                 const SizedBox(width: AppSizes.spacingXS),
                 Text(
-                  'Ordenar: $_sortLabel',
+                  l10n.sortByLabel(_sortLabel(l10n)),
                   style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
                 ),
               ],
@@ -352,7 +353,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
   /// Aviso de que lo que se ve viene del cache local (issue #133): carga
   /// inicial antes de que responda la red, o red caida tras haber podido
   /// mostrar algo previamente.
-  Widget _buildOfflineBanner() {
+  Widget _buildOfflineBanner(AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       color: AppColors.muted.withValues(alpha: 0.15),
@@ -364,10 +365,10 @@ class _DeckListScreenState extends State<DeckListScreen> {
         children: [
           const Icon(Icons.cloud_off_outlined, size: AppSizes.iconSmall, color: AppColors.muted),
           const SizedBox(width: AppSizes.spacingXS),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Sin conexión · mostrando datos guardados',
-              style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
+              l10n.offlineShowingSavedData,
+              style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
             ),
           ),
         ],
@@ -376,7 +377,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
   }
 
   /// Estado vacio (sin mazos todavia), con boton directo a crear el primero.
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.spacingL),
@@ -385,15 +386,15 @@ class _DeckListScreenState extends State<DeckListScreen> {
           children: [
             const Icon(Icons.style_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
             const SizedBox(height: AppSizes.spacingM),
-            const Text(
-              'Todavía no tienes mazos',
-              style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+            Text(
+              l10n.noDecksYetTitle,
+              style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSizes.spacingS),
-            const Text(
-              'Crea tu primer mazo para empezar a registrar partidas',
+            Text(
+              l10n.noDecksYetSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted),
+              style: const TextStyle(color: AppColors.muted),
             ),
           ],
         ),
@@ -403,6 +404,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const SlowLoadingIndicator();
     }
@@ -414,7 +416,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error al cargar mazos: $_errorMessage', textAlign: TextAlign.center),
+              Text(l10n.deckLoadError(_errorMessage!), textAlign: TextAlign.center),
               const SizedBox(height: AppSizes.spacingM),
               FilledButton.icon(
                 onPressed: () async {
@@ -424,7 +426,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                   if (created == true) _loadDecks();
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Crear mazo'),
+                label: Text(l10n.createDeckAction),
               ),
             ],
           ),
@@ -433,16 +435,16 @@ class _DeckListScreenState extends State<DeckListScreen> {
     }
 
     if (_decks.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(l10n);
     }
 
     final filteredDecks = _filteredDecks;
 
     return Column(
       children: [
-        if (_isShowingCachedData) _buildOfflineBanner(),
-        _buildSearchBar(),
-        _buildSortMenu(),
+        if (_isShowingCachedData) _buildOfflineBanner(l10n),
+        _buildSearchBar(l10n),
+        _buildSortMenu(l10n),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadDecks,
@@ -453,7 +455,7 @@ class _DeckListScreenState extends State<DeckListScreen> {
                         padding: const EdgeInsets.only(top: AppSizes.spacingXL),
                         child: Center(
                           child: Text(
-                            'Ningún mazo coincide con "$_searchQuery"',
+                            l10n.noDeckMatchesSearch(_searchQuery),
                             style: const TextStyle(color: AppColors.muted),
                           ),
                         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../../models/opponent_archetype.dart';
 import '../../../widgets/sprite_avatar_group.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Win-rate contra cada arquetipo rival al que se ha enfrentado este mazo
 /// (issue #118: promocionada desde _buildMatchupsSection de
@@ -36,34 +37,35 @@ class _DeckMatchupsSectionState extends State<DeckMatchupsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Expanded(
-              child: Text('Matchups', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(l10n.matchupsSectionTitle, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
             ),
             if (widget.matchups.isNotEmpty)
               IconButton(
                 icon: Icon(_showHeatmap ? Icons.view_list_outlined : Icons.grid_view_outlined),
-                tooltip: _showHeatmap ? 'Ver como lista' : 'Ver como mapa de calor',
+                tooltip: _showHeatmap ? l10n.viewAsListTooltip : l10n.viewAsHeatmapTooltip,
                 onPressed: () => setState(() => _showHeatmap = !_showHeatmap),
               ),
           ],
         ),
         const SizedBox(height: AppSizes.spacingM),
         if (widget.matchups.isEmpty)
-          const Text('Todavía no hay partidas registradas', style: TextStyle(color: AppColors.muted))
+          Text(l10n.noMatchesRegisteredYet, style: const TextStyle(color: AppColors.muted))
         else if (_showHeatmap)
-          _buildHeatmap()
+          _buildHeatmap(l10n)
         else
-          _buildList(),
+          _buildList(l10n),
       ],
     );
   }
 
-  Widget _buildHeatmap() {
+  Widget _buildHeatmap(AppLocalizations l10n) {
     return Wrap(
       spacing: AppSizes.spacingS,
       runSpacing: AppSizes.spacingS,
@@ -71,7 +73,7 @@ class _DeckMatchupsSectionState extends State<DeckMatchupsSection> {
         final winRate = m['winRate'] as num;
         final archetype = widget.archetypesByName[m['opponentDeck']];
         return Tooltip(
-          message: '${m['opponentDeck']}\n${m['wins']}V - ${m['losses']}D - ${m['ties']}E',
+          message: l10n.matchupTooltip(m['opponentDeck'], m['wins'], m['losses'], m['ties']),
           child: Container(
             width: 92,
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS, horizontal: AppSizes.spacingXS),
@@ -103,7 +105,7 @@ class _DeckMatchupsSectionState extends State<DeckMatchupsSection> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(AppLocalizations l10n) {
     return Column(
       children: widget.matchups.map((m) {
         final archetype = widget.archetypesByName[m['opponentDeck']];
@@ -118,7 +120,7 @@ class _DeckMatchupsSectionState extends State<DeckMatchupsSection> {
               size: AppSizes.iconNormal,
             ),
             title: Text(m['opponentDeck']),
-            subtitle: Text('${m['wins']}V - ${m['losses']}D - ${m['ties']}E'),
+            subtitle: Text(l10n.matchResultSummary(m['wins'], m['losses'], m['ties'])),
             trailing: Text(
               '${m['winRate']}%',
               style: const TextStyle(fontWeight: FontWeight.bold),

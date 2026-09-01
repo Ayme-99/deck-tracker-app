@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import 'stats_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// Aviso de racha negativa (issue #167): comprueba la racha actual de un
 /// mazo tras registrar una partida y, si son 3 o más derrotas seguidas,
@@ -29,7 +30,7 @@ class LosingStreakService {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.error,
-          content: Text('🥶 $streakCount derrotas seguidas con este mazo'),
+          content: Text(AppLocalizations.of(context).losingStreakWarning(streakCount)),
         ),
       );
     } catch (_) {

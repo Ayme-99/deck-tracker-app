@@ -5,6 +5,7 @@ import '../../models/tournament_player.dart';
 import '../sprite_avatar_group.dart';
 import 'bracket_constants.dart';
 import 'bracket_layout.dart';
+import '../../l10n/app_localizations.dart';
 
 class BracketNodeCard extends StatelessWidget {
   final double width;
@@ -24,7 +25,7 @@ class BracketNodeCard extends StatelessWidget {
     required this.onSelectMatch,
   });
 
-  Widget _row(TournamentPlayer? player, {required bool isBye}) {
+  Widget _row(AppLocalizations l10n, TournamentPlayer? player, {required bool isBye}) {
     return SizedBox(
       height: BracketConstants.rowHeight,
       child: Row(
@@ -37,7 +38,7 @@ class BracketNodeCard extends StatelessWidget {
           const SizedBox(width: AppSizes.spacingXS),
           Expanded(
             child: Text(
-              isBye ? 'BYE' : (player?.name ?? '?'),
+              isBye ? l10n.byeLabel : (player?.name ?? l10n.unknownPlayerPlaceholder),
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: isBye ? AppColors.muted : null),
             ),
@@ -53,6 +54,7 @@ class BracketNodeCard extends StatelessWidget {
       return;
     }
 
+    final l10n = AppLocalizations.of(context);
     final selected = await showModalBottomSheet<TournamentMatch>(
       context: context,
       builder: (context) => SafeArea(
@@ -60,14 +62,14 @@ class BracketNodeCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: node.legs.map((leg) {
             final label = switch (leg.leg) {
-              'first_leg' => 'Ida',
-              'second_leg' => 'Vuelta',
-              'sudden_death' => 'Muerte súbita',
+              'first_leg' => l10n.legFirstLeg,
+              'second_leg' => l10n.legSecondLeg,
+              'sudden_death' => l10n.legSuddenDeath,
               _ => leg.leg,
             };
             final resultText = leg.status == 'completed'
-                ? (leg.isDraw ? 'Empate' : '${leg.player1Prizes ?? '-'}-${leg.player2Prizes ?? '-'}')
-                : 'Sin resultado';
+                ? (leg.isDraw ? l10n.matchResultTie : '${leg.player1Prizes ?? '-'}-${leg.player2Prizes ?? '-'}')
+                : l10n.noResultYet;
             return ListTile(
               title: Text(label),
               subtitle: Text(resultText),
@@ -83,6 +85,7 @@ class BracketNodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: () => _handleTap(context),
       borderRadius: BorderRadius.circular(AppSizes.radiusM),
@@ -101,15 +104,15 @@ class BracketNodeCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _row(player1, isBye: false),
+                  _row(l10n, player1, isBye: false),
                   const Divider(height: BracketConstants.dividerHeight),
-                  _row(player2, isBye: node.isBye),
+                  _row(l10n, player2, isBye: node.isBye),
                 ],
               ),
             ),
             const SizedBox(width: AppSizes.spacingXS),
             Text(
-              node.resultLabel,
+              node.resultLabel(l10n),
               textAlign: TextAlign.right,
               style: TextStyle(
                 color: node.hasAnyResult ? null : AppColors.muted,

@@ -15,6 +15,7 @@ import 'tournament_rounds/tournament_rounds_action_bar.dart';
 import 'tournament_rounds/tournament_rounds_tabs.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_bracket_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla de rondas/emparejamientos de un torneo hosted (issue #46):
 /// genera rondas segun la estructura, muestra el bracket de eliminatoria
@@ -144,6 +145,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   // o con texto invalido, y el dialogo se cerraba sin hacer nada ni avisar
   // (int.tryParse devolvia null y onConfirm nunca se llamaba).
   Future<void> _askNumber(String title, String label, void Function(int) onConfirm) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -158,10 +160,10 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
             onChanged: (_) => setDialogState(() {}),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
             FilledButton(
               onPressed: int.tryParse(controller.text) == null ? null : () => Navigator.of(context).pop(true),
-              child: const Text('Continuar'),
+              child: Text(l10n.continueAction),
             ),
           ],
         ),
@@ -172,7 +174,8 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   }
 
   Future<void> _handleAssignGroups() async {
-    await _askNumber('Asignar grupos', 'Jugadores por grupo', (groupSize) {
+    final l10n = AppLocalizations.of(context);
+    await _askNumber(l10n.assignGroupsTitle, l10n.playersPerGroupLabel, (groupSize) {
       _runAction(() => _tournamentService.assignPlayerGroups(widget.tournamentId, groupSize));
     });
   }
@@ -199,13 +202,14 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   }
 
   Future<void> _handleClosePhase() async {
+    final l10n = AppLocalizations.of(context);
     final structure = _tournament!.structure;
     if (structure == 'swiss_elimination') {
-      await _askNumber('Cerrar fase suiza', 'Nº de clasificados (top cut)', (topCut) {
+      await _askNumber(l10n.closeSwissPhaseTitle, l10n.topCutQualifiersLabel, (topCut) {
         _runAction(() => _tournamentService.closePhaseToElimination(widget.tournamentId, topCut: topCut));
       });
     } else {
-      await _askNumber('Cerrar fase de grupos', 'Clasificados por grupo', (qualifiersPerGroup) {
+      await _askNumber(l10n.closeGroupPhaseTitle, l10n.qualifiersPerGroupLabel, (qualifiersPerGroup) {
         _runAction(() => _tournamentService.closePhaseToElimination(
               widget.tournamentId,
               qualifiersPerGroup: qualifiersPerGroup,
@@ -250,7 +254,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   Future<void> _handleMatchTap(TournamentMatch match) async {
     if (match.isBye) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bye: resuelto automáticamente, no requiere partida')),
+        SnackBar(content: Text(AppLocalizations.of(context).byeNoMatchNeeded)),
       );
       return;
     }
@@ -285,19 +289,20 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
   /// fase avanzada, etc.) -- se llama desde build(), es idempotente si
   /// nada cambio.
   void _ensureTabController() {
+    final l10n = AppLocalizations.of(context);
     final entries = <TournamentRoundsTabEntry>[];
 
     final roundPhases = _matchesByPhase.keys.where((p) => kRoundBasedPhases.contains(p)).toList();
     for (final phase in roundPhases) {
       final rounds = _matchesByPhase[phase]!.map((m) => m.round ?? 0).toSet().toList()..sort();
       for (final r in rounds) {
-        entries.add(TournamentRoundsTabEntry.round(label: 'Ronda $r', phase: phase, round: r));
+        entries.add(TournamentRoundsTabEntry.round(label: l10n.roundLabel(r), phase: phase, round: r));
       }
     }
 
     for (final phase in kEliminationPhaseOrder) {
       if ((_matchesByPhase[phase] ?? []).isNotEmpty) {
-        entries.add(TournamentRoundsTabEntry.phase(label: kTournamentMatchPhaseLabels[phase] ?? phase, phase: phase));
+        entries.add(TournamentRoundsTabEntry.phase(label: tournamentMatchPhaseLabels(l10n)[phase] ?? phase, phase: phase));
       }
     }
 
@@ -352,22 +357,23 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
     // resultado, generar una ronda, etc.) se mantiene el ListView montado
     // con los datos anteriores hasta que llegan los nuevos, para no perder
     // la posicion de scroll (issue #81).
+    final l10n = AppLocalizations.of(context);
     if (_isLoading && _tournament == null) {
       return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null && _tournament == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Rondas')),
+        appBar: AppBar(title: Text(l10n.roundsScreenTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.spacingL),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                 const SizedBox(height: AppSizes.spacingM),
-                FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
               ],
             ),
           ),
@@ -380,12 +386,12 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rondas y emparejamientos'),
+        title: Text(l10n.roundsAndPairingsTitle),
         actions: [
           if (_hasEliminationMatches)
             IconButton(
               icon: const Icon(Icons.fullscreen),
-              tooltip: 'Ver bracket a pantalla completa',
+              tooltip: l10n.viewFullscreenBracketTooltip,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => TournamentBracketScreen(
@@ -396,7 +402,7 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
             ),
           IconButton(
             icon: const Icon(Icons.leaderboard_outlined),
-            tooltip: 'Clasificación',
+            tooltip: l10n.standingsTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => TournamentStandingsScreen(tournamentId: widget.tournamentId),
@@ -434,13 +440,13 @@ class _TournamentRoundsScreenState extends State<TournamentRoundsScreen> with Ti
                   onFinishTournament: _handleFinishTournament,
                 ),
                 if (!hasAnyMatch)
-                  const Padding(
-                    padding: EdgeInsets.all(AppSizes.spacingL),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSizes.spacingL),
                     child: Center(
                       child: Text(
-                        'Todavía no hay rondas generadas. Usa el botón de arriba para empezar.',
+                        l10n.noRoundsYetHint,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.muted),
+                        style: const TextStyle(color: AppColors.muted),
                       ),
                     ),
                   ),

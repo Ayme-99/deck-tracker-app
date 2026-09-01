@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:deck_tracker_app/models/match.dart';
 import 'package:deck_tracker_app/models/tournament.dart';
 import 'package:deck_tracker_app/services/share_text_formatter.dart';
+import 'package:deck_tracker_app/l10n/app_localizations_es.dart';
+
+final _l10n = AppLocalizationsEs();
 
 Match _match({
   String result = 'win',
@@ -42,7 +45,7 @@ Tournament _tournament({String? finalStanding}) {
 void main() {
   group('ShareTextFormatter.formatMatch', () {
     test('incluye el nombre del mazo cuando se proporciona', () {
-      final text = ShareTextFormatter.formatMatch(_match(), deckName: 'Gardevoir ex');
+      final text = ShareTextFormatter.formatMatch(_l10n, _match(), deckName: 'Gardevoir ex');
 
       expect(text, contains('Gardevoir ex vs Charizard ex'));
       expect(text, contains('Victoria · 6-3'));
@@ -50,21 +53,21 @@ void main() {
     });
 
     test('omite el nombre del mazo cuando no se proporciona', () {
-      final text = ShareTextFormatter.formatMatch(_match());
+      final text = ShareTextFormatter.formatMatch(_l10n, _match());
 
       expect(text, contains('vs Charizard ex'));
       expect(text, isNot(contains('Gardevoir')));
     });
 
     test('incluye fase y ronda cuando la partida pertenece a un torneo', () {
-      final text = ShareTextFormatter.formatMatch(_match(phase: 'swiss', round: 3));
+      final text = ShareTextFormatter.formatMatch(_l10n, _match(phase: 'swiss', round: 3));
 
-      expect(text, contains('Suiza (ronda 3)'));
+      expect(text, contains('Suiza (Ronda 3)'));
     });
 
     test('etiqueta correctamente derrota y empate', () {
-      expect(ShareTextFormatter.formatMatch(_match(result: 'loss')), contains('Derrota'));
-      expect(ShareTextFormatter.formatMatch(_match(result: 'tie')), contains('Empate'));
+      expect(ShareTextFormatter.formatMatch(_l10n, _match(result: 'loss')), contains('Derrota'));
+      expect(ShareTextFormatter.formatMatch(_l10n, _match(result: 'tie')), contains('Empate'));
     });
   });
 
@@ -75,6 +78,7 @@ void main() {
       };
 
       final text = ShareTextFormatter.formatTournamentSummary(
+        _l10n,
         _tournament(finalStanding: '1er puesto'),
         summary,
       );
@@ -90,7 +94,7 @@ void main() {
         'overall': {'wins': 2, 'losses': 2, 'ties': 1, 'winRate': 40},
       };
 
-      final text = ShareTextFormatter.formatTournamentSummary(_tournament(), summary);
+      final text = ShareTextFormatter.formatTournamentSummary(_l10n, _tournament(), summary);
 
       expect(text, isNot(contains('🏆')));
     });

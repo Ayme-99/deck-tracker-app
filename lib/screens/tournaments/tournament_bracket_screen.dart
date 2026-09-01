@@ -6,6 +6,7 @@ import '../../services/tournament_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/tournament_bracket/match_result_dialog.dart';
 import '../../widgets/tournament_bracket/tournament_bracket.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla independiente del bracket (issue #84): navegable libremente
 /// con pan + zoom (InteractiveViewer), como un mapa.
@@ -82,7 +83,7 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
   Future<void> _handleMatchTap(TournamentMatch match) async {
     if (match.isBye) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bye: resuelto automáticamente, no requiere partida')),
+        SnackBar(content: Text(AppLocalizations.of(context).byeNoMatchNeeded)),
       );
       return;
     }
@@ -113,22 +114,23 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null && _players.isEmpty && _matches.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Bracket')),
+        appBar: AppBar(title: Text(l10n.bracketTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.spacingM),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                 const SizedBox(height: AppSizes.spacingM),
-                FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
               ],
             ),
           ),
@@ -137,7 +139,7 @@ class _TournamentBracketScreenState extends State<TournamentBracketScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Bracket')),
+      appBar: AppBar(title: Text(l10n.bracketTitle)),
       body: TournamentBracket(
         interactive: true,
         phaseOrder: kEliminationPhaseOrder,

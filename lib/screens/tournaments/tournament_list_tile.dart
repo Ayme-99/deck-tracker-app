@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../models/deck.dart';
 import '../../models/tournament.dart';
 import '../../widgets/sprite_avatar_group.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Tarjeta de un torneo en el listado (issue #118: extraida de
 /// tournaments_screen.dart).
@@ -48,6 +49,7 @@ class TournamentListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -87,9 +89,9 @@ class TournamentListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSizes.spacingXS),
                     if (!isOwned) ...[
-                      const Text(
-                        'Invitado',
-                        style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS, fontStyle: FontStyle.italic),
+                      Text(
+                        l10n.invitedLabel,
+                        style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS, fontStyle: FontStyle.italic),
                       ),
                       const SizedBox(height: AppSizes.spacingXS),
                     ],
@@ -98,7 +100,7 @@ class TournamentListTile extends StatelessWidget {
                         _formatDate(tournament.date),
                         if (deck != null) deck!.name,
                         if (tournament.structure != null)
-                          kTournamentStructureLabels[tournament.structure] ?? tournament.structure!,
+                          tournamentStructureLabels(l10n)[tournament.structure] ?? tournament.structure!,
                       ].join(' · '),
                       style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
                     ),

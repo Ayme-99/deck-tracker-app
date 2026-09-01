@@ -4,6 +4,7 @@ import '../../models/friend.dart';
 import '../../models/friend_request.dart';
 import '../../services/friend_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Gestion de amigos (issue #229): lista de amigos, solicitudes
 /// entrantes/salientes, y busqueda para enviar una nueva solicitud.
@@ -90,7 +91,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       if (!mounted) return;
       setState(() => _isSearching = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al buscar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).searchError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -104,7 +105,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).genericErrorPrefix(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -116,7 +117,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).genericErrorPrefix(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -128,22 +129,23 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).genericErrorPrefix(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
 
   Future<void> _confirmRemoveFriend(Friend friend) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar amistad'),
-        content: Text('¿Seguro que quieres eliminar a "${friend.username}" de tus amigos?'),
+        title: Text(l10n.removeFriendshipTitle),
+        content: Text(l10n.removeFriendshipConfirm(friend.username)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -157,15 +159,15 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.removeFriendshipError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
 
-  Widget _buildFriendsTab() {
+  Widget _buildFriendsTab(AppLocalizations l10n) {
     if (_friends.isEmpty) {
-      return const Center(
-        child: Text('Todavía no tienes amigos añadidos', style: TextStyle(color: AppColors.muted)),
+      return Center(
+        child: Text(l10n.noFriendsYet, style: const TextStyle(color: AppColors.muted)),
       );
     }
     return RefreshIndicator(
@@ -182,7 +184,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               title: Text(friend.username),
               trailing: IconButton(
                 icon: Icon(Icons.person_remove_outlined, color: Theme.of(context).colorScheme.error),
-                tooltip: 'Eliminar amistad',
+                tooltip: l10n.removeFriendshipTooltip,
                 onPressed: () => _confirmRemoveFriend(friend),
               ),
             ),
@@ -192,10 +194,10 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildRequestsTab() {
+  Widget _buildRequestsTab(AppLocalizations l10n) {
     if (_incoming.isEmpty && _outgoing.isEmpty) {
-      return const Center(
-        child: Text('No hay solicitudes pendientes', style: TextStyle(color: AppColors.muted)),
+      return Center(
+        child: Text(l10n.noPendingRequests, style: const TextStyle(color: AppColors.muted)),
       );
     }
     return RefreshIndicator(
@@ -204,7 +206,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
           if (_incoming.isNotEmpty) ...[
-            const Text('Entrantes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
+            Text(l10n.incomingRequestsTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
             const SizedBox(height: AppSizes.spacingS),
             ..._incoming.map((request) => Card(
                   margin: const EdgeInsets.only(bottom: AppSizes.spacingS),
@@ -216,12 +218,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                       children: [
                         IconButton(
                           icon: const Icon(Icons.check, color: AppColors.success),
-                          tooltip: 'Aceptar',
+                          tooltip: l10n.acceptAction,
                           onPressed: () => _acceptRequest(request),
                         ),
                         IconButton(
                           icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
-                          tooltip: 'Rechazar',
+                          tooltip: l10n.rejectAction,
                           onPressed: () => _rejectRequest(request),
                         ),
                       ],
@@ -231,14 +233,14 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             const SizedBox(height: AppSizes.spacingM),
           ],
           if (_outgoing.isNotEmpty) ...[
-            const Text('Salientes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
+            Text(l10n.outgoingRequestsTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM)),
             const SizedBox(height: AppSizes.spacingS),
             ..._outgoing.map((request) => Card(
                   margin: const EdgeInsets.only(bottom: AppSizes.spacingS),
                   child: ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person)),
                     title: Text(request.recipient.username),
-                    trailing: const Text('Pendiente', style: TextStyle(color: AppColors.muted)),
+                    trailing: Text(l10n.pendingStatus, style: const TextStyle(color: AppColors.muted)),
                   ),
                 )),
           ],
@@ -247,7 +249,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildSearchTab() {
+  Widget _buildSearchTab(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spacingM),
       child: Column(
@@ -256,7 +258,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Buscar por username',
+              hintText: l10n.searchByUsernameHint,
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
               isDense: true,
@@ -279,8 +281,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 ? Center(
                     child: Text(
                       _searchController.text.trim().isEmpty
-                          ? 'Busca a alguien por su nombre de usuario'
-                          : 'Sin resultados',
+                          ? l10n.searchByUsernamePrompt
+                          : l10n.noResultsFound,
                       style: const TextStyle(color: AppColors.muted),
                     ),
                   )
@@ -297,10 +299,10 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                           leading: const CircleAvatar(child: Icon(Icons.person)),
                           title: Text(user.username),
                           trailing: alreadySent
-                              ? const Text('Enviada', style: TextStyle(color: AppColors.muted))
+                              ? Text(l10n.requestSentStatus, style: const TextStyle(color: AppColors.muted))
                               : TextButton(
                                   onPressed: () => _sendRequest(user),
-                                  child: const Text('Añadir'),
+                                  child: Text(l10n.addAction),
                                 ),
                         ),
                       );
@@ -314,15 +316,16 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Amigos'),
+        title: Text(l10n.friendsScreenTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Amigos'),
-            Tab(text: 'Solicitudes'),
-            Tab(text: 'Buscar'),
+          tabs: [
+            Tab(text: l10n.friendsTabLabel),
+            Tab(text: l10n.requestsTabLabel),
+            Tab(text: l10n.searchTabLabel),
           ],
         ),
       ),
@@ -335,9 +338,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -345,9 +348,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildFriendsTab(),
-                    _buildRequestsTab(),
-                    _buildSearchTab(),
+                    _buildFriendsTab(l10n),
+                    _buildRequestsTab(l10n),
+                    _buildSearchTab(l10n),
                   ],
                 ),
     );

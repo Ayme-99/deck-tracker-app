@@ -8,6 +8,7 @@ import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/submit_on_enter.dart';
 import 'tournament_players_screen.dart';
 import 'tournament_detail_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla de creacion/edicion de torneo. Soporta ambos modos: 'tracked'
 /// (seguimiento del propio historial) y 'hosted' (la app aloja el torneo
@@ -74,7 +75,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'No se pudieron cargar tus mazos: ${e.toString().replaceFirst('Exception: ', '')}';
+        _errorMessage = AppLocalizations.of(context).decksLoadError(e.toString().replaceFirst('Exception: ', ''));
         _isLoadingDecks = false;
       });
     }
@@ -110,7 +111,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
     // El mazo solo es obligatorio en modo tracked; en hosted no hay un
     // unico mazo del torneo (cada jugador lleva el suyo).
     if (_mode == 'tracked' && _deckId == null) {
-      setState(() => _errorMessage = 'Necesitas al menos un mazo creado para registrar un torneo');
+      setState(() => _errorMessage = AppLocalizations.of(context).tournamentDeckRequired);
       return;
     }
 
@@ -194,20 +195,20 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
   /// Campos de mazo/estructura: en edicion son de solo lectura (ya puede
   /// haber partidas que dependan de ellos), en creacion son selects, con
   /// la configuracion especifica de hosted anidada dentro.
-  Widget _deckAndStructureFields() {
+  Widget _deckAndStructureFields(AppLocalizations l10n) {
     if (_isEditing) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Mazo', border: OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.deckFieldLabel, border: const OutlineInputBorder()),
             child: Text(_deckNameById(_deckId) ?? '—'),
           ),
           const SizedBox(height: AppSizes.spacingM),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Estructura', border: OutlineInputBorder()),
-            child: Text(kTournamentStructureLabels[_structure] ?? _structure),
+            decoration: InputDecoration(labelText: l10n.structureFieldLabel, border: const OutlineInputBorder()),
+            child: Text(tournamentStructureLabels(l10n)[_structure] ?? _structure),
           ),
           const SizedBox(height: AppSizes.spacingM),
         ],
@@ -220,31 +221,31 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
       children: [
         if (_mode == 'tracked') ...[
           if (_decks.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS),
               child: Text(
-                'No tienes mazos creados todavía. Crea uno primero para poder asociarlo al torneo.',
-                style: TextStyle(color: AppColors.warning),
+                l10n.noDecksYetForTournament,
+                style: const TextStyle(color: AppColors.warning),
               ),
             )
           else
             DropdownButtonFormField<String>(
               initialValue: _deckId,
-              decoration: const InputDecoration(
-                labelText: 'Mazo',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.deckFieldLabel,
+                border: const OutlineInputBorder(),
               ),
               items: _decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
               onChanged: (value) => setState(() => _deckId = value),
-              validator: (value) => value == null ? 'Selecciona un mazo' : null,
+              validator: (value) => value == null ? l10n.deckSelectRequired : null,
             ),
           const SizedBox(height: AppSizes.spacingM),
         ] else ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSizes.spacingS),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingS),
             child: Text(
-              'Si tú también participas, podrás vincular tu mazo más adelante desde la gestión de jugadores.',
-              style: TextStyle(color: AppColors.muted),
+              l10n.hostedModeDeckHint,
+              style: const TextStyle(color: AppColors.muted),
             ),
           ),
           const SizedBox(height: AppSizes.spacingS),
@@ -252,11 +253,11 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
 
         DropdownButtonFormField<String>(
           initialValue: _structure,
-          decoration: const InputDecoration(
-            labelText: 'Estructura del torneo',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.tournamentStructureFieldLabel,
+            border: const OutlineInputBorder(),
           ),
-          items: kTournamentStructureLabels.entries
+          items: tournamentStructureLabels(l10n).entries
               .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
               .toList(),
           onChanged: (value) => setState(() => _structure = value!),
@@ -265,7 +266,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
 
         // Configuracion especifica del modo hosted, segun la
         // estructura elegida (ver TORNEOS_HOSTED_GDD.md).
-        if (_mode == 'hosted') _hostedStructureOptions(),
+        if (_mode == 'hosted') _hostedStructureOptions(l10n),
       ],
     );
   }
@@ -273,7 +274,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
   /// Formato de eliminatoria + 3er/4º puesto (si la estructura tiene fase
   /// eliminatoria) y opcion de ida/vuelta (si es liga) -- solo aplica en
   /// modo hosted.
-  Widget _hostedStructureOptions() {
+  Widget _hostedStructureOptions(AppLocalizations l10n) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,18 +282,18 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
         if (kStructuresWithElimination.contains(_structure)) ...[
           DropdownButtonFormField<String>(
             initialValue: _eliminationFormat,
-            decoration: const InputDecoration(
-              labelText: 'Formato de eliminatoria',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.eliminationFormatFieldLabel,
+              border: const OutlineInputBorder(),
             ),
-            items: kEliminationFormatLabels.entries
+            items: eliminationFormatLabels(l10n).entries
                 .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                 .toList(),
             onChanged: (value) => setState(() => _eliminationFormat = value!),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Disputar 3er y 4º puesto'),
+            title: Text(l10n.thirdPlacePlayoffLabel),
             value: _thirdPlacePlayoff,
             onChanged: (value) => setState(() => _thirdPlacePlayoff = value),
           ),
@@ -301,8 +302,8 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
         if (_structure == 'league') ...[
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Ida y vuelta'),
-            subtitle: const Text('Cada enfrentamiento se juega dos veces'),
+            title: Text(l10n.doubleRoundLabel),
+            subtitle: Text(l10n.doubleRoundSubtitle),
             value: _leagueDoubleRound,
             onChanged: (value) => setState(() => _leagueDoubleRound = value),
           ),
@@ -312,12 +313,12 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
     );
   }
 
-  Widget _modeSelector() {
+  Widget _modeSelector(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
           child: ChoiceChip(
-            label: const Text('Seguimiento propio'),
+            label: Text(l10n.trackedModeLabel),
             selected: _mode == 'tracked',
             onSelected: (_) => setState(() => _mode = 'tracked'),
           ),
@@ -325,7 +326,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
         const SizedBox(width: AppSizes.spacingS),
         Expanded(
           child: ChoiceChip(
-            label: const Text('Alojar torneo'),
+            label: Text(l10n.hostedModeLabel),
             selected: _mode == 'hosted',
             onSelected: (_) => setState(() => _mode = 'hosted'),
           ),
@@ -336,8 +337,9 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar torneo' : 'Nuevo torneo')),
+      appBar: AppBar(title: Text(_isEditing ? l10n.editTournamentTitle : l10n.newTournamentTitle)),
       body: SafeArea(
         child: _isLoadingDecks
             ? const SlowLoadingIndicator()
@@ -350,21 +352,21 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                   padding: const EdgeInsets.all(AppSizes.spacingM),
                   children: [
                     if (!_isEditing) ...[
-                      const Text('Modo', style: TextStyle(fontWeight: FontWeight.w500)),
+                      Text(l10n.modeFieldLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
                       const SizedBox(height: AppSizes.spacingS),
-                      _modeSelector(),
+                      _modeSelector(l10n),
                       const SizedBox(height: AppSizes.spacingM),
                     ],
 
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre del torneo',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.tournamentNameLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Introduce un nombre';
+                          return l10n.tournamentNameRequired;
                         }
                         return null;
                       },
@@ -374,15 +376,15 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                     // Mazo y estructura: solo lectura si se esta editando
                     // (puede haber partidas que dependan de ellos), selects
                     // + configuracion especifica de hosted si se esta creando.
-                    _deckAndStructureFields(),
+                    _deckAndStructureFields(l10n),
 
                     InkWell(
                       onTap: _pickDate,
                       child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Fecha',
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today, size: AppSizes.iconSmall),
+                        decoration: InputDecoration(
+                          labelText: l10n.dateFieldLabel,
+                          border: const OutlineInputBorder(),
+                          suffixIcon: const Icon(Icons.calendar_today, size: AppSizes.iconSmall),
                         ),
                         child: Text(_formatDate(_date)),
                       ),
@@ -391,18 +393,18 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
 
                     TextFormField(
                       controller: _locationController,
-                      decoration: const InputDecoration(
-                        labelText: 'Localización (opcional)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.locationFieldLabel,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: AppSizes.spacingM),
 
                     TextFormField(
                       controller: _notesController,
-                      decoration: const InputDecoration(
-                        labelText: 'Notas (opcional)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.notesOptionalLabel,
+                        border: const OutlineInputBorder(),
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
@@ -426,7 +428,7 @@ class _TournamentFormScreenState extends State<TournamentFormScreen> {
                               width: AppSizes.spinnerSmall,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(_isEditing ? 'Guardar cambios' : 'Crear torneo'),
+                          : Text(_isEditing ? l10n.saveChangesAction : l10n.createTournamentButton),
                     ),
                   ],
                 ),

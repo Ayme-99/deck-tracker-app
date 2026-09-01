@@ -1,4 +1,5 @@
 import '../../models/tournament_match.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Logica pura (sin Flutter) del arbol de eliminatoria directa. Extraida de
 /// `TournamentBracket` (issue #115) para poder testearla sin `WidgetTester`
@@ -26,11 +27,11 @@ class BracketNode {
   TournamentMatch? get _suddenDeath =>
       legs.length == 1 ? null : legs.where((m) => m.leg == 'sudden_death').firstOrNull;
 
-  String get resultLabel {
+  String resultLabel(AppLocalizations l10n) {
     if (legs.length == 1) {
       final m = legs.first;
-      if (m.status != 'completed') return 'Sin resultado';
-      if (m.isDraw) return 'Empate';
+      if (m.status != 'completed') return l10n.noResultYet;
+      if (m.isDraw) return l10n.matchResultTie;
       return '${m.player1Prizes ?? '-'} - ${m.player2Prizes ?? '-'}';
     }
 
@@ -39,20 +40,20 @@ class BracketNode {
     final suddenDeath = _suddenDeath;
 
     if (suddenDeath != null && suddenDeath.status == 'completed') {
-      return 'Agregado + muerte súbita';
+      return l10n.aggregateWithSuddenDeath;
     }
     if (firstLeg != null && firstLeg.status == 'completed' && secondLeg != null && secondLeg.status == 'completed') {
       final p1Total = (firstLeg.player1Prizes ?? 0) +
           (secondLeg.player2Id == firstLeg.player1Id ? (secondLeg.player2Prizes ?? 0) : (secondLeg.player1Prizes ?? 0));
       final p2Total = (firstLeg.player2Prizes ?? 0) +
           (secondLeg.player1Id == firstLeg.player2Id ? (secondLeg.player1Prizes ?? 0) : (secondLeg.player2Prizes ?? 0));
-      if (p1Total == p2Total) return 'Empate agregado ($p1Total-$p2Total) · falta muerte súbita';
-      return '$p1Total - $p2Total (agregado)';
+      if (p1Total == p2Total) return l10n.aggregateTieAwaitingSuddenDeath(p1Total, p2Total);
+      return l10n.aggregateResult(p1Total, p2Total);
     }
     if (firstLeg != null && firstLeg.status == 'completed') {
-      return 'Ida: ${firstLeg.player1Prizes ?? '-'}-${firstLeg.player2Prizes ?? '-'} · Vuelta pendiente';
+      return l10n.firstLegResultAwaitingSecond(firstLeg.player1Prizes ?? '-', firstLeg.player2Prizes ?? '-');
     }
-    return 'Sin resultado';
+    return l10n.noResultYet;
   }
 
   bool get hasAnyResult => legs.any((m) => m.status == 'completed');

@@ -4,6 +4,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/submit_on_enter.dart';
 import '../../widgets/password_form_field.dart';
+import '../../l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -57,8 +58,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
+      appBar: AppBar(title: Text(l10n.registerScreenTitle)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -75,13 +77,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _usernameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Usuario',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.usernameLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Introduce un usuario';
+                          return l10n.registerUsernameRequired;
                         }
                         return null;
                       },
@@ -90,11 +92,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     PasswordFormField(
                       controller: _passwordController,
-                      labelText: 'Contraseña',
+                      labelText: l10n.passwordLabel,
                       textInputAction: TextInputAction.done,
                     validator: (value) {
                       if (value == null || value.length < 6) {
-                        return 'Mínimo 6 caracteres';
+                        return l10n.registerPasswordMinLength;
                       }
                       return null;
                     },
@@ -103,14 +105,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   PasswordFormField(
                     controller: _confirmPasswordController,
-                    labelText: 'Repite la contraseña',
+                    labelText: l10n.registerConfirmPasswordLabel,
                     textInputAction: TextInputAction.done,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Repite la contraseña';
+                        return l10n.registerConfirmPasswordRequired;
                       }
                       if (value != _passwordController.text) {
-                        return 'Las contraseñas no coinciden';
+                        return l10n.registerPasswordsDontMatch;
                       }
                       return null;
                     },
@@ -134,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Crear cuenta'),
+                        : Text(l10n.registerSubmitButton),
                   ),
                 ],
               ),

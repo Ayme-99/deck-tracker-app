@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../../models/match.dart';
 import '../../../models/opponent_archetype.dart';
 import '../../../widgets/sprite_avatar_group.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Partidas de un torneo tracked, agrupadas por fase (issue #115: extraida
 /// de tournament_detail_screen.dart).
@@ -31,12 +32,13 @@ class TournamentMatchesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (groupedMatches.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSizes.spacingM),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingM),
         child: Text(
-          'Todavía no hay partidas registradas en este torneo',
-          style: TextStyle(color: AppColors.muted),
+          l10n.noMatchesRegisteredInTournament,
+          style: const TextStyle(color: AppColors.muted),
         ),
       );
     }
@@ -52,7 +54,7 @@ class TournamentMatchesList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                kMatchPhaseLabels[phase] ?? phase,
+                matchPhaseLabels(l10n)[phase] ?? phase,
                 style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSizes.spacingXS),
@@ -78,10 +80,10 @@ class TournamentMatchesList extends StatelessWidget {
                               color: _resultColor(match.result),
                             ),
                           ),
-                    title: Text('vs ${match.opponentDeck}'),
+                    title: Text(l10n.matchVsOpponent(match.opponentDeck)),
                     subtitle: Text(
                       [
-                        if (match.round != null) 'Ronda ${match.round}',
+                        if (match.round != null) l10n.roundLabel(match.round!),
                         '${match.userPrizes}-${match.opponentPrizes}',
                       ].join(' · '),
                     ),

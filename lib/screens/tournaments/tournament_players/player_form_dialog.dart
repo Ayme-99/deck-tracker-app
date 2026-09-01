@@ -5,6 +5,7 @@ import '../../../models/tournament_player.dart';
 import '../../../services/archetype_sprite_lookup.dart';
 import '../../../widgets/sprite_avatar_group.dart';
 import '../../../widgets/submit_on_enter.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Resultado del formulario de alta/edicion de jugador (issue #118: extraido
 /// de tournament_players_screen.dart). Solo recoge los datos validados del
@@ -41,6 +42,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
   bool isSelf = player?.isOrganizer ?? false;
   String? selfDeckId = player?.deckId;
 
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
@@ -59,7 +61,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
           onSubmit: confirm,
           enabled: isValid(),
           child: AlertDialog(
-            title: Text(player == null ? 'Añadir jugador' : 'Editar jugador'),
+            title: Text(player == null ? l10n.addPlayerTitle : l10n.editPlayerTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -67,7 +69,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    decoration: InputDecoration(labelText: l10n.nameFieldLabel),
                     onChanged: (_) => setDialogState(() {}),
                   ),
                   const SizedBox(height: AppSizes.spacingM),
@@ -84,7 +86,7 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
-                        decoration: const InputDecoration(labelText: 'Mazo / arquetipo (opcional)'),
+                        decoration: InputDecoration(labelText: l10n.deckArchetypeOptionalLabel),
                       );
                     },
                   ),
@@ -101,9 +103,9 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                           children: [
                             SpriteAvatarGroup(sprite1: sprites.$1, sprite2: sprites.$2, size: AppSizes.iconNormal),
                             const SizedBox(width: AppSizes.spacingS),
-                            const Text(
-                              'Icono guardado para este mazo',
-                              style: TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
+                            Text(
+                              l10n.savedIconForDeck,
+                              style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
                             ),
                           ],
                         ),
@@ -113,8 +115,8 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                   const SizedBox(height: AppSizes.spacingM),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Soy yo'),
-                    subtitle: const Text('Vincula esta inscripción a un mazo real tuyo'),
+                    title: Text(l10n.thisIsMeLabel),
+                    subtitle: Text(l10n.linkRealDeckSubtitle),
                     value: isSelf,
                     onChanged: (value) => setDialogState(() => isSelf = value),
                   ),
@@ -123,8 +125,8 @@ Future<PlayerFormResult?> showPlayerFormDialog(
                     DropdownButtonFormField<String>(
                       initialValue: decks.any((d) => d.id == selfDeckId) ? selfDeckId : null,
                       decoration: InputDecoration(
-                        labelText: 'Tu mazo real',
-                        errorText: selfDeckId == null ? 'Elige un mazo' : null,
+                        labelText: l10n.yourRealDeckLabel,
+                        errorText: selfDeckId == null ? l10n.chooseADeckError : null,
                       ),
                       items: decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
                       onChanged: (value) => setDialogState(() => selfDeckId = value),
@@ -136,11 +138,11 @@ Future<PlayerFormResult?> showPlayerFormDialog(
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
+                child: Text(l10n.cancelAction),
               ),
               FilledButton(
                 onPressed: isValid() ? confirm : null,
-                child: const Text('Guardar'),
+                child: Text(l10n.saveAction),
               ),
             ],
           ),

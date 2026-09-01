@@ -5,6 +5,7 @@ import '../../services/deck_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import 'register_match_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Selector de mazo del widget de acceso rápido (issue #10): al tocar el
 /// widget en la pantalla de inicio del móvil, la app abre directamente
@@ -67,8 +68,9 @@ class _QuickRegisterDeckPickerScreenState extends State<QuickRegisterDeckPickerS
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrar partida')),
+      appBar: AppBar(title: Text(l10n.quickRegisterTitle)),
       body: _isLoading
           ? const SlowLoadingIndicator()
           : _errorMessage != null
@@ -78,9 +80,9 @@ class _QuickRegisterDeckPickerScreenState extends State<QuickRegisterDeckPickerS
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error al cargar mazos: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.deckLoadError(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadDecks, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadDecks, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -94,15 +96,15 @@ class _QuickRegisterDeckPickerScreenState extends State<QuickRegisterDeckPickerS
                           children: [
                             const Icon(Icons.style_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
                             const SizedBox(height: AppSizes.spacingM),
-                            const Text(
-                              'Todavía no tienes mazos',
-                              style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                            Text(
+                              l10n.noDecksYetTitle,
+                              style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: AppSizes.spacingS),
-                            const Text(
-                              'Crea un mazo desde la app para poder registrar partidas',
+                            Text(
+                              l10n.createDeckToRegisterMatches,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.muted),
+                              style: const TextStyle(color: AppColors.muted),
                             ),
                           ],
                         ),

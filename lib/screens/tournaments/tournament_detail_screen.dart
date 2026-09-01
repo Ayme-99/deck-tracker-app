@@ -27,6 +27,7 @@ import 'tournament_detail/select_match_phase_dialog.dart';
 import 'tournament_detail/match_options_sheet.dart';
 import 'tournament_detail/confirm_delete_dialogs.dart';
 import 'tournament_form_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class TournamentDetailScreen extends StatefulWidget {
   final String tournamentId;
@@ -77,13 +78,13 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
         if (!mounted) return;
         setState(() => _matches = [match, ..._matches]);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar la partida: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: Text(AppLocalizations.of(context).matchDeleteError(e.toString().replaceFirst('Exception: ', '')))),
         );
       }
     },
     onRemoveLocally: (m) => setState(() => _matches = _matches.where((x) => x.id != m.id).toList()),
     onRestoreLocally: (m) => setState(() => _matches = [m, ..._matches]),
-    buildMessage: (m) => 'Partida contra "${m.opponentDeck}" eliminada',
+    buildMessage: (m) => AppLocalizations.of(context).matchDeletedSnackbar(m.opponentDeck),
   );
 
   @override
@@ -172,7 +173,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).saveError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -191,7 +192,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
       );
       if (updated == true) _loadData();
     } else if (action == 'share') {
-      _shareService.shareText(ShareTextFormatter.formatMatch(match, deckName: _deck?.name));
+      _shareService.shareText(ShareTextFormatter.formatMatch(AppLocalizations.of(context), match, deckName: _deck?.name));
     } else if (action == 'delete') {
       _confirmDeleteMatch(match);
     }
@@ -213,20 +214,21 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   }
 
   Future<void> _exportMatchesCsv(Tournament tournament) async {
+    final l10n = AppLocalizations.of(context);
     try {
       final fileName = 'partidas_${tournament.name.replaceAll(RegExp(r'[^\w\-]+'), '_')}';
-      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(_matches), fileName);
+      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(l10n, _matches), fileName);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Historial exportado a Descargas'),
-          action: SnackBarAction(label: 'Abrir', onPressed: () => _fileExportService.open(exported)),
+          content: Text(l10n.matchHistoryExported),
+          action: SnackBarAction(label: l10n.openAction, onPressed: () => _fileExportService.open(exported)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al exportar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.exportError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -254,7 +256,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).updateError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -278,7 +280,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).saveError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -377,22 +379,23 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const Scaffold(body: SlowLoadingIndicator());
     }
 
     if (_errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Torneo')),
+        appBar: AppBar(title: Text(l10n.tournamentFallbackTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.spacingL),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                 const SizedBox(height: AppSizes.spacingM),
-                FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
               ],
             ),
           ),
@@ -423,7 +426,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               } else if (value == 'toggle_status') {
                 _toggleStatus();
               } else if (value == 'share') {
-                _shareService.shareText(ShareTextFormatter.formatTournamentSummary(tournament, _summary!));
+                _shareService.shareText(ShareTextFormatter.formatTournamentSummary(AppLocalizations.of(context), tournament, _summary!));
               } else if (value == 'export_csv') {
                 _exportMatchesCsv(tournament);
               } else if (value == 'delete') {
@@ -431,15 +434,15 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Editar torneo')),
+              PopupMenuItem(value: 'edit', child: Text(l10n.editTournamentTitle)),
               PopupMenuItem(
                 value: 'toggle_status',
-                child: Text(isFinished ? 'Marcar como en curso' : 'Marcar como finalizado'),
+                child: Text(isFinished ? l10n.markAsInProgress : l10n.markAsFinished),
               ),
               if (_summary != null)
-                const PopupMenuItem(value: 'share', child: Text('Compartir resumen')),
-              const PopupMenuItem(value: 'export_csv', child: Text('Exportar partidas a CSV')),
-              const PopupMenuItem(value: 'delete', child: Text('Eliminar torneo')),
+                PopupMenuItem(value: 'share', child: Text(l10n.shareSummaryAction)),
+              PopupMenuItem(value: 'export_csv', child: Text(l10n.exportMatchesToCsvAction)),
+              PopupMenuItem(value: 'delete', child: Text(l10n.deleteTournamentAction)),
             ],
           ),
         ],
@@ -474,7 +477,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
               const SizedBox(height: AppSizes.spacingL),
             ],
 
-            const Text('Partidas', style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+            Text(l10n.matchesSectionTitle, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSizes.spacingS),
 
             TournamentMatchesList(
@@ -489,7 +492,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
           ? FloatingActionButton.extended(
               onPressed: _handleAddMatch,
               icon: const Icon(Icons.add),
-              label: const Text('Partida'),
+              label: Text(l10n.registerMatchAction),
             )
           : null,
     );

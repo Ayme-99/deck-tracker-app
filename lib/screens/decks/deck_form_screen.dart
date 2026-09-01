@@ -7,6 +7,7 @@ import '../../services/deck_service.dart';
 import '../../services/tcg_live_deck_parser.dart';
 import '../../widgets/sprite_picker.dart';
 import '../../widgets/submit_on_enter.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla unificada para crear, editar y duplicar mazos.
 /// Si [deck] es null, funciona en modo "crear". Si viene informado, modo "editar".
@@ -80,12 +81,13 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   /// TCG Live no coinciden con los del catalogo usado aqui (TCGdex). El
   /// usuario puede refinar cada carta despues con el autocompletado normal.
   Future<void> _showImportFromTcgLive() async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
 
     final pastedText = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Importar desde Pokémon TCG Live'),
+        title: Text(l10n.importFromTcgLiveTitle),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -93,19 +95,19 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_cards.isNotEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: AppSizes.spacingS),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSizes.spacingS),
                   child: Text(
-                    'Esto sustituirá la lista de cartas actual.',
-                    style: TextStyle(color: AppColors.warning),
+                    l10n.importReplacesCurrentList,
+                    style: const TextStyle(color: AppColors.warning),
                   ),
                 ),
               TextField(
                 controller: controller,
                 maxLines: 10,
-                decoration: const InputDecoration(
-                  hintText: 'Pega aquí la lista exportada desde TCG Live',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l10n.importPasteHint,
+                  border: const OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -115,11 +117,11 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Importar'),
+            child: Text(l10n.importAction),
           ),
         ],
       ),
@@ -131,7 +133,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     final parsed = TcgLiveDeckParser.parse(pastedText);
     if (parsed.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se ha reconocido ninguna carta en el texto pegado')),
+        SnackBar(content: Text(l10n.importNoCardsRecognized)),
       );
       return;
     }
@@ -215,9 +217,12 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Mazo' : (widget.duplicateFrom != null ? 'Duplicar Mazo' : 'Nuevo Mazo')),
+        title: Text(_isEditing
+            ? l10n.deckFormEditTitle
+            : (widget.duplicateFrom != null ? l10n.deckFormDuplicateTitle : l10n.deckFormNewTitle)),
       ),
       body: SafeArea(
         child: SubmitOnEnter(
@@ -237,13 +242,13 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre del mazo',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.deckNameLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Introduce un nombre';
+                    return l10n.deckNameRequired;
                   }
                   return null;
                 },
@@ -265,19 +270,19 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Cartas', style: TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold)),
+                  Text(l10n.cardsSectionTitle, style: const TextStyle(fontSize: AppSizes.textM, fontWeight: FontWeight.bold)),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         onPressed: _showImportFromTcgLive,
                         icon: const Icon(Icons.content_paste_outlined),
-                        tooltip: 'Importar desde Pokémon TCG Live',
+                        tooltip: l10n.importFromTcgLiveTitle,
                       ),
                       TextButton.icon(
                         onPressed: _addCard,
                         icon: const Icon(Icons.add),
-                        label: const Text('Añadir carta'),
+                        label: Text(l10n.addCardAction),
                       ),
                     ],
                   ),
@@ -289,7 +294,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.spacingM),
                   child: Text(
-                    _isEditing ? 'No hay cartas añadidas' : 'Puedes añadir cartas ahora o más tarde',
+                    _isEditing ? l10n.noCardsAddedYet : l10n.canAddCardsLater,
                     style: const TextStyle(color: AppColors.muted),
                   ),
                 ),
@@ -339,7 +344,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                               return TextFormField(
                                 controller: controller,
                                 focusNode: focusNode,
-                                decoration: const InputDecoration(labelText: 'Nombre'),
+                                decoration: InputDecoration(labelText: l10n.cardNameLabel),
                                 // Solo se dispara con edicion real del
                                 // usuario (no con asignaciones .text por
                                 // codigo), asi que solo aqui perdemos el
@@ -347,7 +352,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                 onChanged: (_) => card.realCardId = null,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Requerido';
+                                    return l10n.requiredFieldError;
                                   }
                                   return null;
                                 },
@@ -360,7 +365,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                           flex: 1,
                           child: TextFormField(
                             controller: card.quantityController,
-                            decoration: const InputDecoration(labelText: 'Cant.'),
+                            decoration: InputDecoration(labelText: l10n.cardQuantityLabel),
                             keyboardType: TextInputType.number,
                             // Issue #188: sin validador, un campo vacio o con
                             // texto no numerico se guardaba en silencio como
@@ -368,7 +373,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                             validator: (value) {
                               final parsed = int.tryParse(value ?? '');
                               if (parsed == null || parsed < 1) {
-                                return 'Nº entero > 0';
+                                return l10n.cardQuantityInvalid;
                               }
                               return null;
                             },
@@ -379,11 +384,11 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                           flex: 2,
                           child: DropdownButtonFormField<String>(
                             initialValue: card.category,
-                            decoration: const InputDecoration(labelText: 'Tipo'),
-                            items: const [
-                              DropdownMenuItem(value: 'pokemon', child: Text('Pokémon')),
-                              DropdownMenuItem(value: 'trainer', child: Text('Entrenador')),
-                              DropdownMenuItem(value: 'energy', child: Text('Energía')),
+                            decoration: InputDecoration(labelText: l10n.cardCategoryLabel),
+                            items: [
+                              DropdownMenuItem(value: 'pokemon', child: Text(l10n.cardCategoryPokemon)),
+                              DropdownMenuItem(value: 'trainer', child: Text(l10n.cardCategoryTrainer)),
+                              DropdownMenuItem(value: 'energy', child: Text(l10n.cardCategoryEnergy)),
                             ],
                             onChanged: (value) => setState(() => card.category = value!),
                           ),
@@ -417,7 +422,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                         width: AppSizes.spinnerSmall,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(_isEditing ? 'Guardar cambios' : 'Crear mazo'),
+                    : Text(_isEditing ? l10n.saveChangesAction : l10n.createDeckAction),
               ),
             ],
           ),

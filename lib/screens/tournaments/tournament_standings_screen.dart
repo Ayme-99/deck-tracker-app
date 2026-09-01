@@ -8,6 +8,7 @@ import '../../services/opponent_archetype_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/sprite_avatar_group.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Clasificacion en vivo de un torneo hosted (issue #47): puntos, W-L-D
 /// y desempates (diferencial de premios, OMW%), reutilizando
@@ -42,7 +43,7 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
   Map<String, List<Map<String, dynamic>>> get _standingsByGroup {
     final map = <String, List<Map<String, dynamic>>>{};
     for (final entry in _standings) {
-      final group = entry['groupName'] as String? ?? 'Sin grupo';
+      final group = entry['groupName'] as String? ?? AppLocalizations.of(context).noGroupLabel;
       map.putIfAbsent(group, () => []).add(entry);
     }
     return map;
@@ -141,8 +142,9 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Clasificación')),
+      appBar: AppBar(title: Text(l10n.standingsScreenTitle)),
       body: _isLoading
           ? const SlowLoadingIndicator()
           : _errorMessage != null
@@ -152,9 +154,9 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -167,10 +169,10 @@ class _TournamentStandingsScreenState extends State<TournamentStandingsScreen> {
                             children: [
                               ConstrainedBox(
                                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'Todavía no hay jugadores inscritos',
-                                    style: TextStyle(color: AppColors.muted),
+                                    l10n.noPlayersEnrolledYet,
+                                    style: const TextStyle(color: AppColors.muted),
                                   ),
                                 ),
                               ),
@@ -203,6 +205,7 @@ class _StandingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final dropped = entry['dropped'] == true;
     final position = entry['position'];
     final name = entry['name'] as String;
@@ -256,15 +259,15 @@ class _StandingRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '$points pts',
+                  l10n.pointsSuffix(points),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
                 ),
                 Text(
-                  '${wins}V-${losses}D-${draws}E',
+                  l10n.matchResultSummary(wins, losses, draws),
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
                 ),
                 Text(
-                  'Dif. $prizeDifferential · OMW $omwPercentage%',
+                  l10n.prizeDifferentialAndOmw(prizeDifferential, omwPercentage),
                   style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
                 ),
               ],

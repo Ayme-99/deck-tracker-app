@@ -5,6 +5,7 @@ import '../../models/tournament_invite.dart';
 import '../../services/deck_service.dart';
 import '../../services/tournament_invite_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Invitaciones a torneos hosted recibidas de amigos (issue #242): aceptar
 /// (eligiendo con que mazo propio unirse) o rechazar.
@@ -52,13 +53,14 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
   }
 
   Future<void> _accept(TournamentInvite invite) async {
+    final l10n = AppLocalizations.of(context);
     List<Deck> decks;
     try {
       decks = await _deckService.getDecks();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar tus mazos: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.loadDecksError(e.toString().replaceFirst('Exception: ', '')))),
       );
       return;
     }
@@ -66,7 +68,7 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
     if (!mounted) return;
     if (decks.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Necesitas al menos un mazo propio para unirte a un torneo')),
+        SnackBar(content: Text(l10n.needAtLeastOneDeckToJoin)),
       );
       return;
     }
@@ -74,7 +76,7 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
     final selectedDeck = await showDialog<Deck>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('¿Con qué mazo te unes?'),
+        title: Text(l10n.whichDeckToJoinWith),
         children: decks
             .map((d) => SimpleDialogOption(
                   onPressed: () => Navigator.of(context).pop(d),
@@ -92,7 +94,7 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al aceptar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.acceptError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -104,15 +106,16 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al rechazar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).rejectError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Invitaciones a torneos')),
+      appBar: AppBar(title: Text(l10n.tournamentInvitesTitle)),
       body: _isLoading
           ? const SlowLoadingIndicator()
           : _errorMessage != null
@@ -122,16 +125,16 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
                 )
               : _invites.isEmpty
-                  ? const Center(
-                      child: Text('No tienes invitaciones pendientes', style: TextStyle(color: AppColors.muted)),
+                  ? Center(
+                      child: Text(l10n.noPendingInvites, style: const TextStyle(color: AppColors.muted)),
                     )
                   : RefreshIndicator(
                       onRefresh: _loadData,
@@ -143,19 +146,19 @@ class _TournamentInvitesScreenState extends State<TournamentInvitesScreen> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: AppSizes.spacingS),
                             child: ListTile(
-                              title: Text(invite.tournamentName ?? 'Torneo'),
-                              subtitle: Text('Rol: ${invite.role == 'admin' ? 'Admin' : 'Invitado'}'),
+                              title: Text(invite.tournamentName ?? l10n.tournamentFallbackName),
+                              subtitle: Text(l10n.roleWithValue(invite.role == 'admin' ? l10n.roleAdmin : l10n.roleGuest)),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
                                     icon: const Icon(Icons.check, color: AppColors.success),
-                                    tooltip: 'Aceptar',
+                                    tooltip: l10n.acceptAction,
                                     onPressed: () => _accept(invite),
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
-                                    tooltip: 'Rechazar',
+                                    tooltip: l10n.rejectAction,
                                     onPressed: () => _reject(invite),
                                   ),
                                 ],

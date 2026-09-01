@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../../models/deck.dart';
 import '../../../models/tournament.dart';
 import '../../../widgets/sprite_avatar_group.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Cabecera del detalle de un torneo tracked (issue #115: extraida de
 /// tournament_detail_screen.dart): fecha/mazo, estado, estructura,
@@ -27,6 +28,7 @@ class TournamentHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isFinished = tournament.status == 'finished';
 
     return Card(
@@ -62,7 +64,7 @@ class TournamentHeaderCard extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  label: Text(isFinished ? 'Finalizado' : 'En curso'),
+                  label: Text(isFinished ? l10n.tournamentStatusFinished : l10n.tournamentStatusInProgress),
                   backgroundColor: (isFinished ? AppColors.muted : AppColors.success)
                       .withValues(alpha: 0.15),
                   labelStyle: TextStyle(
@@ -78,7 +80,7 @@ class TournamentHeaderCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.spacingS),
             Text(
-              kTournamentStructureLabels[tournament.structure] ?? tournament.structure ?? '',
+              tournamentStructureLabels(l10n)[tournament.structure] ?? tournament.structure ?? '',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.textM),
             ),
             if (tournament.location != null && tournament.location!.isNotEmpty) ...[
@@ -104,8 +106,8 @@ class TournamentHeaderCard extends StatelessWidget {
                     const SizedBox(width: AppSizes.spacingXS),
                     Text(
                       tournament.finalStanding == null || tournament.finalStanding!.isEmpty
-                          ? 'Añadir posición final'
-                          : 'Editar posición final',
+                          ? l10n.addFinalStandingAction
+                          : l10n.editFinalStandingAction,
                       style: const TextStyle(color: AppColors.muted, decoration: TextDecoration.underline),
                     ),
                   ],
