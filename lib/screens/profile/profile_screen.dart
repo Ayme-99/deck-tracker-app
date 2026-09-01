@@ -5,6 +5,8 @@ import '../../services/accent_color_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
+import '../friends/friends_screen.dart';
+import '../../widgets/slow_loading_indicator.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
 /// pantalla de perfil completa (gestion de amigos, stats de cuenta...),
@@ -190,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SlowLoadingIndicator()
           : Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSizes.spacingL),
@@ -205,6 +207,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       _username ?? 'Usuario',
                       style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: AppSizes.spacingL),
+                    // Issue #229: gestion de amigos, colgando de la pantalla
+                    // de perfil (candidato ya previsto en la #235). Ancho
+                    // fijo: dentro del Column(mainAxisSize.min) del Center,
+                    // un ListTile sin restriccion de ancho intentaria
+                    // expandirse de forma infinita.
+                    SizedBox(
+                      width: 280,
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          leading: const Icon(Icons.people_outline),
+                          title: const Text('Amigos'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
