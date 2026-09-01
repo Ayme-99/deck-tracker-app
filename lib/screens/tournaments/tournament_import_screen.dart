@@ -6,6 +6,7 @@ import '../../services/deck_service.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/submit_on_enter.dart';
 import 'tournament_players_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Importa un torneo hosted a partir del JSON exportado por otro usuario
 /// (issue #76, ver TORNEOS_HOSTED_GDD.md seccion 7). Flujo: pegar el JSON
@@ -48,7 +49,7 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
     try {
       final decoded = jsonDecode(_jsonController.text) as Map<String, dynamic>;
       if (decoded['tournament'] == null || decoded['players'] == null || decoded['matches'] == null) {
-        throw const FormatException('El JSON no tiene la forma esperada (faltan tournament/players/matches)');
+        throw FormatException(AppLocalizations.of(context).invalidJsonFormat);
       }
       final players = List<Map<String, dynamic>>.from(decoded['players'] as List);
       final decks = await _deckService.getDecks();
@@ -63,7 +64,7 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'JSON inválido: ${e.toString().replaceFirst('Exception: ', '')}';
+        _errorMessage = AppLocalizations.of(context).invalidJsonError(e.toString().replaceFirst('Exception: ', ''));
         _isAnalyzing = false;
       });
     }
@@ -72,7 +73,7 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
   Future<void> _handleImport() async {
     if (_parsedData == null) return;
     if (_selfPlayerOriginalId != null && _selfDeckId == null) {
-      setState(() => _errorMessage = 'Selecciona tu mazo real para poder vincular tu inscripción');
+      setState(() => _errorMessage = AppLocalizations.of(context).selectRealDeckRequired);
       return;
     }
 
@@ -107,8 +108,9 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Importar torneo')),
+      appBar: AppBar(title: Text(l10n.importTournamentTitle)),
       body: SubmitOnEnter(
         onSubmit: _parsedData == null ? _analyze : _handleImport,
         enabled: !_isAnalyzing && !_isImporting,
@@ -118,7 +120,7 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Pega aquí el JSON que te haya pasado quien exportó el torneo.',
+                l10n.pasteImportJsonInstructions,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSizes.spacingM),
@@ -126,9 +128,9 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
                 controller: _jsonController,
                 maxLines: 10,
                 enabled: _parsedData == null,
-                decoration: const InputDecoration(
-                  labelText: 'JSON del torneo',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.tournamentJsonLabel,
+                  border: const OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -151,23 +153,23 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
                           width: AppSizes.spinnerSmall,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Analizar'),
+                      : Text(l10n.analyzeAction),
                 )
               else ...[
                 Text(
-                  '"${_parsedData!['tournament']['name']}" — ${_players.length} jugadores',
+                  l10n.tournamentWithPlayersCount(_parsedData!['tournament']['name'], _players.length),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: AppSizes.spacingM),
 
                 DropdownButtonFormField<String?>(
                   initialValue: _selfPlayerOriginalId,
-                  decoration: const InputDecoration(
-                    labelText: '¿Quién eres tú en este torneo?',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.whoAreYouInTournament,
+                    border: const OutlineInputBorder(),
                   ),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Ninguno (solo espectador)')),
+                    DropdownMenuItem<String?>(value: null, child: Text(l10n.spectatorOnlyOption)),
                     ..._players.map(
                       (p) => DropdownMenuItem<String?>(
                         value: p['_id'] as String,
@@ -185,9 +187,9 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
                   const SizedBox(height: AppSizes.spacingM),
                   DropdownButtonFormField<String>(
                     initialValue: _selfDeckId,
-                    decoration: const InputDecoration(
-                      labelText: 'Tu mazo real',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.yourRealDeckLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     items: _decks.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
                     onChanged: (value) => setState(() => _selfDeckId = value),
@@ -203,7 +205,7 @@ class _TournamentImportScreenState extends State<TournamentImportScreen> {
                           width: AppSizes.spinnerSmall,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Importar torneo'),
+                      : Text(l10n.importTournamentButton),
                 ),
               ],
             ],

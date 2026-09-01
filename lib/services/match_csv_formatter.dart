@@ -1,4 +1,5 @@
 import '../models/match.dart';
+import '../l10n/app_localizations.dart';
 
 /// Genera el CSV del historial de partidas de un mazo o torneo (issue #162),
 /// para analizar en Excel/Sheets con mas detalle del que cabe en el resumen
@@ -7,16 +8,25 @@ import '../models/match.dart';
 class MatchCsvFormatter {
   MatchCsvFormatter._();
 
-  static const _header = ['Fecha', 'Rival', 'Resultado', 'Mis premios', 'Premios rival', 'Fase', 'Ronda', 'Notas'];
+  static List<String> _header(AppLocalizations l10n) => [
+    l10n.csvHeaderDate,
+    l10n.csvHeaderOpponent,
+    l10n.csvHeaderResult,
+    l10n.csvHeaderMyPrizes,
+    l10n.csvHeaderOpponentPrizes,
+    l10n.csvHeaderPhase,
+    l10n.csvHeaderRound,
+    l10n.csvHeaderNotes,
+  ];
 
-  static String _resultLabel(String result) {
+  static String _resultLabel(AppLocalizations l10n, String result) {
     switch (result) {
       case 'win':
-        return 'Victoria';
+        return l10n.matchResultWin;
       case 'loss':
-        return 'Derrota';
+        return l10n.matchResultLoss;
       default:
-        return 'Empate';
+        return l10n.matchResultTie;
     }
   }
 
@@ -35,18 +45,18 @@ class MatchCsvFormatter {
 
   static String _row(List<String> fields) => fields.map(_escape).join(',');
 
-  static String format(List<Match> matches) {
+  static String format(AppLocalizations l10n, List<Match> matches) {
     final buffer = StringBuffer()
-      ..writeln(_row(_header));
+      ..writeln(_row(_header(l10n)));
 
     for (final match in matches) {
       buffer.writeln(_row([
         _formatDate(match.playedAt),
         match.opponentDeck,
-        _resultLabel(match.result),
+        _resultLabel(l10n, match.result),
         '${match.userPrizes}',
         '${match.opponentPrizes}',
-        match.phase != null ? (kMatchPhaseLabels[match.phase] ?? match.phase!) : '',
+        match.phase != null ? (matchPhaseLabels(l10n)[match.phase] ?? match.phase!) : '',
         match.round?.toString() ?? '',
         match.notes ?? '',
       ]));

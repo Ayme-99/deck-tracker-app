@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../services/pokemon_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// Selector de hasta 2 sprites de Pokemon, con autocompletado de especies.
 /// Componente totalmente controlado: el padre es la fuente de verdad via
@@ -33,7 +34,7 @@ class _SpritePickerState extends State<SpritePicker> {
     if (sprite == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se encontró sprite para "$speciesName"')),
+        SnackBar(content: Text(AppLocalizations.of(context).spriteNotFound(speciesName))),
       );
       return;
     }
@@ -56,6 +57,7 @@ class _SpritePickerState extends State<SpritePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final sprite1 = widget.sprite1;
     final sprite2 = widget.sprite2;
     final canAddMore = sprite2 == null;
@@ -63,7 +65,7 @@ class _SpritePickerState extends State<SpritePicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Icono (opcional)', style: AppTextStyles.caption),
+        Text(l10n.iconOptionalLabel, style: AppTextStyles.caption),
         const SizedBox(height: AppSizes.spacingS),
 
         Row(
@@ -87,7 +89,7 @@ class _SpritePickerState extends State<SpritePicker> {
                 controller: controller,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  labelText: sprite1 == null ? 'Buscar Pokémon' : 'Añadir segundo icono (opcional)',
+                  labelText: sprite1 == null ? l10n.searchPokemonHint : l10n.addSecondIconOptional,
                   border: const OutlineInputBorder(),
                   suffixIcon: _isSearching
                       ? const Padding(

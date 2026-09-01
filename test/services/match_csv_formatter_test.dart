@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:deck_tracker_app/models/match.dart';
 import 'package:deck_tracker_app/services/match_csv_formatter.dart';
+import 'package:deck_tracker_app/l10n/app_localizations_es.dart';
+
+final _l10n = AppLocalizationsEs();
 
 Match _match({
   String opponentDeck = 'Charizard ex',
@@ -30,12 +33,12 @@ Match _match({
 void main() {
   group('MatchCsvFormatter.format', () {
     test('incluye la cabecera aunque no haya partidas', () {
-      final csv = MatchCsvFormatter.format([]);
+      final csv = MatchCsvFormatter.format(_l10n, []);
       expect(csv.trim(), 'Fecha,Rival,Resultado,Mis premios,Premios rival,Fase,Ronda,Notas');
     });
 
     test('formatea una fila con todos los campos', () {
-      final csv = MatchCsvFormatter.format([
+      final csv = MatchCsvFormatter.format(_l10n, [
         _match(phase: 'swiss', round: 3, notes: 'Buena partida'),
       ]);
       final lines = csv.trim().split('\n');
@@ -44,14 +47,14 @@ void main() {
     });
 
     test('deja vacios fase/ronda/notas cuando no aplican', () {
-      final csv = MatchCsvFormatter.format([_match()]);
+      final csv = MatchCsvFormatter.format(_l10n, [_match()]);
       final lines = csv.trim().split('\n');
 
       expect(lines[1], '2026-03-05,Charizard ex,Victoria,6,3,,,');
     });
 
     test('etiqueta correctamente derrota y empate', () {
-      final csv = MatchCsvFormatter.format([
+      final csv = MatchCsvFormatter.format(_l10n, [
         _match(result: 'loss'),
         _match(result: 'tie'),
       ]);
@@ -62,14 +65,14 @@ void main() {
     });
 
     test('escapa campos con comas entre comillas dobles', () {
-      final csv = MatchCsvFormatter.format([_match(opponentDeck: 'Pikachu, Raichu')]);
+      final csv = MatchCsvFormatter.format(_l10n, [_match(opponentDeck: 'Pikachu, Raichu')]);
       final lines = csv.trim().split('\n');
 
       expect(lines[1], startsWith('2026-03-05,"Pikachu, Raichu",Victoria'));
     });
 
     test('escapa comillas dobles internas duplicandolas', () {
-      final csv = MatchCsvFormatter.format([_match(notes: 'Dijo "gg" al final')]);
+      final csv = MatchCsvFormatter.format(_l10n, [_match(notes: 'Dijo "gg" al final')]);
       final lines = csv.trim().split('\n');
 
       expect(lines[1], endsWith('"Dijo ""gg"" al final"'));

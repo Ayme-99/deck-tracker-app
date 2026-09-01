@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/tournament_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Exporta un torneo hosted a JSON (issue #76, ver TORNEOS_HOSTED_GDD.md
 /// seccion 7). Se muestra el JSON con opcion de copiarlo al portapapeles,
@@ -59,14 +60,15 @@ class _TournamentExportScreenState extends State<TournamentExportScreen> {
     await Clipboard.setData(ClipboardData(text: _jsonText!));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copiado al portapapeles')),
+      SnackBar(content: Text(AppLocalizations.of(context).copiedToClipboard)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Exportar torneo')),
+      appBar: AppBar(title: Text(l10n.exportTournamentTitle)),
       body: _isLoading
           ? const SlowLoadingIndicator()
           : _errorMessage != null
@@ -76,9 +78,9 @@ class _TournamentExportScreenState extends State<TournamentExportScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadExport, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadExport, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -88,7 +90,7 @@ class _TournamentExportScreenState extends State<TournamentExportScreen> {
                     Padding(
                       padding: const EdgeInsets.all(AppSizes.spacingM),
                       child: Text(
-                        'Copia este texto y envíaselo a quien vaya a importar el torneo.',
+                        l10n.exportTournamentInstructions,
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
@@ -106,7 +108,7 @@ class _TournamentExportScreenState extends State<TournamentExportScreen> {
                       child: FilledButton.icon(
                         onPressed: _copyToClipboard,
                         icon: const Icon(Icons.copy),
-                        label: const Text('Copiar al portapapeles'),
+                        label: Text(l10n.copyToClipboardAction),
                       ),
                     ),
                   ],

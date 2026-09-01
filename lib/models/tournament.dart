@@ -1,4 +1,5 @@
 import 'tournament_match.dart' show kEliminationPhaseOrder;
+import '../l10n/app_localizations.dart';
 
 class StandingSnapshot {
   final DateTime date;
@@ -133,9 +134,9 @@ class Tournament {
 }
 
 // Etiquetas legibles para eliminationFormat
-const kEliminationFormatLabels = {
-  'single_match': 'Partido único',
-  'two_legs': 'Ida y vuelta',
+Map<String, String> eliminationFormatLabels(AppLocalizations l10n) => {
+  'single_match': l10n.eliminationFormatSingleMatch,
+  'two_legs': l10n.eliminationFormatTwoLegs,
 };
 
 // Estructuras que incluyen una fase de eliminatoria directa en algun punto
@@ -144,12 +145,12 @@ const kStructuresWithElimination = {'elimination', 'swiss_elimination', 'groups_
 
 // Etiquetas legibles para las structure, reutilizables en toda la seccion
 // de Torneos (listado, formulario, detalle...)
-const kTournamentStructureLabels = {
-  'swiss': 'Rondas suizas',
-  'swiss_elimination': 'Suizas + eliminatoria',
-  'groups_elimination': 'Fase de grupos + eliminatoria',
-  'elimination': 'Eliminatoria directa',
-  'league': 'Liga',
+Map<String, String> tournamentStructureLabels(AppLocalizations l10n) => {
+  'swiss': l10n.tournamentStructureSwiss,
+  'swiss_elimination': l10n.tournamentStructureSwissElimination,
+  'groups_elimination': l10n.tournamentStructureGroupsElimination,
+  'elimination': l10n.tournamentStructureElimination,
+  'league': l10n.tournamentStructureLeague,
 };
 
 // Fases validas para cada structure, en el orden en que se juegan.

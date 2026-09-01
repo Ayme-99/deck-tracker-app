@@ -20,6 +20,7 @@ import '../../widgets/slow_loading_indicator.dart';
 import '../../widgets/winrate_chart.dart';
 import '../matches/register_match_screen.dart';
 import '../matches/edit_match_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class DeckDetailScreen extends StatefulWidget {
   final Deck deck;
@@ -56,13 +57,13 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         if (!mounted) return;
         setState(() => _recentMatches = [match, ..._recentMatches]);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar la partida: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: Text(AppLocalizations.of(context).matchDeleteError(e.toString().replaceFirst('Exception: ', '')))),
         );
       }
     },
     onRemoveLocally: (m) => setState(() => _recentMatches = _recentMatches.where((x) => x.id != m.id).toList()),
     onRestoreLocally: (m) => setState(() => _recentMatches = [m, ..._recentMatches]),
-    buildMessage: (m) => 'Partida contra "${m.opponentDeck}" eliminada',
+    buildMessage: (m) => AppLocalizations.of(context).matchDeletedSnackbar(m.opponentDeck),
   );
 
   @override
@@ -78,6 +79,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   }
 
   Future<void> _showMatchOptions(Match match) async {
+    final l10n = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -86,17 +88,17 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar partida'),
+              title: Text(l10n.editMatchAction),
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
               leading: const Icon(Icons.share_outlined),
-              title: const Text('Compartir partida'),
+              title: Text(l10n.shareMatchAction),
               onTap: () => Navigator.of(context).pop('share'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar partida'),
+              title: Text(l10n.deleteMatchAction),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],
@@ -112,26 +114,27 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       );
       if (updated == true) _loadData();
     } else if (action == 'share') {
-      _shareService.shareText(ShareTextFormatter.formatMatch(match, deckName: widget.deck.name));
+      _shareService.shareText(ShareTextFormatter.formatMatch(l10n, match, deckName: widget.deck.name));
     } else if (action == 'delete') {
       _confirmDeleteMatch(match);
     }
   }
 
   Future<void> _confirmDeleteMatch(Match match) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar partida'),
-        content: Text('¿Eliminar la partida contra "${match.opponentDeck}"?'),
+        title: Text(l10n.deleteMatchAction),
+        content: Text(l10n.deleteMatchConfirm(match.opponentDeck)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -149,19 +152,20 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   /// especial ('deleted') al hacer pop, para que sea la lista quien registre
   /// el borrado pendiente (ver _DeckListScreenState).
   Future<void> _confirmDelete() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar mazo'),
-        content: Text('¿Seguro que quieres eliminar "${widget.deck.name}"?'),
+        title: Text(l10n.deleteDeckAction),
+        content: Text(l10n.deleteDeckDetailConfirm(widget.deck.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -172,20 +176,21 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
   }
 
   Future<void> _exportMatchesCsv() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final fileName = 'partidas_${widget.deck.name.replaceAll(RegExp(r'[^\w\-]+'), '_')}';
-      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(_recentMatches), fileName);
+      final exported = await _fileExportService.saveCsv(MatchCsvFormatter.format(l10n, _recentMatches), fileName);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Historial exportado a Descargas'),
-          action: SnackBarAction(label: 'Abrir', onPressed: () => _fileExportService.open(exported)),
+          content: Text(l10n.matchHistoryExported),
+          action: SnackBarAction(label: l10n.openAction, onPressed: () => _fileExportService.open(exported)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al exportar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.exportError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -232,6 +237,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.deck.name),
@@ -261,11 +267,11 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 _confirmDelete();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'edit', child: Text('Editar mazo')),
-              PopupMenuItem(value: 'duplicate', child: Text('Duplicar mazo')),
-              PopupMenuItem(value: 'export_csv', child: Text('Exportar partidas a CSV')),
-              PopupMenuItem(value: 'delete', child: Text('Eliminar mazo')),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'edit', child: Text(l10n.editDeckAction)),
+              PopupMenuItem(value: 'duplicate', child: Text(l10n.duplicateDeckAction)),
+              PopupMenuItem(value: 'export_csv', child: Text(l10n.exportMatchesToCsvAction)),
+              PopupMenuItem(value: 'delete', child: Text(l10n.deleteDeckAction)),
             ],
           ),
         ],
@@ -279,9 +285,9 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -325,7 +331,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
           }
         },
         icon: const Icon(Icons.add),
-        label: const Text('Partida'),
+        label: Text(l10n.registerMatchAction),
       ),
     );
   }

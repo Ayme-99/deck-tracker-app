@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/update_check_service.dart';
 import '../../services/update_download_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Dialogo de aviso de nueva version (issue #233), ampliado en la #248 para
 /// descargar el instalador/APK en segundo plano y ofrecer ejecutarlo, en
@@ -81,17 +82,17 @@ class _UpdateDialogWidgetState extends State<UpdateDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasDownload = widget.update.downloadUrl != null;
 
     return AlertDialog(
-      title: const Text('Nueva versión disponible'),
+      title: Text(l10n.newVersionAvailableTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tienes la versión ${widget.update.currentVersion} instalada. '
-            'Ya está disponible la ${widget.update.latestVersion}.',
+            l10n.versionUpdatePrompt(widget.update.currentVersion, widget.update.latestVersion),
           ),
           if (_state == _UpdateDialogState.downloading) ...[
             const SizedBox(height: 16),
@@ -100,7 +101,7 @@ class _UpdateDialogWidgetState extends State<UpdateDialog> {
           if (_state == _UpdateDialogState.error) ...[
             const SizedBox(height: 16),
             Text(
-              'No se pudo descargar el instalador. Puedes descargarlo a mano desde GitHub.',
+              l10n.downloadFailedHint,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
@@ -109,21 +110,21 @@ class _UpdateDialogWidgetState extends State<UpdateDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Ahora no'),
+          child: Text(l10n.notNowAction),
         ),
         TextButton(
           onPressed: _openInGitHub,
-          child: const Text('Ver en GitHub'),
+          child: Text(l10n.viewOnGithubAction),
         ),
         if (_state == _UpdateDialogState.ready)
           FilledButton(
             onPressed: _runInstaller,
-            child: const Text('Ejecutar instalador'),
+            child: Text(l10n.runInstallerAction),
           )
         else if (hasDownload)
           FilledButton(
             onPressed: _state == _UpdateDialogState.downloading ? null : _startDownload,
-            child: const Text('Actualizar'),
+            child: Text(l10n.updateAction),
           ),
       ],
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../services/opponent_archetype_service.dart';
 import 'sprite_picker.dart';
+import '../l10n/app_localizations.dart';
 
 /// Bottom sheet "Editar rival"/"Eliminar historial", reutilizable en
 /// cualquier pantalla que liste arquetipos rivales (issue #198: antes vivia
@@ -20,6 +21,7 @@ Future<void> showOpponentOptionsSheet(
   required VoidCallback onChanged,
 }) async {
   final archetypeService = OpponentArchetypeService();
+  final l10n = AppLocalizations.of(context);
 
   final action = await showModalBottomSheet<String>(
     context: context,
@@ -29,12 +31,12 @@ Future<void> showOpponentOptionsSheet(
         children: [
           ListTile(
             leading: const Icon(Icons.edit_outlined),
-            title: const Text('Editar rival'),
+            title: Text(l10n.editRivalAction),
             onTap: () => Navigator.of(context).pop('edit'),
           ),
           ListTile(
             leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-            title: const Text('Eliminar historial de este rival'),
+            title: Text(l10n.deleteRivalHistoryAction),
             onTap: () => Navigator.of(context).pop('delete'),
           ),
         ],
@@ -59,6 +61,7 @@ Future<void> _editOpponent(
   String? sprite2,
   VoidCallback onChanged,
 ) async {
+  final l10n = AppLocalizations.of(context);
   final nameController = TextEditingController(text: name);
   String? editedSprite1 = sprite1;
   String? editedSprite2 = sprite2;
@@ -67,7 +70,7 @@ Future<void> _editOpponent(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
-        title: const Text('Editar rival'),
+        title: Text(l10n.editRivalAction),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -75,7 +78,7 @@ Future<void> _editOpponent(
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l10n.nameFieldLabel, border: const OutlineInputBorder()),
               ),
               const SizedBox(height: AppSizes.spacingM),
               SpritePicker(
@@ -90,8 +93,8 @@ Future<void> _editOpponent(
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Guardar')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.saveAction)),
         ],
       ),
     ),
@@ -113,7 +116,7 @@ Future<void> _editOpponent(
   } catch (e) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al editar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      SnackBar(content: Text(l10n.editError(e.toString().replaceFirst('Exception: ', '')))),
     );
   }
 }
@@ -125,24 +128,21 @@ Future<void> _confirmDeleteOpponent(
   int? totalMatches,
   VoidCallback onChanged,
 ) async {
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Eliminar mazo rival'),
+      title: Text(l10n.deleteRivalDeckTitle),
       content: Text(
         totalMatches != null
-            ? '¿Seguro que quieres eliminar "$name"? Se eliminarán también sus '
-                '$totalMatches partidas registradas y dejarán de contar en tus '
-                'estadísticas. Esta acción no se puede deshacer.'
-            : '¿Seguro que quieres eliminar "$name"? Se eliminarán también sus partidas '
-                'registradas y dejarán de contar en tus estadísticas. Esta acción no se '
-                'puede deshacer.',
+            ? l10n.deleteRivalConfirmWithCount(name, totalMatches)
+            : l10n.deleteRivalConfirmSimple(name),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     ),
@@ -156,7 +156,7 @@ Future<void> _confirmDeleteOpponent(
   } catch (e) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+      SnackBar(content: Text(l10n.tournamentDeleteError(name, e.toString().replaceFirst('Exception: ', '')))),
     );
   }
 }

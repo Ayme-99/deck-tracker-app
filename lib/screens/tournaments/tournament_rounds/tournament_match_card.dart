@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../../models/tournament_match.dart';
 import '../../../models/tournament_player.dart';
 import '../../../widgets/sprite_avatar_group.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Tarjeta de un emparejamiento en el listado simple (swiss/liga/grupos),
 /// issue #115: extraida de tournament_rounds_screen.dart.
@@ -26,6 +27,7 @@ class TournamentMatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
       child: Card(
@@ -35,11 +37,14 @@ class TournamentMatchCard extends StatelessWidget {
           trailing: match.isBye
               ? null
               : SpriteAvatarGroup(sprite1: player2Sprites.$1, sprite2: player2Sprites.$2, size: AppSizes.iconNormal),
-          title: Text('${player1?.name ?? '?'} vs ${match.isBye ? 'BYE' : (player2?.name ?? '?')}'),
+          title: Text(l10n.matchVsWithBye(
+            player1?.name ?? l10n.unknownPlayerPlaceholder,
+            match.isBye ? l10n.byeLabel : (player2?.name ?? l10n.unknownPlayerPlaceholder),
+          )),
           subtitle: Text(
             match.status == 'completed'
-                ? (match.isDraw ? 'Empate' : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
-                : 'Sin resultado',
+                ? (match.isDraw ? l10n.matchResultTie : '${match.player1Prizes ?? '-'}-${match.player2Prizes ?? '-'}')
+                : l10n.noResultYet,
           ),
         ),
       ),

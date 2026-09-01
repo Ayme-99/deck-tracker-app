@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 class TournamentMatch {
   final String id;
   final String phase;
@@ -59,18 +61,18 @@ class TournamentMatch {
   }
 }
 
-// Etiquetas legibles para cada fase (comparte semantica con kMatchPhaseLabels
-// de match.dart, duplicado aqui para no acoplar hosted a tracked)
-const kTournamentMatchPhaseLabels = {
-  'group_stage': 'Fase de grupos',
-  'swiss': 'Suiza',
-  'round_of_64': 'Fase de 64',
-  'round_of_32': 'Dieciseisavos',
-  'round_of_16': 'Octavos',
-  'quarterfinal': 'Cuartos',
-  'semifinal': 'Semifinal',
-  'final': 'Final',
-  'league_round': 'Jornada',
+// Etiquetas legibles para cada fase (comparte semantica con
+// matchPhaseLabels de match.dart, duplicado aqui para no acoplar hosted a tracked)
+Map<String, String> tournamentMatchPhaseLabels(AppLocalizations l10n) => {
+  'group_stage': l10n.matchPhaseGroupStage,
+  'swiss': l10n.matchPhaseSwiss,
+  'round_of_64': l10n.matchPhaseRoundOf64,
+  'round_of_32': l10n.matchPhaseRoundOf32,
+  'round_of_16': l10n.matchPhaseRoundOf16,
+  'quarterfinal': l10n.matchPhaseQuarterfinal,
+  'semifinal': l10n.matchPhaseSemifinal,
+  'final': l10n.matchPhaseFinal,
+  'league_round': l10n.matchPhaseLeagueRound,
 };
 
 // Orden de fases de eliminatoria, de mayor a menor tamaño de bracket

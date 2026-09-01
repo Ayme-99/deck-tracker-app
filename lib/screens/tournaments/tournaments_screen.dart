@@ -11,6 +11,7 @@ import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_detail_screen.dart';
 import 'tournament_list_tile.dart';
 import 'tournament_players_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class TournamentsScreen extends StatefulWidget {
   const TournamentsScreen({super.key});
@@ -42,13 +43,13 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
         if (!mounted) return;
         setState(() => _tournaments = [..._tournaments, tournament]);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar "${tournament.name}": ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: Text(AppLocalizations.of(context).tournamentDeleteError(tournament.name, e.toString().replaceFirst('Exception: ', '')))),
         );
       }
     },
     onRemoveLocally: (t) => setState(() => _tournaments = _tournaments.where((x) => x.id != t.id).toList()),
     onRestoreLocally: (t) => setState(() => _tournaments = [..._tournaments, t]),
-    buildMessage: (t) => 'Torneo "${t.name}" eliminado',
+    buildMessage: (t) => AppLocalizations.of(context).tournamentDeletedSnackbar(t.name),
   );
 
   @override
@@ -70,6 +71,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   }
 
   Future<void> _showTournamentOptions(Tournament tournament) async {
+    final l10n = AppLocalizations.of(context);
     final isFinished = tournament.status == 'finished';
 
     final action = await showModalBottomSheet<String>(
@@ -80,12 +82,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           children: [
             ListTile(
               leading: Icon(isFinished ? Icons.replay : Icons.check_circle_outline),
-              title: Text(isFinished ? 'Marcar como en curso' : 'Marcar como finalizado'),
+              title: Text(isFinished ? l10n.markAsInProgress : l10n.markAsFinished),
               onTap: () => Navigator.of(context).pop('toggle_status'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar torneo'),
+              title: Text(l10n.deleteTournamentAction),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],
@@ -110,28 +112,26 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al actualizar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).updateError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
 
   Future<void> _confirmDelete(Tournament tournament) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar torneo'),
-        content: Text(
-          '¿Eliminar "${tournament.name}"? Las partidas ya registradas no se borran, '
-          'quedan sueltas fuera del torneo.',
-        ),
+        title: Text(l10n.deleteTournamentAction),
+        content: Text(l10n.deleteTournamentConfirm(tournament.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -184,14 +184,14 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
   }
 
-  String get _sortLabel {
+  String _sortLabel(AppLocalizations l10n) {
     switch (_sortBy) {
       case 'position':
-        return 'Posición';
+        return l10n.sortByPosition;
       case 'percentage':
-        return '% Ranking';
+        return l10n.sortByRankingPercentage;
       default:
-        return 'Fecha';
+        return l10n.sortByDate;
     }
   }
 
@@ -230,7 +230,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
 
   /// Estado vacio (sin torneos todavia), con RefreshIndicator para poder
   /// tirar hacia abajo y comprobar de nuevo aunque no haya nada que listar.
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return RefreshIndicator(
       onRefresh: _loadTournaments,
       child: LayoutBuilder(
@@ -250,16 +250,16 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                       children: [
                         const Icon(Icons.emoji_events_outlined, size: AppSizes.iconHuge, color: AppColors.muted),
                         const SizedBox(height: AppSizes.spacingM),
-                        const Text(
-                          'Todavía no tienes torneos',
+                        Text(
+                          l10n.noTournamentsYet,
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: AppSizes.spacingS),
-                        const Text(
-                          'Registra tu primer torneo para hacer seguimiento de tus partidas por fase',
+                        Text(
+                          l10n.noTournamentsYetSubtitle,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.muted),
+                          style: const TextStyle(color: AppColors.muted),
                         ),
                       ],
                     ),
@@ -274,7 +274,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   }
 
   /// Control de orden del listado (fecha / posicion / % ranking).
-  Widget _buildSortMenu() {
+  Widget _buildSortMenu(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingS, AppSizes.spacingM, 0),
       child: Row(
@@ -283,10 +283,10 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           PopupMenuButton<String>(
             initialValue: _sortBy,
             onSelected: (value) => setState(() => _sortBy = value),
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'date', child: Text('Fecha')),
-              PopupMenuItem(value: 'position', child: Text('Posición')),
-              PopupMenuItem(value: 'percentage', child: Text('% Ranking')),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'date', child: Text(l10n.sortByDate)),
+              PopupMenuItem(value: 'position', child: Text(l10n.sortByPosition)),
+              PopupMenuItem(value: 'percentage', child: Text(l10n.sortByRankingPercentage)),
             ],
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -294,7 +294,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                 const Icon(Icons.sort, size: AppSizes.iconSmall, color: AppColors.muted),
                 const SizedBox(width: AppSizes.spacingXS),
                 Text(
-                  'Ordenar: $_sortLabel',
+                  l10n.sortByLabel(_sortLabel(l10n)),
                   style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textS),
                 ),
               ],
@@ -307,6 +307,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const SlowLoadingIndicator();
     }
@@ -318,12 +319,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error al cargar torneos: $_errorMessage', textAlign: TextAlign.center),
+              Text(l10n.tournamentLoadError(_errorMessage!), textAlign: TextAlign.center),
               const SizedBox(height: AppSizes.spacingM),
               FilledButton.icon(
                 onPressed: _loadTournaments,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+                label: Text(l10n.retryAction),
               ),
             ],
           ),
@@ -332,12 +333,12 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
 
     if (_tournaments.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(l10n);
     }
 
     return Column(
       children: [
-        _buildSortMenu(),
+        _buildSortMenu(l10n),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadTournaments,

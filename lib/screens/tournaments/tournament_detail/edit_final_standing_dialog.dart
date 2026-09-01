@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../../models/tournament.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Dialogo de edicion del puesto final (issue #256: extraido de
 /// tournament_detail_screen.dart). Devuelve null si se cancela; si se
@@ -27,34 +28,35 @@ Future<({int? position, int? total})?> showEditFinalStandingDialog(
     return p != null && p > 0 && t != null && t > 0;
   }
 
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
-        title: const Text('Posición final'),
+        title: Text(l10n.finalStandingTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: positionController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Puesto obtenido'),
+              decoration: InputDecoration(labelText: l10n.positionObtainedLabel),
               onChanged: (_) => setDialogState(() {}),
             ),
             const SizedBox(height: AppSizes.spacingM),
             TextField(
               controller: totalController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Nº total de participantes'),
+              decoration: InputDecoration(labelText: l10n.totalParticipantsLabel),
               onChanged: (_) => setDialogState(() {}),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
           FilledButton(
             onPressed: isValid() ? () => Navigator.of(context).pop(true) : null,
-            child: const Text('Guardar'),
+            child: Text(l10n.saveAction),
           ),
         ],
       ),

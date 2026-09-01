@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:deck_tracker_app/models/tournament_match.dart';
 import 'package:deck_tracker_app/widgets/tournament_bracket/bracket_layout.dart';
+import 'package:deck_tracker_app/l10n/app_localizations_es.dart';
+
+final _l10n = AppLocalizationsEs();
 
 const cardHeight = 69.0; // BracketConstants.cardHeight (32*2 + 1 + 4)
 const leafGap = 14.0;
@@ -233,7 +236,7 @@ void main() {
       expect(node.isTwoLegs, isTrue);
       expect(node.legs.length, 3);
       expect(node.winnerId, 'p1');
-      expect(node.resultLabel, 'Agregado + muerte súbita');
+      expect(node.resultLabel(_l10n), 'Agregado + muerte súbita');
     });
   });
 

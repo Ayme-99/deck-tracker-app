@@ -9,6 +9,7 @@ import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../widgets/update/update_dialog.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Shell de las 3 pestañas principales (issue #238: cada una vive en su
 /// propia ruta con URL real -- /decks, /stats, /tournaments -- via
@@ -82,8 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentIndex = widget.navigationShell.currentIndex;
-    final titles = ['Mis Mazos', 'Estadísticas', 'Torneos'];
+    final titles = [l10n.homeTitleDecks, l10n.homeTitleStats, l10n.homeTitleTournaments];
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            tooltip: 'Buscar',
+            tooltip: l10n.searchTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const GlobalSearchScreen()),
             ),
@@ -99,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (currentIndex == 2)
             IconButton(
               icon: const Icon(Icons.file_download_outlined),
-              tooltip: 'Importar torneo',
+              tooltip: l10n.importTournamentTooltip,
               onPressed: _handleImportTournament,
             ),
           // Issue #235: el menu de usuario de la #202 pasa a ser una
@@ -108,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // mueven dentro de ProfileScreen, detras de un icono de engranaje.
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
-            tooltip: 'Perfil',
+            tooltip: l10n.profileTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ProfileScreen()),
             ),
@@ -120,22 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ? FloatingActionButton.extended(
               onPressed: _handleCreateDeck,
               icon: const Icon(Icons.add),
-              label: const Text('Añadir mazo'),
+              label: Text(l10n.addDeckAction),
             )
           : currentIndex == 2
               ? FloatingActionButton.extended(
                   onPressed: _handleCreateTournament,
                   icon: const Icon(Icons.add),
-                  label: const Text('Crear torneo'),
+                  label: Text(l10n.createTournamentAction),
                 )
               : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: _onTabSelected,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.style), label: 'Mazos'),
-          NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),
-          NavigationDestination(icon: Icon(Icons.emoji_events), label: 'Torneos'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.style), label: l10n.navDecksLabel),
+          NavigationDestination(icon: const Icon(Icons.bar_chart), label: l10n.navStatsLabel),
+          NavigationDestination(icon: const Icon(Icons.emoji_events), label: l10n.navTournamentsLabel),
         ],
       ),
     );

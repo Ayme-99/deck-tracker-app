@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// Borrado con "deshacer" (issue #128), reutilizable en cualquier pantalla
 /// con una lista de items borrables. La llamada DELETE real se retrasa:
@@ -59,7 +60,7 @@ class PendingDeleteController<T> {
           content: Text(buildMessage(item)),
           duration: duration,
           action: SnackBarAction(
-            label: 'Deshacer',
+            label: AppLocalizations.of(context).undoAction,
             onPressed: () {
               final timer = _pending.remove(item);
               if (timer == null) return; // ya se disparo el borrado real, tarde para deshacer

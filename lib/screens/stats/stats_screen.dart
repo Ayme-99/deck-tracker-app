@@ -8,6 +8,7 @@ import '../../widgets/winrate_chart.dart';
 import '../decks/deck_detail_screen.dart';
 import '../../widgets/deck_shuffle_indicator.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -40,11 +41,11 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
 
   // Issue #196: alineado con las opciones de DeckListScreen (Nombre, Más
   // victorias) para que ambos menus de ordenar ofrezcan el mismo conjunto.
-  final _sortByLabels = const {
-    'winRate': 'Win rate',
-    'totalMatches': 'Partidas',
-    'wins': 'Más victorias',
-    'deckName': 'Nombre',
+  Map<String, String> _sortByLabels(AppLocalizations l10n) => {
+    'winRate': l10n.sortByOption,
+    'totalMatches': l10n.sortByMatches,
+    'wins': l10n.sortByMostWins,
+    'deckName': l10n.sortByName,
   };
 
   @override
@@ -111,7 +112,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       if (!mounted) return;
       setState(() => _isLoadingRanking = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al filtrar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).filterError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -150,7 +151,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al abrir el mazo: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).openDeckError(e.toString().replaceFirst('Exception: ', '')))),
       );
     } finally {
       if (mounted) setState(() => _navigatingDeckId = null);
@@ -181,18 +182,18 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildRankingControls() {
+  Widget _buildRankingControls(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
             initialValue: _sortBy,
-            decoration: const InputDecoration(
-              labelText: 'Ordenar por',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.sortByLabelField,
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
-            items: _sortByLabels.entries
+            items: _sortByLabels(l10n).entries
                 .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                 .toList(),
             onChanged: _changeSortBy,
@@ -202,7 +203,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Mín. partidas', style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
+            Text(l10n.minMatchesLabel, style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -234,6 +235,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const SlowLoadingIndicator();
     }
@@ -245,9 +247,9 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Error: $_errorMessage', textAlign: TextAlign.center),
+              Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
               const SizedBox(height: AppSizes.spacingM),
-              FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+              FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
             ],
           ),
         ),
@@ -261,10 +263,10 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.spacingL),
-          child: const Text(
-            'Registra partidas para ver tus estadísticas globales',
+          child: Text(
+            l10n.noStatsYet,
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted),
+            style: const TextStyle(color: AppColors.muted),
           ),
         ),
       );
@@ -278,16 +280,16 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.spacingM, AppSizes.spacingM, 0),
-          sliver: SliverToBoxAdapter(child: _buildOverviewCard(overview, totalMatches)),
+          sliver: SliverToBoxAdapter(child: _buildOverviewCard(l10n, overview, totalMatches)),
         ),
         SliverPersistentHeader(
           pinned: true,
           delegate: _PinnedTabBarDelegate(
             TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'Mis mazos'),
-                Tab(text: 'Rivales'),
+              tabs: [
+                Tab(text: l10n.myDecksTabLabel),
+                Tab(text: l10n.rivalsTabLabel),
               ],
             ),
           ),
@@ -296,8 +298,8 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildMyDecksTab(),
-          _buildRivalsTab(),
+          _buildMyDecksTab(l10n),
+          _buildRivalsTab(l10n),
         ],
       ),
     );
@@ -305,7 +307,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
 
   /// Resumen global (issue #111: se mantiene visible sobre las dos pestañas,
   /// ya que no es específico ni de "mis mazos" ni de "rivales").
-  Widget _buildOverviewCard(Map<String, dynamic> overview, dynamic totalMatches) {
+  Widget _buildOverviewCard(AppLocalizations l10n, Map<String, dynamic> overview, dynamic totalMatches) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.spacing20),
@@ -313,25 +315,25 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$totalMatches partidas totales',
+              l10n.totalMatchesCount(totalMatches),
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSizes.spacingM),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _statColumn('${overview['winRate']}%', 'Win rate', AppColors.primaryVariant),
-                _statColumn('${overview['wins']}', 'Victorias', AppColors.success),
-                _statColumn('${overview['losses']}', 'Derrotas', AppColors.error),
-                _statColumn('${overview['ties']}', 'Empates', AppColors.muted),
+                _statColumn('${overview['winRate']}%', l10n.winRateLabel, AppColors.primaryVariant),
+                _statColumn('${overview['wins']}', l10n.winsLabel, AppColors.success),
+                _statColumn('${overview['losses']}', l10n.lossesLabel, AppColors.error),
+                _statColumn('${overview['ties']}', l10n.tiesLabel, AppColors.muted),
               ],
             ),
             const Divider(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _statColumn('${overview['totalUserPrizes']}', 'Premios cogidos', AppColors.surface),
-                _statColumn('${overview['totalOpponentPrizes']}', 'Premios cedidos', AppColors.surface),
+                _statColumn('${overview['totalUserPrizes']}', l10n.prizesTakenLabel, AppColors.surface),
+                _statColumn('${overview['totalOpponentPrizes']}', l10n.prizesGivenLabel, AppColors.surface),
               ],
             ),
           ],
@@ -343,15 +345,15 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   /// Pestaña "Mis mazos" (issue #111): ranking propio, con sus controles de
   /// orden y mínimo de partidas. Antes vivía apilada sobre "Contra cada rival"
   /// en el mismo ListView.
-  Widget _buildMyDecksTab() {
+  Widget _buildMyDecksTab(AppLocalizations l10n) {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
-          WinrateChart(timeline: _timeline, title: 'Evolución del win-rate general'),
+          WinrateChart(timeline: _timeline, title: l10n.winrateEvolutionTitle),
           if (_timeline.length >= 2) const SizedBox(height: AppSizes.spacingL),
-          _buildRankingControls(),
+          _buildRankingControls(l10n),
           const SizedBox(height: AppSizes.spacingM),
           if (_isLoadingRanking)
             const Center(
@@ -361,9 +363,9 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
               ),
             )
           else if (_ranking.isEmpty)
-            const Text(
-              'Ningún mazo alcanza aún el mínimo de partidas',
-              style: TextStyle(color: AppColors.muted),
+            Text(
+              l10n.noDeckReachesMinMatches,
+              style: const TextStyle(color: AppColors.muted),
             )
           else
             ..._ranking.asMap().entries.map((entry) {
@@ -405,7 +407,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
                     ],
                   ),
                   title: Text(deck['deckName'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${deck['totalMatches']} partidas · ${deck['wins']}V-${deck['losses']}D-${deck['ties']}E'),
+                  subtitle: Text(l10n.matchesCountSummary(deck['totalMatches'], deck['wins'], deck['losses'], deck['ties'])),
                   trailing: isNavigating
                       ? const SizedBox(
                           height: AppSizes.spinnerSmall,
@@ -433,7 +435,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   /// Pestaña "Rivales" (issue #111): historial cruzado contra cada arquetipo
   /// rival, independientemente de con qué mazo propio se jugó. Antes vivía
   /// apilada bajo "Ranking de mazos" en el mismo ListView.
-  Widget _buildRivalsTab() {
+  Widget _buildRivalsTab(AppLocalizations l10n) {
     final filteredMatchups = _rivalSearchQuery.isEmpty
         ? _opponentMatchups
         : _opponentMatchups
@@ -448,7 +450,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
         padding: const EdgeInsets.all(AppSizes.spacingM),
         children: [
           Text(
-            'Cruzando todos tus mazos, sin importar con cuál jugaste',
+            l10n.crossAllDecksHint,
             style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
           ),
           const SizedBox(height: AppSizes.spacingM),
@@ -456,7 +458,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
             TextField(
               controller: _rivalSearchController,
               decoration: InputDecoration(
-                hintText: 'Buscar rival por nombre',
+                hintText: l10n.searchRivalHint,
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 isDense: true,
@@ -470,13 +472,13 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
             ),
           if (_opponentMatchups.isNotEmpty) const SizedBox(height: AppSizes.spacingM),
           if (_opponentMatchups.isEmpty)
-            const Text(
-              'Registra partidas para ver tu historial contra cada rival',
-              style: TextStyle(color: AppColors.muted),
+            Text(
+              l10n.noRivalHistoryYet,
+              style: const TextStyle(color: AppColors.muted),
             )
           else if (filteredMatchups.isEmpty)
             Text(
-              'Ningún rival coincide con "$_rivalSearchQuery"',
+              l10n.noRivalMatchesSearch(_rivalSearchQuery),
               style: const TextStyle(color: AppColors.muted),
             )
           else
@@ -491,11 +493,11 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
                     size: AppSizes.iconNormal,
                   ),
                   title: Text(
-                    matchup['opponentDeck'] ?? 'Desconocido',
+                    matchup['opponentDeck'] ?? l10n.unknownLabel,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '${matchup['totalMatches']} partidas · ${matchup['wins']}V-${matchup['losses']}D-${matchup['ties']}E',
+                    l10n.matchesCountSummary(matchup['totalMatches'], matchup['wins'], matchup['losses'], matchup['ties']),
                   ),
                   trailing: Text(
                     '${matchup['winRate']}%',

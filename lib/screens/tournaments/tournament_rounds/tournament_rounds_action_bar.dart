@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../../models/tournament.dart';
 import '../../../models/tournament_match.dart';
 import '../../../models/tournament_player.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Botonera de acciones disponibles segun el estado del torneo hosted
 /// (issue #115: extraida de tournament_rounds_screen.dart) -- que boton
@@ -42,6 +43,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (tournament == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
     final structure = tournament!.structure;
     final buttons = <Widget>[];
 
@@ -49,7 +51,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
       buttons.add(FilledButton.icon(
         onPressed: onGenerateSwissRound,
         icon: const Icon(Icons.add),
-        label: const Text('Generar ronda swiss'),
+        label: Text(l10n.generateSwissRoundAction),
       ));
     } else if (structure == 'league') {
       final hasLeagueMatches = matches.any((m) => m.phase == 'league_round');
@@ -57,7 +59,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
         buttons.add(FilledButton.icon(
           onPressed: onGenerateLeague,
           icon: const Icon(Icons.calendar_month),
-          label: const Text('Generar calendario de liga'),
+          label: Text(l10n.generateLeagueScheduleAction),
         ));
       }
     } else if (structure == 'elimination') {
@@ -65,7 +67,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
         buttons.add(FilledButton.icon(
           onPressed: onGenerateBracket,
           icon: const Icon(Icons.account_tree),
-          label: const Text('Generar bracket'),
+          label: Text(l10n.generateBracketAction),
         ));
       }
     } else if (structure == 'swiss_elimination') {
@@ -73,12 +75,12 @@ class TournamentRoundsActionBar extends StatelessWidget {
         buttons.add(FilledButton.icon(
           onPressed: onGenerateSwissRound,
           icon: const Icon(Icons.add),
-          label: const Text('Generar ronda swiss'),
+          label: Text(l10n.generateSwissRoundAction),
         ));
         buttons.add(OutlinedButton.icon(
           onPressed: onClosePhase,
           icon: const Icon(Icons.flag),
-          label: const Text('Cerrar fase suiza'),
+          label: Text(l10n.closeSwissPhaseAction),
         ));
       }
     } else if (structure == 'groups_elimination') {
@@ -88,19 +90,19 @@ class TournamentRoundsActionBar extends StatelessWidget {
         buttons.add(FilledButton.icon(
           onPressed: onAssignGroups,
           icon: const Icon(Icons.groups),
-          label: const Text('Asignar grupos'),
+          label: Text(l10n.assignGroupsAction),
         ));
       } else if (!hasGroupMatches) {
         buttons.add(FilledButton.icon(
           onPressed: onGenerateGroupStage,
           icon: const Icon(Icons.calendar_month),
-          label: const Text('Generar calendario de grupos'),
+          label: Text(l10n.generateGroupScheduleAction),
         ));
       } else if (!hasEliminationMatches) {
         buttons.add(OutlinedButton.icon(
           onPressed: onClosePhase,
           icon: const Icon(Icons.flag),
-          label: const Text('Cerrar fase de grupos'),
+          label: Text(l10n.closeGroupPhaseAction),
         ));
       }
     }
@@ -111,7 +113,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
       buttons.add(FilledButton.icon(
         onPressed: onAdvanceBracket,
         icon: const Icon(Icons.arrow_forward),
-        label: const Text('Avanzar a la siguiente fase'),
+        label: Text(l10n.advanceToNextPhaseAction),
       ));
     }
 
@@ -122,7 +124,7 @@ class TournamentRoundsActionBar extends StatelessWidget {
       buttons.add(FilledButton.icon(
         onPressed: onFinishTournament,
         icon: const Icon(Icons.emoji_events),
-        label: const Text('Finalizar torneo'),
+        label: Text(l10n.finishTournamentAction),
       ));
     }
 

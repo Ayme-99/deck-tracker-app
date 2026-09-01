@@ -30,8 +30,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Cacheo de imágenes desde la red para mejorar el rendimiento y la experiencia del usuario  
+
+  # Textos de la UI centralizados en un archivo de traducciones (issue #261)
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # Cacheo de imágenes desde la red para mejorar el rendimiento y la experiencia del usuario
   cached_network_image: ^3.4.1
 
   # The following adds the Cupertino Icons font to your application.
@@ -122,6 +127,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Textos de la UI centralizados en lib/l10n/app_es.arb (issue #261),
+  # generados como la clase AppLocalizations via `flutter gen-l10n`
+  # (se dispara automaticamente en pub get / build / run). Anadir un
+  # idioma nuevo en el futuro es solo traducir ese archivo (ej.
+  # app_en.arb), sin tocar el codigo Dart. Configuracion en l10n.yaml.
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

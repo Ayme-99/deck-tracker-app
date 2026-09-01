@@ -1,5 +1,6 @@
 import '../models/match.dart';
 import '../models/tournament.dart';
+import '../l10n/app_localizations.dart';
 
 /// Formatea partidas/resumenes de torneo como texto plano listo para
 /// compartir (issue #130) -- p. ej. para pegar en Discord/WhatsApp del
@@ -14,35 +15,35 @@ class ShareTextFormatter {
         '${date.year}';
   }
 
-  static String _resultLabel(String result) {
+  static String _resultLabel(AppLocalizations l10n, String result) {
     switch (result) {
       case 'win':
-        return 'Victoria';
+        return l10n.matchResultWin;
       case 'loss':
-        return 'Derrota';
+        return l10n.matchResultLoss;
       default:
-        return 'Empate';
+        return l10n.matchResultTie;
     }
   }
 
   /// [deckName] es opcional: en el contexto de un torneo no siempre hace
   /// falta repetir el nombre del propio mazo.
-  static String formatMatch(Match match, {String? deckName}) {
+  static String formatMatch(AppLocalizations l10n, Match match, {String? deckName}) {
     final header = deckName != null ? '$deckName vs ${match.opponentDeck}' : 'vs ${match.opponentDeck}';
     final phaseInfo = match.phase != null
-        ? ' · ${kMatchPhaseLabels[match.phase] ?? match.phase}${match.round != null ? ' (ronda ${match.round})' : ''}'
+        ? ' · ${matchPhaseLabels(l10n)[match.phase] ?? match.phase}${match.round != null ? ' (${l10n.roundLabel(match.round!)})' : ''}'
         : '';
 
     return '$header\n'
-        '${_resultLabel(match.result)} · ${match.userPrizes}-${match.opponentPrizes}$phaseInfo\n'
+        '${_resultLabel(l10n, match.result)} · ${match.userPrizes}-${match.opponentPrizes}$phaseInfo\n'
         '${_formatDate(match.playedAt)}';
   }
 
-  static String formatTournamentSummary(Tournament tournament, Map<String, dynamic> summary) {
+  static String formatTournamentSummary(AppLocalizations l10n, Tournament tournament, Map<String, dynamic> summary) {
     final overall = summary['overall'] as Map<String, dynamic>;
     final lines = <String>[
       tournament.name,
-      kTournamentStructureLabels[tournament.structure] ?? tournament.structure ?? '',
+      tournamentStructureLabels(l10n)[tournament.structure] ?? tournament.structure ?? '',
       '${overall['wins']}V-${overall['losses']}D-${overall['ties']}E · ${overall['winRate']}% win rate',
       if (tournament.finalStanding != null && tournament.finalStanding!.isNotEmpty)
         '🏆 ${tournament.finalStanding}',

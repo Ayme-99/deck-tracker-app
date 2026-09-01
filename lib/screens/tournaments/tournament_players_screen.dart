@@ -16,6 +16,7 @@ import 'tournament_players/player_list_tile.dart';
 import 'tournament_rounds_screen.dart';
 import 'tournament_standings_screen.dart';
 import 'tournament_export_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Gestion de jugadores de un torneo hosted (issue #45): alta, baja
 /// (drop), edicion y eliminacion. El campo deckArchetype se autocompleta
@@ -94,13 +95,14 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
   // aceptar y elegir su propio mazo desde su cuenta -- este dialogo solo
   // envia la invitacion, no crea ningun TournamentPlayer todavia.
   Future<void> _showInviteFriendDialog() async {
+    final l10n = AppLocalizations.of(context);
     List<Friend> friends;
     try {
       friends = await _friendService.listFriends();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar amigos: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.loadFriendsError(e.toString().replaceFirst('Exception: ', '')))),
       );
       return;
     }
@@ -108,7 +110,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     if (!mounted) return;
     if (friends.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Todavía no tienes amigos añadidos')),
+        SnackBar(content: Text(l10n.noFriendsAddedYet)),
       );
       return;
     }
@@ -116,7 +118,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     final selectedFriend = await showDialog<Friend>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Elegir amigo'),
+        title: Text(l10n.chooseFriendTitle),
         children: friends
             .map((f) => SimpleDialogOption(
                   onPressed: () => Navigator.of(context).pop(f),
@@ -133,31 +135,31 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('Invitar a ${selectedFriend.username}'),
+          title: Text(l10n.inviteFriendTitle(selectedFriend.username)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Rol dentro del torneo:'),
+              Text(l10n.roleInTournamentLabel),
               const SizedBox(height: AppSizes.spacingS),
               SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'guest', label: Text('Invitado')),
-                  ButtonSegment(value: 'admin', label: Text('Admin')),
+                segments: [
+                  ButtonSegment(value: 'guest', label: Text(l10n.roleGuest)),
+                  ButtonSegment(value: 'admin', label: Text(l10n.roleAdmin)),
                 ],
                 selected: {role},
                 onSelectionChanged: (selection) => setDialogState(() => role = selection.first),
               ),
               const SizedBox(height: AppSizes.spacingS),
-              const Text(
-                'Invitado: solo tú registras sus resultados. Admin: podrá registrar sus propias partidas en el futuro.',
-                style: TextStyle(fontSize: AppSizes.textXS, color: AppColors.muted),
+              Text(
+                l10n.roleGuestExplanation,
+                style: const TextStyle(fontSize: AppSizes.textXS, color: AppColors.muted),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Enviar invitación')),
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.sendInviteAction)),
           ],
         ),
       ),
@@ -169,12 +171,12 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
       await _inviteService.sendInvite(widget.tournamentId, userId: selectedFriend.id, role: role);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invitación enviada a ${selectedFriend.username}')),
+        SnackBar(content: Text(l10n.inviteSentTo(selectedFriend.username))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.genericErrorPrefix(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -211,12 +213,13 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(AppLocalizations.of(context).saveError(e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
 
   Future<void> _showPlayerOptions(TournamentPlayer player) async {
+    final l10n = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -225,17 +228,17 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar jugador'),
+              title: Text(l10n.editPlayerTitle),
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
               leading: Icon(player.dropped ? Icons.replay : Icons.person_off_outlined),
-              title: Text(player.dropped ? 'Reactivar (deshacer baja)' : 'Dar de baja (drop)'),
+              title: Text(player.dropped ? l10n.reactivatePlayerAction : l10n.dropPlayerAction),
               onTap: () => Navigator.of(context).pop('toggle_drop'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar jugador'),
+              title: Text(l10n.deletePlayerAction),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],
@@ -254,7 +257,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: Text(l10n.genericErrorPrefix(e.toString().replaceFirst('Exception: ', '')))),
         );
       }
     } else if (action == 'delete') {
@@ -263,18 +266,17 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
   }
 
   Future<void> _confirmDelete(TournamentPlayer player) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar jugador'),
-        content: Text(
-          '¿Eliminar a "${player.name}"? Las partidas ya registradas contra este jugador no se borran.',
-        ),
+        title: Text(l10n.deletePlayerAction),
+        content: Text(l10n.deletePlayerConfirm(player.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -288,7 +290,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')),
+        SnackBar(content: Text(l10n.tournamentDeleteError(player.name, e.toString().replaceFirst('Exception: ', '')))),
       );
     }
   }
@@ -297,9 +299,10 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jugadores'),
+        title: Text(l10n.playersScreenTitle),
         // Boton "atras" explicito que siempre devuelve true al hacer pop,
         // para que quien empujo esta pantalla (ej. tras crear un torneo
         // hosted, ver issue #82) sepa que debe refrescar sus datos incluso
@@ -311,7 +314,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.file_upload_outlined),
-            tooltip: 'Exportar torneo',
+            tooltip: l10n.exportTournamentTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => TournamentExportScreen(tournamentId: widget.tournamentId),
@@ -320,7 +323,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.leaderboard_outlined),
-            tooltip: 'Clasificación',
+            tooltip: l10n.standingsTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => TournamentStandingsScreen(tournamentId: widget.tournamentId),
@@ -329,7 +332,7 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.sports_score),
-            tooltip: 'Rondas y emparejamientos',
+            tooltip: l10n.roundsAndPairingsTooltip,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => TournamentRoundsScreen(tournamentId: widget.tournamentId),
@@ -347,9 +350,9 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
@@ -362,10 +365,10 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
                             children: [
                               ConstrainedBox(
                                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'Todavía no hay jugadores inscritos',
-                                    style: TextStyle(color: AppColors.muted),
+                                    l10n.noPlayersEnrolledYet,
+                                    style: const TextStyle(color: AppColors.muted),
                                   ),
                                 ),
                               ),
@@ -401,14 +404,14 @@ class _TournamentPlayersScreenState extends State<TournamentPlayersScreen> {
             heroTag: 'invite_friend',
             onPressed: _showInviteFriendDialog,
             icon: const Icon(Icons.person_add_alt_1),
-            label: const Text('Amigo'),
+            label: Text(l10n.friendFabLabel),
           ),
           const SizedBox(height: AppSizes.spacingS),
           FloatingActionButton.extended(
             heroTag: 'add_player',
             onPressed: () => _showPlayerForm(),
             icon: const Icon(Icons.add),
-            label: const Text('Jugador'),
+            label: Text(l10n.playerFabLabel),
           ),
         ],
       ),

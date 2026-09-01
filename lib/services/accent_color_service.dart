@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../styles/colors.dart';
+import '../l10n/app_localizations.dart';
 
 /// Color de acento personalizable (issue #168): mas alla del claro/oscuro/
 /// sistema (issue #129), el usuario puede elegir el color principal de la
@@ -30,13 +31,13 @@ class AccentColorService {
     'orange': Color(0xFFFB8C00),
   };
 
-  static const Map<String, String> labels = {
-    'blue': 'Azul',
-    'purple': 'Morado',
-    'green': 'Verde',
-    'red': 'Rojo',
-    'teal': 'Turquesa',
-    'orange': 'Naranja',
+  static Map<String, String> labelsFor(AppLocalizations l10n) => {
+    'blue': l10n.accentColorBlue,
+    'purple': l10n.accentColorPurple,
+    'green': l10n.accentColorGreen,
+    'red': l10n.accentColorRed,
+    'teal': l10n.accentColorTeal,
+    'orange': l10n.accentColorOrange,
   };
 
   /// DeckTrackerApp escucha esto para reconstruir el MaterialApp (el tema

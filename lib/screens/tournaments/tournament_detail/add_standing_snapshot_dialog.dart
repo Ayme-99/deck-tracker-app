@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Dialogo para añadir un snapshot manual de posicion/puntos (issue #256:
 /// extraido de tournament_detail_screen.dart). Solo tiene sentido en
@@ -11,34 +12,35 @@ Future<({int? points, int? position, String? notes})?> showAddStandingSnapshotDi
   final positionController = TextEditingController();
   final notesController = TextEditingController();
 
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Añadir posición'),
+      title: Text(l10n.addStandingTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: pointsController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Puntos'),
+            decoration: InputDecoration(labelText: l10n.pointsLabel),
           ),
           const SizedBox(height: AppSizes.spacingM),
           TextField(
             controller: positionController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Posición en la tabla'),
+            decoration: InputDecoration(labelText: l10n.positionInTableLabel),
           ),
           const SizedBox(height: AppSizes.spacingM),
           TextField(
             controller: notesController,
-            decoration: const InputDecoration(labelText: 'Notas (opcional)'),
+            decoration: InputDecoration(labelText: l10n.notesOptionalLabel),
           ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Guardar')),
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
+        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.saveAction)),
       ],
     ),
   );

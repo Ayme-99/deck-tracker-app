@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
+import '../l10n/app_localizations.dart';
 
 // Issue #243: paso entre lineas divisorias verticales, adaptado al numero
 // de partidas mostradas (N) en vez de un valor fijo. Se elige el multiplo
@@ -55,19 +56,19 @@ List<int> winrateChartGridLines(int n) {
 ///   pide nada nuevo al backend.
 class WinrateChart extends StatefulWidget {
   final List<dynamic> timeline;
-  final String title;
+  final String? title;
 
-  const WinrateChart({super.key, required this.timeline, this.title = 'Evolución del win-rate'});
+  const WinrateChart({super.key, required this.timeline, this.title});
 
   @override
   State<WinrateChart> createState() => _WinrateChartState();
 }
 
 class _WinrateChartState extends State<WinrateChart> {
-  static const _series = [
-    (key: 'cumulativeWinRate', label: 'Acumulado', color: AppColors.primaryVariant),
-    (key: 'last5WinRate', label: 'Últimas 5', color: AppColors.secondary),
-    (key: 'last10WinRate', label: 'Últimas 10', color: AppColors.muted),
+  List<({String key, String label, Color color})> _series(AppLocalizations l10n) => [
+    (key: 'cumulativeWinRate', label: l10n.seriesCumulative, color: AppColors.primaryVariant),
+    (key: 'last5WinRate', label: l10n.seriesLast5, color: AppColors.secondary),
+    (key: 'last10WinRate', label: l10n.seriesLast10, color: AppColors.muted),
   ];
 
   final Set<String> _hidden = {};
@@ -121,6 +122,7 @@ class _WinrateChartState extends State<WinrateChart> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (widget.timeline.length < 2) {
       return const SizedBox.shrink();
     }
@@ -131,15 +133,15 @@ class _WinrateChartState extends State<WinrateChart> {
         Row(
           children: [
             Expanded(
-              child: Text(widget.title, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+              child: Text(widget.title ?? l10n.winrateEvolutionTitle, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
             ),
             DropdownButton<int?>(
               value: _windowSize,
               underline: const SizedBox.shrink(),
               style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textS),
               items: [
-                const DropdownMenuItem(value: null, child: Text('Todas')),
-                for (var n = 10; n <= 100; n += 10) DropdownMenuItem(value: n, child: Text('Últimas $n')),
+                DropdownMenuItem(value: null, child: Text(l10n.allMatchesOption)),
+                for (var n = 10; n <= 100; n += 10) DropdownMenuItem(value: n, child: Text(l10n.lastNMatchesOption(n))),
               ],
               onChanged: (value) => setState(() => _windowSize = value),
             ),
@@ -150,7 +152,7 @@ class _WinrateChartState extends State<WinrateChart> {
           spacing: AppSizes.spacingM,
           runSpacing: AppSizes.spacingXS,
           children: [
-            for (final s in _series)
+            for (final s in _series(l10n))
               _LegendItem(
                 color: s.color,
                 label: s.label,

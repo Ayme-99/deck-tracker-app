@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Dialogos de confirmacion de borrado (issue #256: extraidos de
 /// tournament_detail_screen.dart). Devuelven true solo si se confirma.
 Future<bool> confirmDeleteMatch(BuildContext context, {required String opponentDeck}) async {
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Eliminar partida'),
-      content: Text('¿Eliminar la partida contra "$opponentDeck"?'),
+      title: Text(l10n.deleteMatchAction),
+      content: Text(l10n.deleteMatchConfirm(opponentDeck)),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     ),
@@ -21,19 +23,17 @@ Future<bool> confirmDeleteMatch(BuildContext context, {required String opponentD
 }
 
 Future<bool> confirmDeleteTournament(BuildContext context, {required String name}) async {
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Eliminar torneo'),
-      content: Text(
-        '¿Eliminar "$name"? Las partidas ya registradas no se borran, '
-        'quedan sueltas fuera del torneo.',
-      ),
+      title: Text(l10n.deleteTournamentAction),
+      content: Text(l10n.deleteTournamentConfirm(name)),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          child: Text(l10n.deleteAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
       ],
     ),

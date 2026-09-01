@@ -12,6 +12,7 @@ import '../decks/deck_detail_screen.dart';
 import '../tournaments/tournament_detail_screen.dart';
 import '../tournaments/tournament_players_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Búsqueda unificada sobre mazos, torneos y rivales (issue #131).
 ///
@@ -140,6 +141,7 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasQuery = _query.isNotEmpty;
     final decks = _matchingDecks;
     final tournaments = _matchingTournaments;
@@ -151,8 +153,8 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
         title: TextField(
           controller: _searchController,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Buscar mazos, torneos, rivales...',
+          decoration: InputDecoration(
+            hintText: l10n.globalSearchHint,
             border: InputBorder.none,
           ),
         ),
@@ -166,26 +168,26 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Error: $_errorMessage', textAlign: TextAlign.center),
+                        Text(l10n.genericErrorLabel(_errorMessage!), textAlign: TextAlign.center),
                         const SizedBox(height: AppSizes.spacingM),
-                        FilledButton(onPressed: _loadData, child: const Text('Reintentar')),
+                        FilledButton(onPressed: _loadData, child: Text(l10n.retryAction)),
                       ],
                     ),
                   ),
                 )
               : !hasQuery
-                  ? const Center(
-                      child: Text('Escribe para buscar entre tus mazos, torneos y rivales', style: TextStyle(color: AppColors.muted)),
+                  ? Center(
+                      child: Text(l10n.globalSearchPrompt, style: const TextStyle(color: AppColors.muted)),
                     )
                   : !hasResults
                       ? Center(
-                          child: Text('Sin resultados para "$_query"', style: const TextStyle(color: AppColors.muted)),
+                          child: Text(l10n.globalSearchNoResults(_query), style: const TextStyle(color: AppColors.muted)),
                         )
                       : ListView(
                           padding: const EdgeInsets.all(AppSizes.spacingM),
                           children: [
                             if (decks.isNotEmpty) ...[
-                              _sectionHeader('Mazos'),
+                              _sectionHeader(l10n.sectionDecks),
                               ...decks.map((deck) => Card(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     child: ListTile(
@@ -196,19 +198,19 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                                   )),
                             ],
                             if (tournaments.isNotEmpty) ...[
-                              _sectionHeader('Torneos'),
+                              _sectionHeader(l10n.sectionTournaments),
                               ...tournaments.map((tournament) => Card(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     child: ListTile(
                                       title: Text(tournament.name),
-                                      subtitle: Text(kTournamentStructureLabels[tournament.structure] ?? tournament.format),
+                                      subtitle: Text(tournamentStructureLabels(l10n)[tournament.structure] ?? tournament.format),
                                       trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
                                       onTap: () => _openTournament(tournament),
                                     ),
                                   )),
                             ],
                             if (archetypes.isNotEmpty) ...[
-                              _sectionHeader('Rivales'),
+                              _sectionHeader(l10n.sectionRivals),
                               ...archetypes.map((archetype) => Card(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     child: ListTile(

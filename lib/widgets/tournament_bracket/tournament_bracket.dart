@@ -6,6 +6,7 @@ import 'bracket_connector_painter.dart';
 import 'bracket_constants.dart';
 import 'bracket_layout.dart';
 import 'bracket_node_card.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Arbol de eliminatoria directa (issue #46), combinando el estilo de
 /// bracketmaker.app (columnas por fase, conectores en angulo recto) y de
@@ -93,9 +94,9 @@ class _TournamentBracketState extends State<TournamentBracket> {
     );
 
     if (layout.phasesWithMatches.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSizes.spacingL),
-        child: Center(child: Text('Todavía no hay bracket generado', style: TextStyle(color: AppColors.muted))),
+      return Padding(
+        padding: const EdgeInsets.all(AppSizes.spacingL),
+        child: Center(child: Text(AppLocalizations.of(context).noBracketYet, style: const TextStyle(color: AppColors.muted))),
       );
     }
 
@@ -155,7 +156,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: AppSizes.spacingXS),
                     child: Text(
-                      kTournamentMatchPhaseLabels[phasesWithMatches[i]] ?? phasesWithMatches[i],
+                      tournamentMatchPhaseLabels(AppLocalizations.of(context))[phasesWithMatches[i]] ?? phasesWithMatches[i],
                       style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS),
                     ),
                   ),
@@ -165,7 +166,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
         ),
         if (thirdPlaceMatch != null) ...[
           const SizedBox(height: AppSizes.spacingL),
-          Text('3er y 4º puesto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
+          Text(AppLocalizations.of(context).thirdFourthPlaceLabel, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: AppSizes.textXS)),
           const SizedBox(height: AppSizes.spacingXS),
           BracketNodeCard(
             width: cardWidth,
@@ -215,7 +216,7 @@ class _TournamentBracketState extends State<TournamentBracket> {
             bottom: AppSizes.spacingM,
             child: FloatingActionButton.small(
               heroTag: 'bracket_recenter',
-              tooltip: 'Centrar vista',
+              tooltip: AppLocalizations.of(context).recenterViewTooltip,
               onPressed: _recenter,
               child: const Icon(Icons.center_focus_strong),
             ),

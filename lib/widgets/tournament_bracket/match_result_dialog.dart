@@ -4,6 +4,7 @@ import '../../models/tournament_match.dart';
 import '../../models/tournament_player.dart';
 import '../prize_counter.dart';
 import '../sprite_avatar_group.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Datos introducidos en el dialogo de resultado (issues #185/#195): el
 /// llamador decide que hacer con ellos (guardar, mostrar error...), este
@@ -53,6 +54,7 @@ Future<MatchResultInput?> showMatchResultDialog(
   bool isDraw = match.isDraw;
   String? winnerId = match.winnerId;
 
+  final l10n = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
@@ -66,7 +68,7 @@ Future<MatchResultInput?> showMatchResultDialog(
             ],
             Flexible(
               child: Text(
-                '${player1?.name ?? '?'} vs ${player2?.name ?? '?'}',
+                l10n.matchVsWithBye(player1?.name ?? l10n.unknownPlayerPlaceholder, player2?.name ?? l10n.unknownPlayerPlaceholder),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -83,12 +85,12 @@ Future<MatchResultInput?> showMatchResultDialog(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 PrizeCounter(
-                  label: 'Premios de ${player1?.name ?? 'jugador 1'}',
+                  label: l10n.prizesOfPlayer(player1?.name ?? l10n.player1Fallback),
                   value: player1Prizes,
                   onChanged: (v) => setDialogState(() => player1Prizes = v),
                 ),
                 PrizeCounter(
-                  label: 'Premios de ${player2?.name ?? 'jugador 2'}',
+                  label: l10n.prizesOfPlayer(player2?.name ?? l10n.player2Fallback),
                   value: player2Prizes,
                   onChanged: (v) => setDialogState(() => player2Prizes = v),
                 ),
@@ -97,7 +99,7 @@ Future<MatchResultInput?> showMatchResultDialog(
             const SizedBox(height: AppSizes.spacingM),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Empate'),
+              title: Text(l10n.drawLabel),
               value: isDraw,
               onChanged: (value) => setDialogState(() => isDraw = value),
             ),
@@ -109,12 +111,12 @@ Future<MatchResultInput?> showMatchResultDialog(
                   children: [
                     RadioListTile<String>(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('Gana ${player1?.name ?? 'jugador 1'}'),
+                      title: Text(l10n.playerWinsLabel(player1?.name ?? l10n.player1Fallback)),
                       value: match.player1Id,
                     ),
                     RadioListTile<String>(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('Gana ${player2?.name ?? 'jugador 2'}'),
+                      title: Text(l10n.playerWinsLabel(player2?.name ?? l10n.player2Fallback)),
                       value: match.player2Id!,
                     ),
                   ],
@@ -123,18 +125,18 @@ Future<MatchResultInput?> showMatchResultDialog(
               // Issue #185: el ganador NO se deduce de los premios --
               // aclarado explicitamente para no dar por hecho que ambos
               // campos deben "cuadrar" entre si.
-              const Text(
-                'El ganador puede no coincidir con los premios (rendición, mazo agotado, tiempo...)',
-                style: TextStyle(fontSize: AppSizes.textXS, color: AppColors.muted),
+              Text(
+                l10n.winnerMayNotMatchPrizes,
+                style: const TextStyle(fontSize: AppSizes.textXS, color: AppColors.muted),
               ),
             ],
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
           FilledButton(
             onPressed: (!isDraw && winnerId == null) ? null : () => Navigator.of(context).pop(true),
-            child: const Text('Guardar'),
+            child: Text(l10n.saveAction),
           ),
         ],
       ),
