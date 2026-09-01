@@ -7,6 +7,7 @@ import '../../services/deck_cache_service.dart';
 import '../../services/deck_service.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/stats_service.dart';
+import '../../services/tab_refresh_signals.dart';
 import 'deck_detail_screen.dart';
 import 'deck_list_tile.dart';
 import '../../widgets/slow_loading_indicator.dart';
@@ -63,10 +64,15 @@ class _DeckListScreenState extends State<DeckListScreen> {
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
     });
+    // Ver tab_refresh_signals.dart: goBranch(index, initialLocation: true)
+    // no basta para forzar la recarga tras crear un mazo desde HomeScreen,
+    // ya que esta pantalla vive en su propia rama del StatefulShellRoute.
+    deckListRefreshSignal.addListener(_loadDecks);
   }
 
   @override
   void dispose() {
+    deckListRefreshSignal.removeListener(_loadDecks);
     _pendingDelete.dispose();
     _searchController.dispose();
     super.dispose();

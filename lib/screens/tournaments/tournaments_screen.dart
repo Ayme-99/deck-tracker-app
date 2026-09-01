@@ -5,6 +5,7 @@ import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
 import '../../services/pending_delete_controller.dart';
+import '../../services/tab_refresh_signals.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import 'tournament_detail_screen.dart';
 import 'tournament_list_tile.dart';
@@ -49,10 +50,16 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   void initState() {
     super.initState();
     _loadTournaments();
+    // Ver tab_refresh_signals.dart: goBranch(index, initialLocation: true)
+    // no basta para forzar la recarga tras crear/importar un torneo desde
+    // HomeScreen, ya que esta pantalla vive en su propia rama del
+    // StatefulShellRoute.
+    tournamentsListRefreshSignal.addListener(_loadTournaments);
   }
 
   @override
   void dispose() {
+    tournamentsListRefreshSignal.removeListener(_loadTournaments);
     _pendingDelete.dispose();
     super.dispose();
   }

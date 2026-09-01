@@ -3,6 +3,7 @@ import 'package:deck_tracker_app/screens/tournaments/tournament_form_screen.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../services/tab_refresh_signals.dart';
 import '../../services/update_check_service.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
@@ -47,9 +48,10 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const DeckFormScreen()),
     );
     if (created == true) {
-      // initialLocation: true resetea la pestaña a su ruta inicial,
-      // forzando su recarga -- mismo efecto que antes tenia el UniqueKey.
-      widget.navigationShell.goBranch(0, initialLocation: true);
+      // Ver tab_refresh_signals.dart: goBranch(index, initialLocation: true)
+      // no basta por si solo (no remonta el widget si la rama ya esta en su
+      // ubicacion inicial, que es el caso normal aqui).
+      deckListRefreshSignal.value++;
     }
   }
 
@@ -58,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const TournamentFormScreen()),
     );
     if (created != null) {
-      widget.navigationShell.goBranch(2, initialLocation: true);
+      tournamentsListRefreshSignal.value++;
     }
   }
 
@@ -67,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const TournamentImportScreen()),
     );
     if (imported != null) {
-      widget.navigationShell.goBranch(2, initialLocation: true);
+      tournamentsListRefreshSignal.value++;
     }
   }
 
