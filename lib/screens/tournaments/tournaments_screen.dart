@@ -4,6 +4,7 @@ import '../../models/tournament.dart';
 import '../../models/deck.dart';
 import '../../services/tournament_service.dart';
 import '../../services/deck_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/pending_delete_controller.dart';
 import '../../services/tab_refresh_signals.dart';
 import '../../widgets/slow_loading_indicator.dart';
@@ -21,11 +22,15 @@ class TournamentsScreen extends StatefulWidget {
 class _TournamentsScreenState extends State<TournamentsScreen> {
   final _tournamentService = TournamentService();
   final _deckService = DeckService();
+  final _authService = AuthService();
 
   List<Tournament> _tournaments = [];
   Map<String, Deck> _decksById = {};
   bool _isLoading = true;
   String? _errorMessage;
+  // Issue #257: para distinguir "mis torneos" de los torneos hosted donde
+  // participo como invitado (server#102 los incluye en la misma lista).
+  String? _currentUserId;
   // 'date' (por defecto), 'position' (1º primero) o 'percentage' (mejor % de ranking primero)
   String _sortBy = 'date';
 
@@ -150,12 +155,14 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       final results = await Future.wait([
         _tournamentService.getTournaments(),
         _deckService.getDecks(),
+        _authService.getMe(),
       ]);
 
       if (!mounted) return;
 
       final tournaments = results[0] as List<Tournament>;
       final decks = results[1] as List<Deck>;
+      final me = results[2] as Map<String, dynamic>;
 
       // Filtra torneos con un borrado pendiente (ver deck_list_screen.dart
       // para el mismo criterio), para que un reload de fondo no los haga
@@ -165,6 +172,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       setState(() {
         _tournaments = tournaments.where((t) => !pendingIds.contains(t.id)).toList();
         _decksById = {for (final d in decks) d.id: d};
+        _currentUserId = me['_id'] as String?;
         _isLoading = false;
       });
     } catch (e) {
@@ -345,10 +353,16 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               itemBuilder: (context, index) {
                 final tournament = _sortedTournaments[index];
                 final deck = tournament.deckId != null ? _decksById[tournament.deckId] : null;
+                // Issue #257: solo el dueño puede editar/duplicar/eliminar
+                // -- para un torneo donde participo como invitado, esas
+                // acciones fallarian en el servidor (siguen exigiendo ser
+                // el dueño exacto, ver server#102).
+                final isOwned = tournament.userId == _currentUserId;
 
                 return TournamentListTile(
                   tournament: tournament,
                   deck: deck,
+                  isOwned: isOwned,
                   onTap: () async {
                     // Los torneos hosted aun no tienen su propia pantalla
                     // de detalle completa (llegara con #46/#47); por ahora
@@ -376,7 +390,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                       _loadTournaments(); // recarga por si cambio el estado
                     }
                   },
-                  onLongPress: () => _showTournamentOptions(tournament),
+                  onLongPress: isOwned ? () => _showTournamentOptions(tournament) : null,
                 );
               },
             ),

@@ -34,6 +34,9 @@ class StandingSnapshot {
 
 class Tournament {
   final String id;
+  // Issue #257: id del dueño del torneo, para distinguir "mis torneos" de
+  // los torneos hosted donde participo como invitado (server#102).
+  final String userId;
   final String name;
   final String format;
   final DateTime date;
@@ -54,6 +57,7 @@ class Tournament {
 
   Tournament({
     required this.id,
+    required this.userId,
     required this.name,
     required this.format,
     required this.date,
@@ -75,6 +79,10 @@ class Tournament {
   factory Tournament.fromJson(Map<String, dynamic> json) {
     return Tournament(
       id: json['_id'],
+      // Ausente en backups antiguos (issue #165, previos a la #257): no se
+      // usa para nada en ese flujo (restoreBackup no lo lee), asi que un
+      // valor vacio es un fallback seguro en vez de reventar el parseo.
+      userId: json['userId'] ?? '',
       name: json['name'],
       format: json['format'] ?? 'Standard',
       date: DateTime.parse(json['date']),
@@ -103,6 +111,7 @@ class Tournament {
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
+      'userId': userId,
       'name': name,
       'format': format,
       'date': date.toIso8601String(),
