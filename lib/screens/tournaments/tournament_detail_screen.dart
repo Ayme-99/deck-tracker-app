@@ -21,6 +21,11 @@ import 'tournament_detail/tournament_header_card.dart';
 import 'tournament_detail/tournament_matches_list.dart';
 import 'tournament_detail/tournament_standing_section.dart';
 import 'tournament_detail/tournament_summary_card.dart';
+import 'tournament_detail/edit_final_standing_dialog.dart';
+import 'tournament_detail/add_standing_snapshot_dialog.dart';
+import 'tournament_detail/select_match_phase_dialog.dart';
+import 'tournament_detail/match_options_sheet.dart';
+import 'tournament_detail/confirm_delete_dialogs.dart';
 import 'tournament_form_screen.dart';
 
 class TournamentDetailScreen extends StatefulWidget {
@@ -144,77 +149,22 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   /// hay un bracket que deje claro en que puesto quedaste (a diferencia de
   /// una eliminatoria, donde perder en semifinal ya dice tu puesto). Se
   /// guarda como texto compuesto en finalStanding (unico campo que expone
-  /// el backend para esto), parseando el valor previo si sigue el patron
-  /// "Nº de M" para poder editarlo de nuevo.
-  // Issue #187: antes se guardaba el texto interpolado sin validar que
-  // fuera numerico (pese a keyboardType: TextInputType.number, eso no
-  // impide pegar/dejar texto invalido). Si no coincidia con el patron que
-  // usa tournaments_screen.dart para ordenar, ese torneo dejaba de
-  // ordenarse bien, en silencio. Ahora "Guardar" exige que ambos campos
-  // esten vacios (borra la posicion) o sean numeros positivos validos.
+  /// el backend para esto). El dialogo (ver tournament_detail/
+  /// edit_final_standing_dialog.dart) ya valida que ambos campos esten
+  /// vacios (borra la posicion) o sean numeros positivos validos (issue
+  /// #187).
   Future<void> _editFinalStanding() async {
     final tournament = _tournament!;
-    final parsed = parseFinalStanding(tournament.finalStanding);
-    final positionController = TextEditingController(text: parsed?.$1.toString() ?? '');
-    final totalController = TextEditingController(text: parsed?.$2.toString() ?? '');
+    final result = await showEditFinalStandingDialog(context, currentFinalStanding: tournament.finalStanding);
 
-    bool isValid() {
-      final position = positionController.text.trim();
-      final total = totalController.text.trim();
-      if (position.isEmpty && total.isEmpty) return true; // borra la posicion guardada
-      final p = int.tryParse(position);
-      final t = int.tryParse(total);
-      return p != null && p > 0 && t != null && t > 0;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Posición final'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: positionController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Puesto obtenido'),
-                onChanged: (_) => setDialogState(() {}),
-              ),
-              const SizedBox(height: AppSizes.spacingM),
-              TextField(
-                controller: totalController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Nº total de participantes'),
-                onChanged: (_) => setDialogState(() {}),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: isValid() ? () => Navigator.of(context).pop(true) : null,
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) {
+    if (result == null || !mounted) {
       _loadData(); // el cambio de status ya se guardo aunque se cancele el dialogo
       return;
     }
 
-    final position = positionController.text.trim();
-    final total = totalController.text.trim();
-    // Si se dejan ambos vacios, se borra la posicion final guardada
-    final finalStanding = (position.isEmpty || total.isEmpty)
+    final finalStanding = result.position == null || result.total == null
         ? null
-        : formatFinalStanding(int.parse(position), int.parse(total));
+        : formatFinalStanding(result.position!, result.total!);
 
     try {
       await _tournamentService.updateTournament(tournament.id, {'finalStanding': finalStanding});
@@ -228,31 +178,7 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   }
 
   Future<void> _showMatchOptions(Match match) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('Editar partida'),
-              onTap: () => Navigator.of(context).pop('edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Compartir partida'),
-              onTap: () => Navigator.of(context).pop('share'),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
-              title: const Text('Eliminar partida'),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
-        ),
-      ),
-    );
+    final action = await showMatchOptionsSheet(context);
 
     if (!mounted) return;
 
@@ -272,26 +198,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   }
 
   Future<void> _confirmDeleteMatch(Match match) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar partida'),
-        content: Text('¿Eliminar la partida contra "${match.opponentDeck}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
+    final confirmed = await confirmDeleteMatch(context, opponentDeck: match.opponentDeck);
+    if (!confirmed || !mounted) return;
     _pendingDeleteMatch.requestDelete(context, match);
   }
 
@@ -356,56 +264,15 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   /// la puntuacion del resto de participantes), asi que el usuario la
   /// introduce a mano cuando quiera.
   Future<void> _addStandingSnapshot() async {
-    final pointsController = TextEditingController();
-    final positionController = TextEditingController();
-    final notesController = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Añadir posición'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: pointsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Puntos'),
-            ),
-            const SizedBox(height: AppSizes.spacingM),
-            TextField(
-              controller: positionController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Posición en la tabla'),
-            ),
-            const SizedBox(height: AppSizes.spacingM),
-            TextField(
-              controller: notesController,
-              decoration: const InputDecoration(labelText: 'Notas (opcional)'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
+    final result = await showAddStandingSnapshotDialog(context);
+    if (result == null || !mounted) return;
 
     try {
       await _tournamentService.addStandingSnapshot(
         _tournament!.id,
-        points: int.tryParse(pointsController.text),
-        position: int.tryParse(positionController.text),
-        notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+        points: result.points,
+        position: result.position,
+        notes: result.notes,
       );
       _loadData();
     } catch (e) {
@@ -417,28 +284,8 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
   }
 
   Future<void> _confirmDeleteTournament() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar torneo'),
-        content: Text(
-          '¿Eliminar "${_tournament!.name}"? Las partidas ya registradas no se borran, '
-          'quedan sueltas fuera del torneo.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
+    final confirmed = await confirmDeleteTournament(context, name: _tournament!.name);
+    if (!confirmed || !mounted) return;
 
     // Igual que en deck_detail_screen.dart: borrar el torneo desde su
     // propio detalle cierra la pantalla, asi que el SnackBar de deshacer
@@ -468,52 +315,13 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
     final validPhases = kStructurePhases[tournament.structure] ?? [];
     if (validPhases.isEmpty) return;
 
-    String selectedPhase = validPhases.first;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final needsRound = kRoundBasedPhases.contains(selectedPhase);
-          return AlertDialog(
-            title: const Text('¿En qué fase se juega?'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedPhase,
-                  decoration: const InputDecoration(labelText: 'Fase'),
-                  items: validPhases
-                      .map((p) => DropdownMenuItem(value: p, child: Text(kMatchPhaseLabels[p] ?? p)))
-                      .toList(),
-                  onChanged: (value) => setDialogState(() => selectedPhase = value!),
-                ),
-                if (needsRound) ...[
-                  const SizedBox(height: AppSizes.spacingM),
-                  Text(
-                    'Ronda ${_nextRoundFor(selectedPhase)}',
-                    style: const TextStyle(color: AppColors.muted),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continuar'),
-              ),
-            ],
-          );
-        },
-      ),
+    final selectedPhase = await showSelectMatchPhaseDialog(
+      context,
+      validPhases: validPhases,
+      nextRoundFor: _nextRoundFor,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (selectedPhase == null || !mounted) return;
 
     final needsRound = kRoundBasedPhases.contains(selectedPhase);
     final round = needsRound ? _nextRoundFor(selectedPhase) : null;
