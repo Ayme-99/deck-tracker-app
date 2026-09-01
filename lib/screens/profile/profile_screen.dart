@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import '../friends/friends_screen.dart';
+import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
@@ -224,6 +225,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacingS),
+                    // Issue #242: invitaciones a torneos hosted recibidas.
+                    SizedBox(
+                      width: 280,
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          leading: const Icon(Icons.mail_outline),
+                          title: const Text('Invitaciones a torneos'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const TournamentInvitesScreen()),
                           ),
                         ),
                       ),
