@@ -1476,4 +1476,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get undoAction => 'Deshacer';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get emailRequired => 'Introduce tu email';
+
+  @override
+  String get emailInvalid => 'El email no es válido';
+
+  @override
+  String get emailVerificationBannerText =>
+      'Verifica tu email para asegurar tu cuenta';
+
+  @override
+  String get resendVerificationAction => 'Reenviar correo';
+
+  @override
+  String get verificationEmailSent => 'Correo de verificación reenviado';
+
+  @override
+  String resendVerificationError(Object error) {
+    return 'Error al reenviar el correo: $error';
+  }
 }

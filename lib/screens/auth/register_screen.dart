@@ -16,6 +16,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _authService = AuthService();
@@ -35,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _authService.register(
         _usernameController.text.trim(),
         _passwordController.text,
+        _emailController.text.trim(),
       );
 
       if (!mounted) return;
@@ -51,10 +53,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  static final _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +89,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return l10n.registerUsernameRequired;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSizes.spacingM),
+
+                    TextFormField(
+                      controller: _emailController,
+                      textInputAction: TextInputAction.next,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: l10n.emailLabel,
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.emailRequired;
+                        }
+                        if (!_emailRegex.hasMatch(value.trim())) {
+                          return l10n.emailInvalid;
                         }
                         return null;
                       },

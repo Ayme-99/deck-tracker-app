@@ -892,5 +892,20 @@
   "@losingStreakWarning": {"description": "Aviso de racha negativa con un mazo", "placeholders": {"count": {}}},
 
   "undoAction": "Deshacer",
-  "@undoAction": {"description": "Boton para deshacer un borrado pendiente"}
+  "@undoAction": {"description": "Boton para deshacer un borrado pendiente"},
+
+  "emailLabel": "Email",
+  "@emailLabel": {"description": "Etiqueta del campo de email en el registro"},
+  "emailRequired": "Introduce tu email",
+  "@emailRequired": {"description": "Validacion: email vacio en el registro"},
+  "emailInvalid": "El email no es válido",
+  "@emailInvalid": {"description": "Validacion: formato de email invalido"},
+  "emailVerificationBannerText": "Verifica tu email para asegurar tu cuenta",
+  "@emailVerificationBannerText": {"description": "Aviso en el perfil cuando el email aun no esta verificado"},
+  "resendVerificationAction": "Reenviar correo",
+  "@resendVerificationAction": {"description": "Boton para reenviar el correo de verificacion"},
+  "verificationEmailSent": "Correo de verificación reenviado",
+  "@verificationEmailSent": {"description": "Confirmacion tras reenviar el correo de verificacion"},
+  "resendVerificationError": "Error al reenviar el correo: {error}",
+  "@resendVerificationError": {"description": "Error al reenviar el correo de verificacion", "placeholders": {"error": {}}}
 }

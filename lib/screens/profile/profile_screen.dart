@@ -23,15 +23,33 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final _authService = AuthService();
   String? _username;
+  bool _emailVerified = true; // hasta que se sepa lo contrario no se muestra el aviso
   bool _isLoading = true;
+  bool _isResendingVerification = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUsername();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Issue #268: la verificacion del email pasa por el navegador (el enlace
+  // del correo), fuera de la app -- sin esto, al volver el perfil se queda
+  // con el estado "no verificado" que tenia al entrar, aunque ya se haya
+  // confirmado desde fuera.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadUsername();
   }
 
   Future<void> _loadUsername() async {
@@ -40,11 +58,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() {
         _username = me['username'] as String?;
+        // Cuentas creadas antes de la #268 no tienen email todavia -- no
+        // tiene sentido pedirles que "verifiquen" algo que no existe.
+        _emailVerified = me['email'] == null || me['emailVerified'] == true;
         _isLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    setState(() => _isResendingVerification = true);
+    final l10n = AppLocalizations.of(context);
+    try {
+      await _authService.resendVerificationEmail();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.verificationEmailSent)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.resendVerificationError(e.toString().replaceFirst('Exception: ', '')))),
+      );
+    } finally {
+      if (mounted) setState(() => _isResendingVerification = false);
     }
   }
 
@@ -216,6 +256,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: AppSizes.spacingL),
+                    if (!_emailVerified) ...[
+                      SizedBox(
+                        width: 280,
+                        child: Card(
+                          color: AppColors.warning.withValues(alpha: 0.15),
+                          clipBehavior: Clip.antiAlias,
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.spacingM),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.mark_email_unread_outlined, color: AppColors.warning, size: AppSizes.iconSmall),
+                                    const SizedBox(width: AppSizes.spacingS),
+                                    Expanded(child: Text(l10n.emailVerificationBannerText)),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSizes.spacingS),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: _isResendingVerification ? null : _resendVerificationEmail,
+                                    child: _isResendingVerification
+                                        ? const SizedBox(
+                                            height: AppSizes.spinnerSmall,
+                                            width: AppSizes.spinnerSmall,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : Text(l10n.resendVerificationAction),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.spacingS),
+                    ],
                     // Issue #229: gestion de amigos, colgando de la pantalla
                     // de perfil (candidato ya previsto en la #235). Ancho
                     // fijo: dentro del Column(mainAxisSize.min) del Center,
