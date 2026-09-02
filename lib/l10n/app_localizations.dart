@@ -2650,6 +2650,48 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Deshacer'**
   String get undoAction;
+
+  /// Etiqueta del campo de email en el registro
+  ///
+  /// In es, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// Validacion: email vacio en el registro
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce tu email'**
+  String get emailRequired;
+
+  /// Validacion: formato de email invalido
+  ///
+  /// In es, this message translates to:
+  /// **'El email no es válido'**
+  String get emailInvalid;
+
+  /// Aviso en el perfil cuando el email aun no esta verificado
+  ///
+  /// In es, this message translates to:
+  /// **'Verifica tu email para asegurar tu cuenta'**
+  String get emailVerificationBannerText;
+
+  /// Boton para reenviar el correo de verificacion
+  ///
+  /// In es, this message translates to:
+  /// **'Reenviar correo'**
+  String get resendVerificationAction;
+
+  /// Confirmacion tras reenviar el correo de verificacion
+  ///
+  /// In es, this message translates to:
+  /// **'Correo de verificación reenviado'**
+  String get verificationEmailSent;
+
+  /// Error al reenviar el correo de verificacion
+  ///
+  /// In es, this message translates to:
+  /// **'Error al reenviar el correo: {error}'**
+  String resendVerificationError(Object error);
 }
 
 class _AppLocalizationsDelegate

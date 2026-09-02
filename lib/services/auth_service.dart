@@ -7,13 +7,18 @@ class AuthService {
   final _storage = const FlutterSecureStorage();
   final _deckCacheService = DeckCacheService();
 
-  Future<Map<String, dynamic>> register(String username, String password) async {
+  Future<Map<String, dynamic>> register(String username, String password, String email) async {
     final response = await _api.post('/auth/register', {
       'username': username,
       'password': password,
+      'email': email,
     });
     await _storage.write(key: 'token', value: response['token']);
     return response;
+  }
+
+  Future<Map<String, dynamic>> resendVerificationEmail() async {
+    return await _api.post('/auth/resend-verification', {});
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
