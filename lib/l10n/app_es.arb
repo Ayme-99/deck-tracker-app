@@ -907,5 +907,28 @@
   "verificationEmailSent": "Correo de verificación reenviado",
   "@verificationEmailSent": {"description": "Confirmacion tras reenviar el correo de verificacion"},
   "resendVerificationError": "Error al reenviar el correo: {error}",
-  "@resendVerificationError": {"description": "Error al reenviar el correo de verificacion", "placeholders": {"error": {}}}
+  "@resendVerificationError": {"description": "Error al reenviar el correo de verificacion", "placeholders": {"error": {}}},
+
+  "viewFullStatsAction": "Ver estadísticas completas",
+  "@viewFullStatsAction": {"description": "Boton para ir a la pantalla de estadisticas completas desde el perfil"},
+  "friendsCountLabel": "{count} amigos",
+  "@friendsCountLabel": {"description": "Numero de amigos mostrado en la card de amigos del perfil", "placeholders": {"count": {}}},
+  "appVersionLabel": "Versión {version}",
+  "@appVersionLabel": {"description": "Version de la app mostrada al final del perfil", "placeholders": {"version": {}}},
+
+  "reportBugAction": "Reportar un bug",
+  "@reportBugAction": {"description": "Accion del menu de ajustes para reportar un bug en GitHub"},
+
+  "changePasswordSettingsAction": "Cambiar contraseña",
+  "@changePasswordSettingsAction": {"description": "Accion del menu de ajustes para cambiar la contraseña"},
+  "changePasswordTitle": "Cambiar contraseña",
+  "@changePasswordTitle": {"description": "Titulo del dialogo de cambiar contraseña"},
+  "currentPasswordLabel": "Contraseña actual",
+  "@currentPasswordLabel": {"description": "Etiqueta del campo de contraseña actual"},
+  "currentPasswordRequired": "Introduce tu contraseña actual",
+  "@currentPasswordRequired": {"description": "Validacion: contraseña actual vacia"},
+  "newPasswordLabel": "Nueva contraseña",
+  "@newPasswordLabel": {"description": "Etiqueta del campo de nueva contraseña"},
+  "passwordChangedSuccess": "Contraseña actualizada",
+  "@passwordChangedSuccess": {"description": "Confirmacion tras cambiar la contraseña"}
 }

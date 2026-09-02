@@ -21,6 +21,13 @@ class AuthService {
     return await _api.post('/auth/resend-verification', {});
   }
 
+  Future<Map<String, dynamic>> changePassword(String currentPassword, String newPassword) async {
+    return await _api.post('/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+  }
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await _api.post('/auth/login', {
       'username': username,

@@ -1500,4 +1500,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String resendVerificationError(Object error) {
     return 'Error al reenviar el correo: $error';
   }
+
+  @override
+  String get viewFullStatsAction => 'Ver estadísticas completas';
+
+  @override
+  String friendsCountLabel(Object count) {
+    return '$count amigos';
+  }
+
+  @override
+  String appVersionLabel(Object version) {
+    return 'Versión $version';
+  }
+
+  @override
+  String get reportBugAction => 'Reportar un bug';
+
+  @override
+  String get changePasswordSettingsAction => 'Cambiar contraseña';
+
+  @override
+  String get changePasswordTitle => 'Cambiar contraseña';
+
+  @override
+  String get currentPasswordLabel => 'Contraseña actual';
+
+  @override
+  String get currentPasswordRequired => 'Introduce tu contraseña actual';
+
+  @override
+  String get newPasswordLabel => 'Nueva contraseña';
+
+  @override
+  String get passwordChangedSuccess => 'Contraseña actualizada';
 }
