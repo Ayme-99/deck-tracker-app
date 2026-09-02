@@ -2692,6 +2692,66 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Error al reenviar el correo: {error}'**
   String resendVerificationError(Object error);
+
+  /// Boton para ir a la pantalla de estadisticas completas desde el perfil
+  ///
+  /// In es, this message translates to:
+  /// **'Ver estadísticas completas'**
+  String get viewFullStatsAction;
+
+  /// Numero de amigos mostrado en la card de amigos del perfil
+  ///
+  /// In es, this message translates to:
+  /// **'{count} amigos'**
+  String friendsCountLabel(Object count);
+
+  /// Version de la app mostrada al final del perfil
+  ///
+  /// In es, this message translates to:
+  /// **'Versión {version}'**
+  String appVersionLabel(Object version);
+
+  /// Accion del menu de ajustes para reportar un bug en GitHub
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar un bug'**
+  String get reportBugAction;
+
+  /// Accion del menu de ajustes para cambiar la contraseña
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar contraseña'**
+  String get changePasswordSettingsAction;
+
+  /// Titulo del dialogo de cambiar contraseña
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar contraseña'**
+  String get changePasswordTitle;
+
+  /// Etiqueta del campo de contraseña actual
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña actual'**
+  String get currentPasswordLabel;
+
+  /// Validacion: contraseña actual vacia
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce tu contraseña actual'**
+  String get currentPasswordRequired;
+
+  /// Etiqueta del campo de nueva contraseña
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva contraseña'**
+  String get newPasswordLabel;
+
+  /// Confirmacion tras cambiar la contraseña
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña actualizada'**
+  String get passwordChangedSuccess;
 }
 
 class _AppLocalizationsDelegate

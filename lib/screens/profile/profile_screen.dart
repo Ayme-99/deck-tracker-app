@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/accent_color_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/deck_service.dart';
+import '../../services/friend_service.dart';
+import '../../services/stats_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
+import 'change_password_dialog.dart';
 import '../friends/friends_screen.dart';
+import '../stats/stats_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
@@ -25,16 +32,29 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final _authService = AuthService();
+  final _deckService = DeckService();
+  final _friendService = FriendService();
+  final _statsService = StatsService();
+
   String? _username;
   bool _emailVerified = true; // hasta que se sepa lo contrario no se muestra el aviso
   bool _isLoading = true;
   bool _isResendingVerification = false;
 
+  // Issue #276/#279/#280/#284: resumen rapido + contadores sociales +
+  // version de la app, todo cargado de golpe al entrar al perfil.
+  int _deckCount = 0;
+  int _totalMatches = 0;
+  num _winRate = 0;
+  int _friendCount = 0;
+  int _pendingRequestCount = 0;
+  String? _appVersion;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadUsername();
+    _loadProfileData();
   }
 
   @override
@@ -49,18 +69,39 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   // confirmado desde fuera.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _loadUsername();
+    if (state == AppLifecycleState.resumed) _loadProfileData();
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadProfileData() async {
     try {
-      final me = await _authService.getMe();
+      // Cada dato viene de un servicio distinto -- si uno falla (ej. sin
+      // conexion puntual), no debe tirar abajo los demas, asi que cada
+      // future tiene su propio fallback en vez de un solo try/catch total.
+      final results = await Future.wait([
+        _authService.getMe(),
+        _deckService.getDecks().then((d) => d.length).catchError((_) => 0),
+        _statsService.getGlobalOverview().catchError((_) => <String, dynamic>{}),
+        _friendService.listFriends().then((f) => f.length).catchError((_) => 0),
+        _friendService.listRequests('incoming').then((r) => r.length).catchError((_) => 0),
+        PackageInfo.fromPlatform().then((p) => '${p.version}+${p.buildNumber}').catchError((_) => ''),
+      ]);
+
       if (!mounted) return;
+
+      final me = results[0] as Map<String, dynamic>;
+      final overview = results[2] as Map<String, dynamic>;
+
       setState(() {
         _username = me['username'] as String?;
         // Cuentas creadas antes de la #268 no tienen email todavia -- no
         // tiene sentido pedirles que "verifiquen" algo que no existe.
         _emailVerified = me['email'] == null || me['emailVerified'] == true;
+        _deckCount = results[1] as int;
+        _totalMatches = overview['totalMatches'] as int? ?? 0;
+        _winRate = overview['winRate'] as num? ?? 0;
+        _friendCount = results[3] as int;
+        _pendingRequestCount = results[4] as int;
+        _appVersion = results[5] as String;
         _isLoading = false;
       });
     } catch (_) {
@@ -86,6 +127,15 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     } finally {
       if (mounted) setState(() => _isResendingVerification = false);
     }
+  }
+
+  Widget _profileStat(String value, String label) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
+      ],
+    );
   }
 
   Future<void> _handleLogout() async {
@@ -199,6 +249,16 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
               onTap: () => Navigator.of(context).pop('theme'),
             ),
             ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: Text(l10n.changePasswordSettingsAction),
+              onTap: () => Navigator.of(context).pop('change_password'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: Text(l10n.reportBugAction),
+              onTap: () => Navigator.of(context).pop('report_bug'),
+            ),
+            ListTile(
               leading: const Icon(Icons.logout),
               title: Text(l10n.logoutAction),
               onTap: () => Navigator.of(context).pop('logout'),
@@ -219,6 +279,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         _showAccentPicker();
       case 'theme':
         _showThemePicker();
+      case 'change_password':
+        showChangePasswordDialog(context);
+      case 'report_bug':
+        launchUrl(
+          Uri.parse('https://github.com/Ayme-99/deck-tracker-app/issues/new?template=user_bug_report.md'),
+          mode: LaunchMode.externalApplication,
+        );
       case 'logout':
         _handleLogout();
     }
@@ -240,12 +307,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       ),
       body: _isLoading
           ? const SlowLoadingIndicator()
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.spacingL),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+          : SingleChildScrollView(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.spacingL),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     const CircleAvatar(
                       radius: AppSizes.iconHuge / 2,
                       child: Icon(Icons.person, size: AppSizes.iconLarge),
@@ -295,10 +363,43 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       ),
                       const SizedBox(height: AppSizes.spacingS),
                     ],
-                    // Issue #229: gestion de amigos, colgando de la pantalla
-                    // de perfil (candidato ya previsto en la #235). Ancho
-                    // fijo: dentro del Column(mainAxisSize.min) del Center,
-                    // un ListTile sin restriccion de ancho intentaria
+                    // Issue #276/#278: resumen rapido de actividad, con
+                    // enlace a las estadisticas completas -- solo tiene
+                    // sentido para el dueno del perfil (no hay perfil
+                    // "de otro usuario" todavia, asi que siempre se muestra).
+                    SizedBox(
+                      width: 280,
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacingM),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _profileStat('$_deckCount', l10n.navDecksLabel),
+                                  _profileStat('$_totalMatches', l10n.matchesSectionTitle),
+                                  _profileStat('$_winRate%', l10n.winRateLabel),
+                                ],
+                              ),
+                              const SizedBox(height: AppSizes.spacingS),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const StatsScreen()),
+                                ),
+                                child: Text(l10n.viewFullStatsAction),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacingS),
+                    // Issue #229/#279/#280: gestion de amigos, colgando de la
+                    // pantalla de perfil (candidato ya previsto en la #235).
+                    // Ancho fijo: dentro del Column(mainAxisSize.min) del
+                    // Center, un ListTile sin restriccion de ancho intentaria
                     // expandirse de forma infinita.
                     SizedBox(
                       width: 280,
@@ -307,7 +408,27 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                         child: ListTile(
                           leading: const Icon(Icons.people_outline),
                           title: Text(l10n.friendsMenuAction),
-                          trailing: const Icon(Icons.chevron_right),
+                          subtitle: Text(l10n.friendsCountLabel(_friendCount)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_pendingRequestCount > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacingS, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                                  ),
+                                  child: Text(
+                                    '$_pendingRequestCount',
+                                    style: const TextStyle(color: Colors.white, fontSize: AppSizes.textXS, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSizes.spacingXS),
+                              ],
+                              const Icon(Icons.chevron_right),
+                            ],
+                          ),
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const FriendsScreen()),
                           ),
@@ -330,10 +451,18 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                         ),
                       ),
                     ),
+                    if (_appVersion != null && _appVersion!.isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.spacingL),
+                      Text(
+                        l10n.appVersionLabel(_appVersion!),
+                        style: const TextStyle(color: AppColors.muted, fontSize: AppSizes.textXS),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
+          ),
     );
   }
 }
