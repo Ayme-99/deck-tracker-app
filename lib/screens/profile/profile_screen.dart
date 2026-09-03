@@ -5,7 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/accent_color_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/deck_service.dart';
 import '../../services/friend_service.dart';
+import '../../services/stats_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
@@ -29,15 +31,20 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final _authService = AuthService();
+  final _deckService = DeckService();
   final _friendService = FriendService();
+  final _statsService = StatsService();
 
   String? _username;
   bool _emailVerified = true; // hasta que se sepa lo contrario no se muestra el aviso
   bool _isLoading = true;
   bool _isResendingVerification = false;
 
-  // Issue #279/#280/#284: contadores sociales + version de la app, cargados
-  // de golpe al entrar al perfil.
+  // Issue #276/#279/#280/#284: resumen rapido + contadores sociales +
+  // version de la app, todo cargado de golpe al entrar al perfil.
+  int _deckCount = 0;
+  int _totalMatches = 0;
+  num _winRate = 0;
   int _friendCount = 0;
   int _pendingRequestCount = 0;
   String? _appVersion;
@@ -71,6 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       // future tiene su propio fallback en vez de un solo try/catch total.
       final results = await Future.wait([
         _authService.getMe(),
+        _deckService.getDecks().then((d) => d.length).catchError((_) => 0),
+        _statsService.getGlobalOverview().catchError((_) => <String, dynamic>{}),
         _friendService.listFriends().then((f) => f.length).catchError((_) => 0),
         _friendService.listRequests('incoming').then((r) => r.length).catchError((_) => 0),
         PackageInfo.fromPlatform().then((p) => '${p.version}+${p.buildNumber}').catchError((_) => ''),
@@ -79,15 +88,19 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       if (!mounted) return;
 
       final me = results[0] as Map<String, dynamic>;
+      final overview = results[2] as Map<String, dynamic>;
 
       setState(() {
         _username = me['username'] as String?;
         // Cuentas creadas antes de la #268 no tienen email todavia -- no
         // tiene sentido pedirles que "verifiquen" algo que no existe.
         _emailVerified = me['email'] == null || me['emailVerified'] == true;
-        _friendCount = results[1] as int;
-        _pendingRequestCount = results[2] as int;
-        _appVersion = results[3] as String;
+        _deckCount = results[1] as int;
+        _totalMatches = overview['totalMatches'] as int? ?? 0;
+        _winRate = overview['winRate'] as num? ?? 0;
+        _friendCount = results[3] as int;
+        _pendingRequestCount = results[4] as int;
+        _appVersion = results[5] as String;
         _isLoading = false;
       });
     } catch (_) {
@@ -113,6 +126,15 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     } finally {
       if (mounted) setState(() => _isResendingVerification = false);
     }
+  }
+
+  Widget _profileStat(String value, String label) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS)),
+      ],
+    );
   }
 
   Future<void> _handleLogout() async {
@@ -340,6 +362,27 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       ),
                       const SizedBox(height: AppSizes.spacingS),
                     ],
+                    // Issue #276: resumen rapido de actividad -- solo tiene
+                    // sentido para el dueno del perfil (no hay perfil
+                    // "de otro usuario" todavia, asi que siempre se muestra).
+                    SizedBox(
+                      width: 280,
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSizes.spacingM),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _profileStat('$_deckCount', l10n.navDecksLabel),
+                              _profileStat('$_totalMatches', l10n.matchesSectionTitle),
+                              _profileStat('$_winRate%', l10n.winRateLabel),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spacingS),
                     // Issue #229/#279/#280: gestion de amigos, colgando de la
                     // pantalla de perfil (candidato ya previsto en la #235).
                     // Ancho fijo: dentro del Column(mainAxisSize.min) del
