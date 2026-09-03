@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/stats_service.dart';
 import '../../services/deck_service.dart';
+import '../../services/tab_refresh_signals.dart';
 import '../../widgets/opponent_options_sheet.dart';
 import '../../widgets/sprite_avatar_group.dart';
 import '../../widgets/winrate_chart.dart';
@@ -56,10 +57,15 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
     _rivalSearchController.addListener(() {
       setState(() => _rivalSearchQuery = _rivalSearchController.text.trim().toLowerCase());
     });
+    // Issue #278: recarga si algo fuera de esta pantalla (ej. el boton "Ver
+    // estadisticas completas" del perfil) pide un refresco explicito -- ver
+    // tab_refresh_signals.dart.
+    statsRefreshSignal.addListener(_loadData);
   }
 
   @override
   void dispose() {
+    statsRefreshSignal.removeListener(_loadData);
     _tabController.dispose();
     _rivalSearchController.dispose();
     super.dispose();
