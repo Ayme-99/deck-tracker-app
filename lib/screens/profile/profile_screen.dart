@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/deck_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/stats_service.dart';
+import '../../services/tab_refresh_signals.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
@@ -390,7 +391,18 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                 // veia rota). Navega de verdad a la pestana
                                 // Stats real via go_router, que sustituye la
                                 // pila entera y cierra este perfil de paso.
-                                onPressed: () => context.go('/stats'),
+                                //
+                                // La rama /stats normalmente ya esta en su
+                                // ubicacion inicial (nunca se abandona), asi
+                                // que context.go('/stats') por si solo no
+                                // remonta StatsScreen y se veian datos
+                                // obsoletos -- se fuerza la recarga con la
+                                // señal antes de navegar (ver
+                                // tab_refresh_signals.dart).
+                                onPressed: () {
+                                  statsRefreshSignal.value++;
+                                  context.go('/stats');
+                                },
                                 child: Text(l10n.viewFullStatsAction),
                               ),
                             ],
