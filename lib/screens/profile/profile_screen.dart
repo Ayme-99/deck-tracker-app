@@ -12,7 +12,6 @@ import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
 import '../friends/friends_screen.dart';
-import '../stats/stats_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
@@ -385,9 +384,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                               ),
                               const SizedBox(height: AppSizes.spacingS),
                               TextButton(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const StatsScreen()),
-                                ),
+                                // Issue #278: iba a una StatsScreen nueva y
+                                // desnuda, sin el Scaffold/AppBar/bottom nav
+                                // de HomeScreen (recargaba todo de cero y se
+                                // veia rota). Navega de verdad a la pestana
+                                // Stats real via go_router, que sustituye la
+                                // pila entera y cierra este perfil de paso.
+                                onPressed: () => context.go('/stats'),
                                 child: Text(l10n.viewFullStatsAction),
                               ),
                             ],
