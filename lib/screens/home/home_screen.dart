@@ -108,14 +108,18 @@ class _HomeScreenState extends State<HomeScreen> {
           // (copia de seguridad, color de acento, tema, cerrar sesion) se
           // mueven dentro de ProfileScreen, detras de un icono de engranaje.
           //
-          // Issue #300: context.push (no Navigator.push directo) para que
-          // /profile tenga su propia ruta en go_router y la URL se
-          // actualice en web, igual que ya ocurre con /decks, /stats y
-          // /tournaments -- ver app_router.dart.
+          // Issue #300: context.go (no context.push) para que /profile
+          // tenga su propia ruta en go_router y la URL se actualice en web.
+          // Se probo primero con context.push, pero no sincronizaba la URL
+          // del navegador en este proyecto -- context.go si lo hace de
+          // forma fiable (es el mismo mecanismo que ya usan las 3 pestañas
+          // principales via goBranch). Como contrapartida, go sustituye la
+          // pantalla actual en vez de apilarla; el boton de atras sigue
+          // funcionando via el historial de URLs del navegador/go_router.
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
             tooltip: l10n.profileTooltip,
-            onPressed: () => context.push('/profile'),
+            onPressed: () => context.go('/profile'),
           ),
         ],
       ),
