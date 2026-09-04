@@ -6,6 +6,7 @@ import '../screens/home/home_screen.dart';
 import '../screens/decks/deck_list_screen.dart';
 import '../screens/stats/stats_screen.dart';
 import '../screens/tournaments/tournaments_screen.dart';
+import '../screens/profile/profile_screen.dart';
 
 /// Rutas con URL real por pantalla (issue #238). Alcance inicial: solo las
 /// 3 pestañas principales (Mazos/Stats/Torneos), que son las que se
@@ -15,6 +16,11 @@ import '../screens/tournaments/tournaments_screen.dart';
 /// go_router es compatible con eso: cualquier pantalla puede seguir
 /// empujandose encima sin necesitar su propia ruta nombrada. Migrar el
 /// resto (16 archivos con Navigator.push) queda para sub-issues futuras.
+///
+/// /profile (issue #300) es la primera de esas sub-issues: ruta de nivel
+/// superior (fuera del StatefulShellRoute, igual que /splash y /login) ya
+/// que el perfil se abre a pantalla completa, sin la barra de navegacion
+/// inferior por debajo -- no necesita vivir dentro del shell de pestañas.
 final appRouter = GoRouter(
   navigatorKey: NavigationService.navigatorKey,
   initialLocation: '/splash',
@@ -25,6 +31,7 @@ final appRouter = GoRouter(
       builder: (context, state) =>
           LoginScreen(sessionExpired: state.uri.queryParameters['reason'] == 'expired'),
     ),
+    GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => HomeScreen(navigationShell: navigationShell),
       branches: [

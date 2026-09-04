@@ -7,7 +7,6 @@ import '../../services/tab_refresh_signals.dart';
 import '../../services/update_check_service.dart';
 import '../tournaments/tournament_import_screen.dart';
 import '../search/global_search_screen.dart';
-import '../profile/profile_screen.dart';
 import '../../widgets/update/update_dialog.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -108,12 +107,15 @@ class _HomeScreenState extends State<HomeScreen> {
           // pantalla de perfil propia; los ajustes que vivian en ese menu
           // (copia de seguridad, color de acento, tema, cerrar sesion) se
           // mueven dentro de ProfileScreen, detras de un icono de engranaje.
+          //
+          // Issue #300: context.push (no Navigator.push directo) para que
+          // /profile tenga su propia ruta en go_router y la URL se
+          // actualice en web, igual que ya ocurre con /decks, /stats y
+          // /tournaments -- ver app_router.dart.
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
             tooltip: l10n.profileTooltip,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            ),
+            onPressed: () => context.push('/profile'),
           ),
         ],
       ),
