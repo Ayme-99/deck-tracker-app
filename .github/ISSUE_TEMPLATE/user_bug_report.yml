@@ -1,0 +1,53 @@
+name: Reporte de bug (desde la app)
+description: Reporta un problema que te has encontrado usando Deck Tracker
+title: "[BUG] "
+labels: ["bug", "user-report"]
+assignees: []
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: ¿Qué ha pasado?
+      description: Cuéntanos qué ha ocurrido con el mayor detalle posible.
+      placeholder: Ej. Al pulsar "Registrar partida" la app se queda cargando y no pasa nada.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ¿Qué esperabas que pasara?
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo (si los conoces)
+      description: Escribe los pasos, uno por línea. No pasa nada si no estás seguro del todo.
+      placeholder: |
+        1. Entro en un mazo
+        2. Pulso "Partida"
+        3. Relleno el formulario y le doy a Registrar
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - Android
+        - Windows
+        - Web
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Versión de la app
+      description: La ves al final de tu pantalla de Perfil (ej. "1.5.0+1")
+      placeholder: "1.5.0+1"
+    validations:
+      required: false
