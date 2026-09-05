@@ -638,6 +638,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get defaultUsername => 'Usuario';
 
   @override
+  String memberSinceLabel(Object date) {
+    return 'Miembro desde $date';
+  }
+
+  @override
   String get friendsMenuAction => 'Amigos';
 
   @override

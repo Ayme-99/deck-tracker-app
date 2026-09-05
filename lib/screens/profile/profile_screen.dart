@@ -48,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   int _friendCount = 0;
   int _pendingRequestCount = 0;
   String? _appVersion;
+  String? _memberSince;
 
   @override
   void initState() {
@@ -101,6 +102,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         _friendCount = results[3] as int;
         _pendingRequestCount = results[4] as int;
         _appVersion = results[5] as String;
+        // Issue #272: "Miembro desde" -- createdAt ya viene en el propio
+        // documento de usuario devuelto por /auth/me, no hace falta ningun
+        // endpoint nuevo.
+        final createdAt = me['createdAt'] as String?;
+        _memberSince = createdAt != null ? _formatMemberSince(DateTime.parse(createdAt)) : null;
         _isLoading = false;
       });
     } catch (_) {
@@ -126,6 +132,19 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     } finally {
       if (mounted) setState(() => _isResendingVerification = false);
     }
+  }
+
+  // Issue #272: formato manual ("julio de 2026") en vez de intl's DateFormat
+  // con locale 'es', para no depender de que los datos de localizacion de
+  // fecha esten inicializados -- mismo criterio ya usado en
+  // MatchCsvFormatter para fechas.
+  static const _spanishMonths = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ];
+
+  String _formatMemberSince(DateTime date) {
+    return '${_spanishMonths[date.month - 1]} de ${date.year}';
   }
 
   Widget _profileStat(String value, String label) {
@@ -333,6 +352,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       _username ?? l10n.defaultUsername,
                       style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                     ),
+                    if (_memberSince != null) ...[
+                      const SizedBox(height: AppSizes.spacingXS),
+                      Text(
+                        l10n.memberSinceLabel(_memberSince!),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.textXS),
+                      ),
+                    ],
                     const SizedBox(height: AppSizes.spacingL),
                     if (!_emailVerified) ...[
                       SizedBox(

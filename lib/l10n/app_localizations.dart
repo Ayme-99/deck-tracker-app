@@ -1195,6 +1195,12 @@ abstract class AppLocalizations {
   /// **'Usuario'**
   String get defaultUsername;
 
+  /// Fecha de alta mostrada en el perfil, cerca del nombre de usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro desde {date}'**
+  String memberSinceLabel(Object date);
+
   /// Accion del perfil para ir a la pantalla de amigos
   ///
   /// In es, this message translates to:
