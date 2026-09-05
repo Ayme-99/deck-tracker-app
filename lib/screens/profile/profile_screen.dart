@@ -301,7 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         showChangePasswordDialog(context);
       case 'report_bug':
         launchUrl(
-          Uri.parse('https://github.com/Ayme-99/deck-tracker-app/issues/new?template=user_bug_report.md'),
+          Uri.parse('https://github.com/Ayme-99/deck-tracker-app/issues/new?template=user_bug_report.yml'),
           mode: LaunchMode.externalApplication,
         );
       case 'logout':
