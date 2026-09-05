@@ -295,6 +295,17 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+        // Issue #300: boton de volver explicito. Al llegar aqui via
+        // context.go('/profile') (no push), la ruta anterior no queda
+        // apilada -- Navigator.canPop() es false y Flutter no dibuja el
+        // boton de atras automatico que si aparecia con push. context.go
+        // de vuelta a /decks en vez de Navigator.pop, por el mismo motivo
+        // (no hay nada que hacer pop).
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.backTooltip,
+          onPressed: () => context.go('/decks'),
+        ),
         title: Text(l10n.myProfileTitle),
         actions: [
           IconButton(

@@ -1183,6 +1183,12 @@ abstract class AppLocalizations {
   /// **'Ajustes'**
   String get settingsTooltip;
 
+  /// Tooltip del boton de volver en pantallas secundarias
+  ///
+  /// In es, this message translates to:
+  /// **'Volver'**
+  String get backTooltip;
+
   /// Nombre de usuario por defecto si no se pudo cargar
   ///
   /// In es, this message translates to:

@@ -632,6 +632,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsTooltip => 'Ajustes';
 
   @override
+  String get backTooltip => 'Volver';
+
+  @override
   String get defaultUsername => 'Usuario';
 
   @override
