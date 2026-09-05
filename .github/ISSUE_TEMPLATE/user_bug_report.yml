@@ -2,7 +2,8 @@ name: Reporte de bug (desde la app)
 description: Reporta un problema que te has encontrado usando Deck Tracker
 title: "[BUG] "
 labels: ["bug", "user-report"]
-assignees: []
+assignees: ["Ayme-99"]
+projects: ["Ayme-99/7"]
 body:
   - type: textarea
     id: what-happened
