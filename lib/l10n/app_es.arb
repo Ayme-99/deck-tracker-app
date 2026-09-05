@@ -375,6 +375,8 @@
   "@backTooltip": {"description": "Tooltip del boton de volver en pantallas secundarias"},
   "defaultUsername": "Usuario",
   "@defaultUsername": {"description": "Nombre de usuario por defecto si no se pudo cargar"},
+  "memberSinceLabel": "Miembro desde {date}",
+  "@memberSinceLabel": {"description": "Fecha de alta mostrada en el perfil, cerca del nombre de usuario", "placeholders": {"date": {}}},
   "friendsMenuAction": "Amigos",
   "@friendsMenuAction": {"description": "Accion del perfil para ir a la pantalla de amigos"},
   "tournamentInvitesMenuAction": "Invitaciones a torneos",
