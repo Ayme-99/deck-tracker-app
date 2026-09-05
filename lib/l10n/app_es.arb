@@ -371,6 +371,8 @@
   "@myProfileTitle": {"description": "Titulo de la pantalla de perfil"},
   "settingsTooltip": "Ajustes",
   "@settingsTooltip": {"description": "Tooltip del icono de ajustes"},
+  "backTooltip": "Volver",
+  "@backTooltip": {"description": "Tooltip del boton de volver en pantallas secundarias"},
   "defaultUsername": "Usuario",
   "@defaultUsername": {"description": "Nombre de usuario por defecto si no se pudo cargar"},
   "friendsMenuAction": "Amigos",
