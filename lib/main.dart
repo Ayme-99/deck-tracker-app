@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:home_widget/home_widget.dart';
 import 'screens/matches/quick_register_deck_picker_screen.dart';
 import 'config/app_router.dart';
@@ -14,6 +15,11 @@ import 'package:deck_tracker_app/styles/theme.dart';
 Future<void> main() async {
   // Necesario para poder leer flutter_secure_storage antes de runApp.
   WidgetsFlutterBinding.ensureInitialized();
+  // Issue #294: quita el "#" de las URLs en web (deck-tracker-web.onrender.com/decks
+  // en vez de /#/decks). Sin efecto en plataformas no-web. Requiere que el
+  // hosting redirija cualquier subruta a index.html (ver web/_redirects),
+  // o recargar la pagina en una subruta directa daria 404.
+  usePathUrlStrategy();
   // Carga la preferencia de tema y de color de acento guardadas (issues
   // #129 y #168) antes de arrancar, para no mostrar un flash de los
   // valores por defecto si el usuario ya habia elegido otros.
