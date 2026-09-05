@@ -88,6 +88,10 @@ dependencies:
   # antes de ejecutarlo (issue #248)
   path_provider: ^2.1.4
 
+  # PathUrlStrategy para quitar el # de las URLs en web (issue #294)
+  flutter_web_plugins:
+    sdk: flutter
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
