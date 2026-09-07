@@ -2765,12 +2765,6 @@ abstract class AppLocalizations {
   /// **'Contraseña actualizada'**
   String get passwordChangedSuccess;
 
-  /// Confirmacion tras cambiar la contraseña
-  ///
-  /// In es, this message translates to:
-  /// **'Contraseña actualizada'**
-  String get passwordChangedSuccess;
-
   /// Titulo del dialogo de cambiar nombre de usuario, y tooltip del icono de editar junto al nombre en el perfil
   ///
   /// In es, this message translates to:

@@ -1542,9 +1542,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get passwordChangedSuccess => 'Contraseña actualizada';
-    
-  @override
-  String get passwordChangedSuccess => 'Contraseña actualizada';
 
   @override
   String get changeUsernameTitle => 'Cambiar nombre de usuario';
