@@ -2764,6 +2764,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Contraseña actualizada'**
   String get passwordChangedSuccess;
+
+  /// Titulo del dialogo de cambiar nombre de usuario, y tooltip del icono de editar junto al nombre en el perfil
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar nombre de usuario'**
+  String get changeUsernameTitle;
+
+  /// Etiqueta del campo de nuevo nombre de usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo nombre de usuario'**
+  String get newUsernameLabel;
+
+  /// Validacion: nombre de usuario vacio al cambiarlo
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce un nombre de usuario'**
+  String get usernameRequired;
+
+  /// Validacion: longitud de nombre de usuario invalida
+  ///
+  /// In es, this message translates to:
+  /// **'Debe tener entre 3 y 20 caracteres'**
+  String get usernameLengthError;
+
+  /// Validacion: caracteres no permitidos en el nombre de usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Solo letras, números y guiones bajos'**
+  String get usernameInvalidCharsError;
+
+  /// Confirmacion tras cambiar el nombre de usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de usuario actualizado'**
+  String get usernameChangedSuccess;
 }
 
 class _AppLocalizationsDelegate

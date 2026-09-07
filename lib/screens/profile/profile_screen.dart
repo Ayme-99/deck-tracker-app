@@ -11,6 +11,7 @@ import '../../services/stats_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
+import 'change_username_dialog.dart';
 import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
@@ -131,6 +132,17 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       );
     } finally {
       if (mounted) setState(() => _isResendingVerification = false);
+    }
+  }
+
+  // Issue #270: cambiar nombre de usuario desde el perfil. Al recibir un
+  // resultado no nulo del dialogo, se actualiza solo el username local sin
+  // recargar todo _loadProfileData (evita repetir las 6 llamadas en
+  // paralelo por un cambio de un unico campo).
+  Future<void> _showChangeUsernameDialog() async {
+    final result = await showChangeUsernameDialog(context, _username ?? '');
+    if (result != null && mounted) {
+      setState(() => _username = result);
     }
   }
 
@@ -348,9 +360,22 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       child: Icon(Icons.person, size: AppSizes.iconLarge),
                     ),
                     const SizedBox(height: AppSizes.spacingM),
-                    Text(
-                      _username ?? l10n.defaultUsername,
-                      style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                    // Issue #270: icono de edicion junto al nombre en vez de
+                    // colgarlo del menu de ajustes -- es una edicion de
+                    // identidad, no un ajuste de sistema como backup/tema.
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _username ?? l10n.defaultUsername,
+                          style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: AppSizes.iconSmall),
+                          tooltip: l10n.changeUsernameTitle,
+                          onPressed: _showChangeUsernameDialog,
+                        ),
+                      ],
                     ),
                     if (_memberSince != null) ...[
                       const SizedBox(height: AppSizes.spacingXS),
