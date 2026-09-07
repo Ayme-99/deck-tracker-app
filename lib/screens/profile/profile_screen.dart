@@ -373,6 +373,9 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: AppSizes.iconSmall),
                           tooltip: l10n.changeUsernameTitle,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           onPressed: _showChangeUsernameDialog,
                         ),
                       ],
