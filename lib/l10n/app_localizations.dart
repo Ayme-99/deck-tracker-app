@@ -2769,7 +2769,7 @@ abstract class AppLocalizations {
   ///
   /// In es, this message translates to:
   /// **'Cambiar nombre de usuario'**
-  String get changeUsernameTitle;
+  String get editProfileTitle;
 
   /// Etiqueta del campo de nuevo nombre de usuario
   ///

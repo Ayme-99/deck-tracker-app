@@ -11,7 +11,7 @@ import '../../services/stats_service.dart';
 import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
-import 'change_username_dialog.dart';
+import 'edit_profile_screen.dart';
 import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
@@ -135,15 +135,22 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
   }
 
-  // Issue #270: cambiar nombre de usuario desde el perfil. Al recibir un
-  // resultado no nulo del dialogo, se actualiza solo el username local sin
-  // recargar todo _loadProfileData (evita repetir las 6 llamadas en
-  // paralelo por un cambio de un unico campo).
-  Future<void> _showChangeUsernameDialog() async {
-    final result = await showChangeUsernameDialog(context, _username ?? '');
-    if (result != null && mounted) {
-      setState(() => _username = result);
-    }
+  // Issue #270 y punto de entrada para futuras ediciones de perfil (#269,
+  // #274...): un unico Map de cambios, se aplican los que haya. Sin
+  // recargar _loadProfileData completo por evitar repetir las 6 llamadas
+  // en paralelo por un cambio de un par de campos.
+  Future<void> _openEditProfile() async {
+    final changes = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(currentUsername: _username ?? ''),
+      ),
+    );
+    if (changes == null || !mounted) return;
+    setState(() {
+      if (changes.containsKey('username')) {
+        _username = changes['username'] as String;
+      }
+    });
   }
 
   // Issue #272: formato manual ("julio de 2026") en vez de intl's DateFormat
@@ -340,6 +347,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         title: Text(l10n.myProfileTitle),
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: l10n.editProfileTitle,
+            onPressed: _openEditProfile,
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: l10n.settingsTooltip,
             onPressed: _showSettingsMenu,
@@ -360,25 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       child: Icon(Icons.person, size: AppSizes.iconLarge),
                     ),
                     const SizedBox(height: AppSizes.spacingM),
-                    // Issue #270: icono de edicion junto al nombre en vez de
-                    // colgarlo del menu de ajustes -- es una edicion de
-                    // identidad, no un ajuste de sistema como backup/tema.
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _username ?? l10n.defaultUsername,
-                          style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: AppSizes.iconSmall),
-                          tooltip: l10n.changeUsernameTitle,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: _showChangeUsernameDialog,
-                        ),
-                      ],
+                    Text(
+                      _username ?? l10n.defaultUsername,
+                      style: const TextStyle(fontSize: AppSizes.textL, fontWeight: FontWeight.bold),
                     ),
                     if (_memberSince != null) ...[
                       const SizedBox(height: AppSizes.spacingXS),
