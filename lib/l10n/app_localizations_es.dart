@@ -1542,4 +1542,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get passwordChangedSuccess => 'Contraseña actualizada';
+    
+  @override
+  String get passwordChangedSuccess => 'Contraseña actualizada';
+
+  @override
+  String get changeUsernameTitle => 'Cambiar nombre de usuario';
+
+  @override
+  String get newUsernameLabel => 'Nuevo nombre de usuario';
+
+  @override
+  String get usernameRequired => 'Introduce un nombre de usuario';
+
+  @override
+  String get usernameLengthError => 'Debe tener entre 3 y 20 caracteres';
+
+  @override
+  String get usernameInvalidCharsError =>
+      'Solo letras, números y guiones bajos';
+
+  @override
+  String get usernameChangedSuccess => 'Nombre de usuario actualizado';
 }

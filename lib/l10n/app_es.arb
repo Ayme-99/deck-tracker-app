@@ -935,4 +935,19 @@
   "@newPasswordLabel": {"description": "Etiqueta del campo de nueva contraseña"},
   "passwordChangedSuccess": "Contraseña actualizada",
   "@passwordChangedSuccess": {"description": "Confirmacion tras cambiar la contraseña"}
+  "passwordChangedSuccess": "Contraseña actualizada",
+  "@passwordChangedSuccess": {"description": "Confirmacion tras cambiar la contraseña"},
+
+  "changeUsernameTitle": "Cambiar nombre de usuario",
+  "@changeUsernameTitle": {"description": "Titulo del dialogo de cambiar nombre de usuario, y tooltip del icono de editar junto al nombre en el perfil"},
+  "newUsernameLabel": "Nuevo nombre de usuario",
+  "@newUsernameLabel": {"description": "Etiqueta del campo de nuevo nombre de usuario"},
+  "usernameRequired": "Introduce un nombre de usuario",
+  "@usernameRequired": {"description": "Validacion: nombre de usuario vacio al cambiarlo"},
+  "usernameLengthError": "Debe tener entre 3 y 20 caracteres",
+  "@usernameLengthError": {"description": "Validacion: longitud de nombre de usuario invalida"},
+  "usernameInvalidCharsError": "Solo letras, números y guiones bajos",
+  "@usernameInvalidCharsError": {"description": "Validacion: caracteres no permitidos en el nombre de usuario"},
+  "usernameChangedSuccess": "Nombre de usuario actualizado",
+  "@usernameChangedSuccess": {"description": "Confirmacion tras cambiar el nombre de usuario"}
 }

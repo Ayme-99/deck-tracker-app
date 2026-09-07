@@ -28,6 +28,12 @@ class AuthService {
     });
   }
 
+  Future<Map<String, dynamic>> changeUsername(String username) async {
+  return await _api.post('/auth/change-username', {
+    'username': username,
+  });
+}
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await _api.post('/auth/login', {
       'username': username,
