@@ -9,23 +9,26 @@ import '../../services/auth_service.dart';
 import '../../widgets/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Pantalla de edicion de perfil (issue #270, #269 y futuras: #274 email,
-/// #271 Google, #275 eliminar cuenta...). Punto unico de entrada para todo
-/// lo que sea "editar mi cuenta", en vez de ir esparciendo dialogos/iconos
+/// Pantalla de edicion de perfil (issue #270, #269, #274 y futuras: #271
+/// Google, #275 eliminar cuenta...). Punto unico de entrada para todo lo
+/// que sea "editar mi cuenta", en vez de ir esparciendo dialogos/iconos
 /// sueltos por ProfileScreen a medida que crece el alcance.
 ///
 /// Devuelve al hacer pop un Map<String, dynamic> con los campos que
-/// cambiaron realmente (ej. {'username': ...} y/o {'avatarBase64': ...}),
-/// para que ProfileScreen actualice su estado local sin recargar todo el
-/// perfil. Si no hubo ningun cambio guardado, devuelve null.
+/// cambiaron realmente (ej. {'username': ...}, {'avatarBase64': ...} y/o
+/// {'email': ..., 'emailVerified': false}), para que ProfileScreen
+/// actualice su estado local sin recargar todo el perfil. Si no hubo
+/// ningun cambio guardado, devuelve null.
 class EditProfileScreen extends StatefulWidget {
   final String currentUsername;
   final String? currentAvatarBase64;
+  final String? currentEmail;
 
   const EditProfileScreen({
     super.key,
     required this.currentUsername,
     this.currentAvatarBase64,
+    this.currentEmail,
   });
 
   @override
@@ -37,6 +40,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _authService = AuthService();
   final _imagePicker = ImagePicker();
   late final TextEditingController _usernameController;
+  late final TextEditingController _emailController;
 
   bool _isSaving = false;
   String? _errorMessage;
@@ -51,11 +55,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     _usernameController = TextEditingController(text: widget.currentUsername);
+    _emailController = TextEditingController(text: widget.currentEmail ?? '');
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -106,6 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final trimmedUsername = _usernameController.text.trim();
+    final trimmedEmail = _emailController.text.trim();
     final changes = <String, dynamic>{};
 
     setState(() {
@@ -115,7 +122,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Solo se llama a cada endpoint si el campo correspondiente realmente
     // cambio -- evita llamadas de red innecesarias cuando el usuario entra,
-    // no toca nada (o solo una de las dos cosas) y le da a Guardar.
+    // no toca nada (o solo alguno de los campos) y le da a Guardar.
     if (trimmedUsername != widget.currentUsername) {
       try {
         await _authService.changeUsername(trimmedUsername);
@@ -144,6 +151,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     }
 
+    if (trimmedEmail.isNotEmpty && trimmedEmail != (widget.currentEmail ?? '')) {
+      try {
+        final response = await _authService.changeEmail(trimmedEmail);
+        changes['email'] = response['email'];
+        changes['emailVerified'] = response['emailVerified'];
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isSaving = false;
+        });
+        return;
+      }
+    }
+
     if (!mounted) return;
 
     if (changes.isEmpty) {
@@ -161,6 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final hasExistingEmail = widget.currentEmail != null && widget.currentEmail!.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -203,7 +226,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: AppSizes.spacingL),
               TextFormField(
                 controller: _usernameController,
-                textInputAction: TextInputAction.done,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
                   labelText: l10n.newUsernameLabel,
                 ),
@@ -215,6 +238,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   }
                   if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(trimmed)) {
                     return l10n.usernameInvalidCharsError;
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSizes.spacingM),
+              TextFormField(
+                controller: _emailController,
+                textInputAction: TextInputAction.done,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  // Issue #274: cuentas anteriores a la #268 pueden no
+                  // tener email todavia -- mismo campo/endpoint sirve para
+                  // anadirlo por primera vez o cambiarlo, solo cambia el
+                  // texto para que quede claro que accion se esta haciendo.
+                  labelText: hasExistingEmail ? l10n.changeEmailLabel : l10n.addEmailLabel,
+                ),
+                validator: (value) {
+                  final trimmed = value?.trim() ?? '';
+                  // El email es opcional: una cuenta sin email puede seguir
+                  // sin tenerlo si el usuario deja el campo vacio.
+                  if (trimmed.isEmpty) return null;
+                  if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) {
+                    return l10n.emailInvalid;
                   }
                   return null;
                 },

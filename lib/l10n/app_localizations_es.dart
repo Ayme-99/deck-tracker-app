@@ -1569,4 +1569,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileUpdatedSuccess => 'Perfil actualizado';
+
+  @override
+  String get changeEmailLabel => 'Cambiar email';
+
+  @override
+  String get addEmailLabel => 'Añadir email';
 }

@@ -2812,6 +2812,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Perfil actualizado'**
   String get profileUpdatedSuccess;
+
+  /// Etiqueta del campo de email en editar perfil, cuando la cuenta ya tiene un email asociado
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar email'**
+  String get changeEmailLabel;
+
+  /// Etiqueta del campo de email en editar perfil, cuando la cuenta todavia no tiene ningun email (cuentas anteriores a la #268)
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir email'**
+  String get addEmailLabel;
 }
 
 class _AppLocalizationsDelegate
