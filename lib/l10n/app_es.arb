@@ -946,7 +946,7 @@
   "usernameInvalidCharsError": "Solo letras, números y guiones bajos",
   "@usernameInvalidCharsError": {"description": "Validacion: caracteres no permitidos en el nombre de usuario"},
   "usernameChangedSuccess": "Nombre de usuario actualizado",
-  "@usernameChangedSuccess": {"description": "Confirmacion tras cambiar el nombre de usuario"}
+  "@usernameChangedSuccess": {"description": "Confirmacion tras cambiar el nombre de usuario"},
   "avatarPickError": "Error al seleccionar la imagen: {error}",
   "@avatarPickError": {"description": "Error al elegir una foto de perfil desde la galeria", "placeholders": {"error": {}}},
   "profileUpdatedSuccess": "Perfil actualizado",
