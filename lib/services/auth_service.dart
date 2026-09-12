@@ -29,10 +29,18 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> changeUsername(String username) async {
-  return await _api.post('/auth/change-username', {
-    'username': username,
-  });
-}
+    return await _api.post('/auth/change-username', {
+      'username': username,
+    });
+  }
+
+  // Issue #269: avatarBase64 es una data URI completa
+  // ("data:image/jpeg;base64,...."), ya formada en EditProfileScreen.
+  Future<Map<String, dynamic>> changeAvatar(String avatarBase64) async {
+    return await _api.post('/auth/change-avatar', {
+      'avatarBase64': avatarBase64,
+    });
+  }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await _api.post('/auth/login', {

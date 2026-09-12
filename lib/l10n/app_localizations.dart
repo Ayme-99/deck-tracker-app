@@ -2800,6 +2800,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nombre de usuario actualizado'**
   String get usernameChangedSuccess;
+
+  /// Error al elegir una foto de perfil desde la galeria
+  ///
+  /// In es, this message translates to:
+  /// **'Error al seleccionar la imagen: {error}'**
+  String avatarPickError(Object error);
+
+  /// Confirmacion generica tras guardar cambios en editar perfil (username y/o avatar)
+  ///
+  /// In es, this message translates to:
+  /// **'Perfil actualizado'**
+  String get profileUpdatedSuccess;
 }
 
 class _AppLocalizationsDelegate

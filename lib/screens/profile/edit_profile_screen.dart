@@ -1,21 +1,29 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Pantalla de edicion de perfil (issue #270 y futuras: #269 foto, #274
-/// email, #271 Google, #275 eliminar cuenta...). Punto unico de entrada
-/// para todo lo que sea "editar mi cuenta", en vez de ir esparciendo
-/// dialogos/iconos sueltos por ProfileScreen a medida que crece el alcance.
+/// Pantalla de edicion de perfil (issue #270, #269 y futuras: #274 email,
+/// #271 Google, #275 eliminar cuenta...). Punto unico de entrada para todo
+/// lo que sea "editar mi cuenta", en vez de ir esparciendo dialogos/iconos
+/// sueltos por ProfileScreen a medida que crece el alcance.
 ///
 /// Devuelve al hacer pop un Map<String, dynamic> con los campos que
-/// cambiaron realmente (hoy como mucho {'username': nuevoValor}), para que
-/// ProfileScreen actualice su estado local sin recargar todo el perfil. Si
-/// no hubo ningun cambio guardado, devuelve null.
+/// cambiaron realmente (ej. {'username': ...} y/o {'avatarBase64': ...}),
+/// para que ProfileScreen actualice su estado local sin recargar todo el
+/// perfil. Si no hubo ningun cambio guardado, devuelve null.
 class EditProfileScreen extends StatefulWidget {
   final String currentUsername;
+  final String? currentAvatarBase64;
 
-  const EditProfileScreen({super.key, required this.currentUsername});
+  const EditProfileScreen({
+    super.key,
+    required this.currentUsername,
+    this.currentAvatarBase64,
+  });
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -24,10 +32,17 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
+  final _imagePicker = ImagePicker();
   late final TextEditingController _usernameController;
 
   bool _isSaving = false;
   String? _errorMessage;
+
+  // Bytes de la nueva imagen elegida (si el usuario cambio la foto) y su
+  // data URI ya lista para el server. Mientras no se guarde, se muestra la
+  // previsualizacion en memoria en vez de la que ya hay en el perfil.
+  Uint8List? _pendingAvatarBytes;
+  String? _pendingAvatarDataUri;
 
   @override
   void initState() {
@@ -41,24 +56,76 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  // Issue #269: redimension y compresion ya en origen via maxWidth/
+  // maxHeight/imageQuality -- evita tener que anadir un paquete aparte de
+  // procesado de imagenes solo para esto. 512px de lado y calidad 80 dan un
+  // JPEG de sobra pequeno para un avatar (tipicamente bastante por debajo
+  // del limite de 500KB que valida el server).
+  Future<void> _pickAvatar() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      final mimeType = _mimeTypeFor(picked.name);
+
+      setState(() {
+        _pendingAvatarBytes = bytes;
+        _pendingAvatarDataUri = 'data:$mimeType;base64,${base64Encode(bytes)}';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.avatarPickError(e.toString().replaceFirst('Exception: ', '')))),
+      );
+    }
+  }
+
+  String _mimeTypeFor(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
     final trimmedUsername = _usernameController.text.trim();
     final changes = <String, dynamic>{};
 
-    // Solo se llama al endpoint si el campo realmente cambio -- evita una
-    // llamada de red (y el rechazo por "unico pero ya es tuyo" que el
-    // server ya maneja, pero mejor no depender de eso) cuando el usuario
-    // entra, no toca nada y le da a Guardar.
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    // Solo se llama a cada endpoint si el campo correspondiente realmente
+    // cambio -- evita llamadas de red innecesarias cuando el usuario entra,
+    // no toca nada (o solo una de las dos cosas) y le da a Guardar.
     if (trimmedUsername != widget.currentUsername) {
-      setState(() {
-        _isSaving = true;
-        _errorMessage = null;
-      });
       try {
         await _authService.changeUsername(trimmedUsername);
         changes['username'] = trimmedUsername;
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isSaving = false;
+        });
+        return;
+      }
+    }
+
+    if (_pendingAvatarDataUri != null) {
+      try {
+        await _authService.changeAvatar(_pendingAvatarDataUri!);
+        changes['avatarBase64'] = _pendingAvatarDataUri;
       } catch (e) {
         if (!mounted) return;
         setState(() {
@@ -79,13 +146,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final l10n = AppLocalizations.of(context);
     Navigator.of(context).pop(changes);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.usernameChangedSuccess)),
+      SnackBar(content: Text(l10n.profileUpdatedSuccess)),
     );
+  }
+
+  ImageProvider? _currentAvatarImage() {
+    if (_pendingAvatarBytes != null) return MemoryImage(_pendingAvatarBytes!);
+    if (widget.currentAvatarBase64 != null) {
+      final base64Part = widget.currentAvatarBase64!.split(',').last;
+      return MemoryImage(base64Decode(base64Part));
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final avatarImage = _currentAvatarImage();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.editProfileTitle),
@@ -97,6 +175,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: GestureDetector(
+                  onTap: _isSaving ? null : _pickAvatar,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: AppSizes.iconHuge / 2,
+                        backgroundImage: avatarImage,
+                        child: avatarImage == null
+                            ? const Icon(Icons.person, size: AppSizes.iconLarge)
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.spacingXS),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_outlined, size: AppSizes.iconSmall, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacingL),
               TextFormField(
                 controller: _usernameController,
                 textInputAction: TextInputAction.done,
