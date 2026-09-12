@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/user_avatar.dart';
 
 /// Pantalla de edicion de perfil (issue #270, #269 y futuras: #274 email,
 /// #271 Google, #275 eliminar cuenta...). Punto unico de entrada para todo
@@ -151,19 +152,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  ImageProvider? _currentAvatarImage() {
-    if (_pendingAvatarBytes != null) return MemoryImage(_pendingAvatarBytes!);
-    if (widget.currentAvatarBase64 != null) {
-      final base64Part = widget.currentAvatarBase64!.split(',').last;
-      return MemoryImage(base64Decode(base64Part));
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final avatarImage = _currentAvatarImage();
 
     return Scaffold(
       appBar: AppBar(
@@ -182,13 +173,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      CircleAvatar(
-                        radius: AppSizes.iconHuge / 2,
-                        backgroundImage: avatarImage,
-                        child: avatarImage == null
-                            ? const Icon(Icons.person, size: AppSizes.iconLarge)
-                            : null,
-                      ),
+                      _pendingAvatarBytes != null
+                        ? CircleAvatar(
+                            radius: AppSizes.iconHuge / 2,
+                            backgroundImage: MemoryImage(_pendingAvatarBytes!),
+                          )
+                        : UserAvatar(
+                            avatarBase64: widget.currentAvatarBase64,
+                            radius: AppSizes.iconHuge / 2,
+                          ),
                       Container(
                         padding: const EdgeInsets.all(AppSizes.spacingXS),
                         decoration: BoxDecoration(

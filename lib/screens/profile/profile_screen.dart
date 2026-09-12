@@ -18,6 +18,7 @@ import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/user_avatar.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
 /// pantalla de perfil completa (gestion de amigos, stats de cuenta...),
@@ -377,15 +378,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    CircleAvatar(
-                      radius: AppSizes.iconHuge / 2,
-                      backgroundImage: _avatarBase64 != null
-                          ? MemoryImage(base64Decode(_avatarBase64!.split(',').last))
-                          : null,
-                      child: _avatarBase64 == null
-                          ? const Icon(Icons.person, size: AppSizes.iconLarge)
-                          : null,
-                    ),
+                    UserAvatar(avatarBase64: _avatarBase64),
                     const SizedBox(height: AppSizes.spacingM),
                     Text(
                       _username ?? l10n.defaultUsername,
