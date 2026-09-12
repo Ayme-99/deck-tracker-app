@@ -18,6 +18,7 @@ import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/user_avatar.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
 /// pantalla de perfil completa (gestion de amigos, stats de cuenta...),

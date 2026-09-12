@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/user_avatar.dart';
 
 /// Pantalla de edicion de perfil (issue #270, #269 y futuras: #274 email,
 /// #271 Google, #275 eliminar cuenta...). Punto unico de entrada para todo
