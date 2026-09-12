@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -37,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   final _statsService = StatsService();
 
   String? _username;
+  String? _avatarBase64;
   bool _emailVerified = true; // hasta que se sepa lo contrario no se muestra el aviso
   bool _isLoading = true;
   bool _isResendingVerification = false;
@@ -94,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
       setState(() {
         _username = me['username'] as String?;
+        _avatarBase64 = me['avatarBase64'] as String?;
         // Cuentas creadas antes de la #268 no tienen email todavia -- no
         // tiene sentido pedirles que "verifiquen" algo que no existe.
         _emailVerified = me['email'] == null || me['emailVerified'] == true;
@@ -135,20 +139,26 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
   }
 
-  // Issue #270 y punto de entrada para futuras ediciones de perfil (#269,
-  // #274...): un unico Map de cambios, se aplican los que haya. Sin
+  // Issue #270/#269 y punto de entrada para futuras ediciones de perfil
+  // (#274...): un unico Map de cambios, se aplican los que haya. Sin
   // recargar _loadProfileData completo por evitar repetir las 6 llamadas
   // en paralelo por un cambio de un par de campos.
   Future<void> _openEditProfile() async {
     final changes = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute(
-        builder: (_) => EditProfileScreen(currentUsername: _username ?? ''),
+        builder: (_) => EditProfileScreen(
+          currentUsername: _username ?? '',
+          currentAvatarBase64: _avatarBase64,
+        ),
       ),
     );
     if (changes == null || !mounted) return;
     setState(() {
       if (changes.containsKey('username')) {
         _username = changes['username'] as String;
+      }
+      if (changes.containsKey('avatarBase64')) {
+        _avatarBase64 = changes['avatarBase64'] as String?;
       }
     });
   }
@@ -367,9 +377,14 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: AppSizes.iconHuge / 2,
-                      child: Icon(Icons.person, size: AppSizes.iconLarge),
+                      backgroundImage: _avatarBase64 != null
+                          ? MemoryImage(base64Decode(_avatarBase64!.split(',').last))
+                          : null,
+                      child: _avatarBase64 == null
+                          ? const Icon(Icons.person, size: AppSizes.iconLarge)
+                          : null,
                     ),
                     const SizedBox(height: AppSizes.spacingM),
                     Text(

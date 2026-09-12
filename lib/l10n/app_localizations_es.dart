@@ -1561,4 +1561,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get usernameChangedSuccess => 'Nombre de usuario actualizado';
+
+  @override
+  String avatarPickError(Object error) {
+    return 'Error al seleccionar la imagen: $error';
+  }
+
+  @override
+  String get profileUpdatedSuccess => 'Perfil actualizado';
 }
