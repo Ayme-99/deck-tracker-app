@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
-import '../../l10n/app_localizations.dart';
 import '../../widgets/user_avatar.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Pantalla de edicion de perfil (issue #270, #269 y futuras: #274 email,
 /// #271 Google, #275 eliminar cuenta...). Punto unico de entrada para todo
@@ -58,20 +59,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // Issue #269: redimension y compresion ya en origen via maxWidth/
-  // maxHeight/imageQuality -- evita tener que anadir un paquete aparte de
-  // procesado de imagenes solo para esto. 512px de lado y calidad 80 dan un
-  // JPEG de sobra pequeno para un avatar (tipicamente bastante por debajo
-  // del limite de 500KB que valida el server).
   Future<void> _pickAvatar() async {
     final l10n = AppLocalizations.of(context);
     try {
-      final picked = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
-      );
+      // Issue #269: en web, image_picker_for_web tiene un bug conocido al
+      // redimensionar via maxWidth/maxHeight/imageQuality (el blob URL de
+      // la imagen puede fallar a cargar durante el resize en <canvas>,
+      // "Couldn't load blob from this url"). En web se pide la imagen sin
+      // redimensionar y se confia en la validacion de tamano del server;
+      // en nativo (donde el resize si es fiable) se mantiene el
+      // redimensionado en origen para no subir base64 innecesariamente
+      // grandes.
+      final picked = kIsWeb
+          ? await _imagePicker.pickImage(source: ImageSource.gallery)
+          : await _imagePicker.pickImage(
+              source: ImageSource.gallery,
+              maxWidth: 512,
+              maxHeight: 512,
+              imageQuality: 80,
+            );
       if (picked == null) return;
 
       final bytes = await picked.readAsBytes();
@@ -174,14 +180,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     alignment: Alignment.bottomRight,
                     children: [
                       _pendingAvatarBytes != null
-                        ? CircleAvatar(
-                            radius: AppSizes.iconHuge / 2,
-                            backgroundImage: MemoryImage(_pendingAvatarBytes!),
-                          )
-                        : UserAvatar(
-                            avatarBase64: widget.currentAvatarBase64,
-                            radius: AppSizes.iconHuge / 2,
-                          ),
+                          ? CircleAvatar(
+                              radius: AppSizes.iconHuge / 2,
+                              backgroundImage: MemoryImage(_pendingAvatarBytes!),
+                            )
+                          : UserAvatar(
+                              avatarBase64: widget.currentAvatarBase64,
+                              radius: AppSizes.iconHuge / 2,
+                            ),
                       Container(
                         padding: const EdgeInsets.all(AppSizes.spacingXS),
                         decoration: BoxDecoration(
