@@ -42,6 +42,15 @@ class AuthService {
     });
   }
 
+  // Issue #274: mismo endpoint sirve para anadir el email por primera vez
+  // (cuentas anteriores a la #268, sin email) o cambiarlo. El server deja
+  // el email como no verificado y reenvia el correo de verificacion.
+  Future<Map<String, dynamic>> changeEmail(String email) async {
+    return await _api.post('/auth/change-email', {
+      'email': email,
+    });
+  }
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await _api.post('/auth/login', {
       'username': username,

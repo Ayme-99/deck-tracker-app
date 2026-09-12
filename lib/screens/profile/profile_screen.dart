@@ -14,11 +14,11 @@ import '../../services/theme_preference_service.dart';
 import '../backup/backup_screen.dart';
 import 'change_password_dialog.dart';
 import 'edit_profile_screen.dart';
+import '../../widgets/user_avatar.dart';
 import '../friends/friends_screen.dart';
 import '../tournaments/tournament_invites_screen.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
-import '../../widgets/user_avatar.dart';
 
 /// Pantalla de perfil de usuario (issue #235): primer paso hacia una futura
 /// pantalla de perfil completa (gestion de amigos, stats de cuenta...),
@@ -41,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   String? _username;
   String? _avatarBase64;
+  String? _email;
   bool _emailVerified = true; // hasta que se sepa lo contrario no se muestra el aviso
   bool _isLoading = true;
   bool _isResendingVerification = false;
@@ -99,6 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       setState(() {
         _username = me['username'] as String?;
         _avatarBase64 = me['avatarBase64'] as String?;
+        _email = me['email'] as String?;
         // Cuentas creadas antes de la #268 no tienen email todavia -- no
         // tiene sentido pedirles que "verifiquen" algo que no existe.
         _emailVerified = me['email'] == null || me['emailVerified'] == true;
@@ -140,16 +142,17 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
   }
 
-  // Issue #270/#269 y punto de entrada para futuras ediciones de perfil
-  // (#274...): un unico Map de cambios, se aplican los que haya. Sin
-  // recargar _loadProfileData completo por evitar repetir las 6 llamadas
-  // en paralelo por un cambio de un par de campos.
+  // Issue #270/#269/#274 y punto de entrada para futuras ediciones de
+  // perfil (#275...): un unico Map de cambios, se aplican los que haya.
+  // Sin recargar _loadProfileData completo por evitar repetir las 6
+  // llamadas en paralelo por un cambio de un par de campos.
   Future<void> _openEditProfile() async {
     final changes = await Navigator.of(context).push<Map<String, dynamic>>(
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(
           currentUsername: _username ?? '',
           currentAvatarBase64: _avatarBase64,
+          currentEmail: _email,
         ),
       ),
     );
@@ -160,6 +163,10 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       }
       if (changes.containsKey('avatarBase64')) {
         _avatarBase64 = changes['avatarBase64'] as String?;
+      }
+      if (changes.containsKey('email')) {
+        _email = changes['email'] as String?;
+        _emailVerified = changes['emailVerified'] as bool? ?? false;
       }
     });
   }

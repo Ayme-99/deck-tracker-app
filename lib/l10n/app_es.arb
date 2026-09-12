@@ -91,8 +91,6 @@
   "@deleteAction": {"description": "Boton generico para confirmar un borrado"},
   "deckSearchHint": "Buscar mazo por nombre",
   "@deckSearchHint": {"description": "Placeholder del buscador de mazos"},
-  "sortByLabel": "Ordenar: {sortLabel}",
-  "@sortByLabel": {"description": "Texto del menu de ordenacion actual", "placeholders": {"sortLabel": {}}},
   "offlineShowingSavedData": "Sin conexión · mostrando datos guardados",
   "@offlineShowingSavedData": {"description": "Aviso de datos cacheados sin conexion"},
   "noDecksYetTitle": "Todavía no tienes mazos",
@@ -105,6 +103,8 @@
   "@createDeckAction": {"description": "Boton para crear un mazo"},
   "noDeckMatchesSearch": "Ningún mazo coincide con \"{query}\"",
   "@noDeckMatchesSearch": {"description": "Estado vacio de busqueda de mazos sin resultados", "placeholders": {"query": {}}},
+  "sortByLabel": "Ordenar: {sortLabel}",
+  "@sortByLabel": {"description": "Texto del menu de ordenacion actual", "placeholders": {"sortLabel": {}}},
 
   "importFromTcgLiveTitle": "Importar desde Pokémon TCG Live",
   "@importFromTcgLiveTitle": {"description": "Titulo del dialogo de importacion de lista de cartas"},
@@ -935,6 +935,7 @@
   "@newPasswordLabel": {"description": "Etiqueta del campo de nueva contraseña"},
   "passwordChangedSuccess": "Contraseña actualizada",
   "@passwordChangedSuccess": {"description": "Confirmacion tras cambiar la contraseña"},
+
   "editProfileTitle": "Editar perfil",
   "@editProfileTitle": {"description": "Titulo de la pantalla de editar perfil, y tooltip de su icono en la AppBar del perfil"},
   "newUsernameLabel": "Nuevo nombre de usuario",
@@ -947,8 +948,14 @@
   "@usernameInvalidCharsError": {"description": "Validacion: caracteres no permitidos en el nombre de usuario"},
   "usernameChangedSuccess": "Nombre de usuario actualizado",
   "@usernameChangedSuccess": {"description": "Confirmacion tras cambiar el nombre de usuario"},
+
   "avatarPickError": "Error al seleccionar la imagen: {error}",
   "@avatarPickError": {"description": "Error al elegir una foto de perfil desde la galeria", "placeholders": {"error": {}}},
   "profileUpdatedSuccess": "Perfil actualizado",
-  "@profileUpdatedSuccess": {"description": "Confirmacion generica tras guardar cambios en editar perfil (username y/o avatar)"}
+  "@profileUpdatedSuccess": {"description": "Confirmacion generica tras guardar cambios en editar perfil (username y/o avatar)"},
+
+  "changeEmailLabel": "Cambiar email",
+  "@changeEmailLabel": {"description": "Etiqueta del campo de email en editar perfil, cuando la cuenta ya tiene un email asociado"},
+  "addEmailLabel": "Añadir email",
+  "@addEmailLabel": {"description": "Etiqueta del campo de email en editar perfil, cuando la cuenta todavia no tiene ningun email (cuentas anteriores a la #268)"}
 }
