@@ -957,7 +957,7 @@
   "changeEmailLabel": "Cambiar email",
   "@changeEmailLabel": {"description": "Etiqueta del campo de email en editar perfil, cuando la cuenta ya tiene un email asociado"},
   "addEmailLabel": "Añadir email",
-  "@addEmailLabel": {"description": "Etiqueta del campo de email en editar perfil, cuando la cuenta todavia no tiene ningun email (cuentas anteriores a la #268)"}
+  "@addEmailLabel": {"description": "Etiqueta del campo de email en editar perfil, cuando la cuenta todavia no tiene ningun email (cuentas anteriores a la #268)"},
   "blockedUsersScreenTitle": "Usuarios bloqueados",
   "@blockedUsersScreenTitle": {"description": "Titulo de la pantalla de usuarios bloqueados, y tooltip de su icono en Amigos"},
   "noBlockedUsersYet": "No has bloqueado a nadie",
