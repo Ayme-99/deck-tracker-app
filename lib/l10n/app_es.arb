@@ -977,5 +977,11 @@
   "userUnblockedSnackbar": "Has desbloqueado a \"{username}\"",
   "@userUnblockedSnackbar": {"description": "Confirmacion tras desbloquear a un usuario", "placeholders": {"username": {}}},
   "unblockUserError": "Error al desbloquear: {error}",
-  "@unblockUserError": {"description": "Error al desbloquear un usuario", "placeholders": {"error": {}}}
+  "@unblockUserError": {"description": "Error al desbloquear un usuario", "placeholders": {"error": {}}},
+    "deleteAccountTitle": "Eliminar cuenta",
+  "@deleteAccountTitle": {"description": "Titulo de la pantalla de confirmacion de eliminar cuenta"},
+  "deleteAccountAction": "Eliminar cuenta",
+  "@deleteAccountAction": {"description": "Boton para eliminar la cuenta, en editar perfil y en la pantalla de confirmacion"},
+  "deleteAccountWarning": "Esta acción es irreversible. Se eliminarán permanentemente tus mazos, partidas y torneos propios. Tu participación en torneos de otros usuarios se conservará, sin vincular a tu cuenta.",
+  "@deleteAccountWarning": {"description": "Aviso mostrado en la pantalla de confirmacion de eliminar cuenta"}
 }
