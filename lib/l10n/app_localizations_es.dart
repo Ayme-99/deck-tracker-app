@@ -172,11 +172,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deckSearchHint => 'Buscar mazo por nombre';
 
   @override
-  String sortByLabel(Object sortLabel) {
-    return 'Ordenar: $sortLabel';
-  }
-
-  @override
   String get offlineShowingSavedData =>
       'Sin conexión · mostrando datos guardados';
 
@@ -198,6 +193,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String noDeckMatchesSearch(Object query) {
     return 'Ningún mazo coincide con \"$query\"';
+  }
+
+  @override
+  String sortByLabel(Object sortLabel) {
+    return 'Ordenar: $sortLabel';
   }
 
   @override
@@ -1576,7 +1576,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get addEmailLabel => 'Añadir email';
 
-    @override
+  @override
   String get blockedUsersScreenTitle => 'Usuarios bloqueados';
 
   @override
@@ -1590,12 +1590,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String blockUserConfirm(Object username) {
-    return '¿Seguro que quieres bloquear a "$username"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.';
+    return '¿Seguro que quieres bloquear a \"$username\"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.';
   }
 
   @override
   String userBlockedSnackbar(Object username) {
-    return 'Has bloqueado a "$username"';
+    return 'Has bloqueado a \"$username\"';
   }
 
   @override
@@ -1608,7 +1608,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String userUnblockedSnackbar(Object username) {
-    return 'Has desbloqueado a "$username"';
+    return 'Has desbloqueado a \"$username\"';
   }
 
   @override
@@ -1616,12 +1616,13 @@ class AppLocalizationsEs extends AppLocalizations {
     return 'Error al desbloquear: $error';
   }
 
-    @override
+  @override
   String get deleteAccountTitle => 'Eliminar cuenta';
 
   @override
   String get deleteAccountAction => 'Eliminar cuenta';
 
   @override
-  String get deleteAccountWarning => 'Esta acción es irreversible. Se eliminarán permanentemente tus mazos, partidas y torneos propios. Tu participación en torneos de otros usuarios se conservará, sin vincular a tu cuenta.';
+  String get deleteAccountWarning =>
+      'Esta acción es irreversible. Se eliminarán permanentemente tus mazos, partidas y torneos propios. Tu participación en torneos de otros usuarios se conservará, sin vincular a tu cuenta.';
 }
