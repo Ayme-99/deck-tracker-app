@@ -1,0 +1,47 @@
+name: Build Windows Installer
+
+# Se puede lanzar a mano desde la pestaña Actions (Run workflow), o
+# automaticamente al crear un tag de version (ej. v1.5.2).
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      # Chocolatey ya viene preinstalado en los runners de GitHub Actions,
+      # y con el viene tambien Inno Setup (paquete innosetup) sin tener que
+      # descargarlo/instalarlo a mano.
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Compile installer with Inno Setup
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows_installer\deck_tracker.iss
+        shell: pwsh
+
+      - name: Upload installer as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeckTrackerSetup
+          path: windows_installer\output\*.exe

@@ -364,12 +364,6 @@ abstract class AppLocalizations {
   /// **'Buscar mazo por nombre'**
   String get deckSearchHint;
 
-  /// Texto del menu de ordenacion actual
-  ///
-  /// In es, this message translates to:
-  /// **'Ordenar: {sortLabel}'**
-  String sortByLabel(Object sortLabel);
-
   /// Aviso de datos cacheados sin conexion
   ///
   /// In es, this message translates to:
@@ -405,6 +399,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ningún mazo coincide con \"{query}\"'**
   String noDeckMatchesSearch(Object query);
+
+  /// Texto del menu de ordenacion actual
+  ///
+  /// In es, this message translates to:
+  /// **'Ordenar: {sortLabel}'**
+  String sortByLabel(Object sortLabel);
 
   /// Titulo del dialogo de importacion de lista de cartas
   ///
@@ -2765,10 +2765,10 @@ abstract class AppLocalizations {
   /// **'Contraseña actualizada'**
   String get passwordChangedSuccess;
 
-  /// Titulo del dialogo de cambiar nombre de usuario, y tooltip del icono de editar junto al nombre en el perfil
+  /// Titulo de la pantalla de editar perfil, y tooltip de su icono en la AppBar del perfil
   ///
   /// In es, this message translates to:
-  /// **'Cambiar nombre de usuario'**
+  /// **'Editar perfil'**
   String get editProfileTitle;
 
   /// Etiqueta del campo de nuevo nombre de usuario
@@ -2852,13 +2852,13 @@ abstract class AppLocalizations {
   /// Confirmacion de bloqueo de un usuario
   ///
   /// In es, this message translates to:
-  /// **'¿Seguro que quieres bloquear a "{username}"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.'**
+  /// **'¿Seguro que quieres bloquear a \"{username}\"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.'**
   String blockUserConfirm(Object username);
 
   /// Confirmacion tras bloquear a un usuario
   ///
   /// In es, this message translates to:
-  /// **'Has bloqueado a "{username}"'**
+  /// **'Has bloqueado a \"{username}\"'**
   String userBlockedSnackbar(Object username);
 
   /// Error al bloquear un usuario
@@ -2876,7 +2876,7 @@ abstract class AppLocalizations {
   /// Confirmacion tras desbloquear a un usuario
   ///
   /// In es, this message translates to:
-  /// **'Has desbloqueado a "{username}"'**
+  /// **'Has desbloqueado a \"{username}\"'**
   String userUnblockedSnackbar(Object username);
 
   /// Error al desbloquear un usuario
@@ -2885,7 +2885,7 @@ abstract class AppLocalizations {
   /// **'Error al desbloquear: {error}'**
   String unblockUserError(Object error);
 
-    /// Titulo de la pantalla de confirmacion de eliminar cuenta
+  /// Titulo de la pantalla de confirmacion de eliminar cuenta
   ///
   /// In es, this message translates to:
   /// **'Eliminar cuenta'**
