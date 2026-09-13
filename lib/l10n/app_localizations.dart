@@ -2884,6 +2884,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Error al desbloquear: {error}'**
   String unblockUserError(Object error);
+
+    /// Titulo de la pantalla de confirmacion de eliminar cuenta
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar cuenta'**
+  String get deleteAccountTitle;
+
+  /// Boton para eliminar la cuenta, en editar perfil y en la pantalla de confirmacion
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar cuenta'**
+  String get deleteAccountAction;
+
+  /// Aviso mostrado en la pantalla de confirmacion de eliminar cuenta
+  ///
+  /// In es, this message translates to:
+  /// **'Esta acción es irreversible. Se eliminarán permanentemente tus mazos, partidas y torneos propios. Tu participación en torneos de otros usuarios se conservará, sin vincular a tu cuenta.'**
+  String get deleteAccountWarning;
 }
 
 class _AppLocalizationsDelegate

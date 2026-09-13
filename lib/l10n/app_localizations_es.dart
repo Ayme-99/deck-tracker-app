@@ -1615,4 +1615,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String unblockUserError(Object error) {
     return 'Error al desbloquear: $error';
   }
+
+    @override
+  String get deleteAccountTitle => 'Eliminar cuenta';
+
+  @override
+  String get deleteAccountAction => 'Eliminar cuenta';
+
+  @override
+  String get deleteAccountWarning => 'Esta acción es irreversible. Se eliminarán permanentemente tus mazos, partidas y torneos propios. Tu participación en torneos de otros usuarios se conservará, sin vincular a tu cuenta.';
 }

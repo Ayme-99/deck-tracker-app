@@ -8,6 +8,7 @@ import 'package:deck_tracker_app/styles.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/user_avatar.dart';
 import '../../l10n/app_localizations.dart';
+import 'delete_account_screen.dart';
 
 /// Pantalla de edicion de perfil (issue #270, #269, #274 y futuras: #271
 /// Google, #275 eliminar cuenta...). Punto unico de entrada para todo lo
@@ -284,6 +285,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(l10n.saveAction),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacingXL),
+              const Divider(),
+              const SizedBox(height: AppSizes.spacingS),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                  ),
+                  child: Text(
+                    l10n.deleteAccountAction,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 ),
               ),
             ],

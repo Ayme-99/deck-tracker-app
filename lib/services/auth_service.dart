@@ -51,6 +51,18 @@ class AuthService {
     });
   }
 
+  // Issue #275: elimina la cuenta permanentemente, requiere confirmar la
+  // contraseña actual. Tras un borrado exitoso, limpia sesion y cache local
+  // igual que logout() -- la cuenta ya no existe, no tiene sentido dejar el
+  // token guardado ni datos cacheados de un usuario borrado.
+  Future<void> deleteAccount(String password) async {
+    await _api.post('/auth/delete-account', {
+      'password': password,
+    });
+    await _storage.delete(key: 'token');
+    await _deckCacheService.clear();
+  }
+
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await _api.post('/auth/login', {
       'username': username,
