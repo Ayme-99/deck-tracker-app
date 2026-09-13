@@ -1575,4 +1575,44 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get addEmailLabel => 'Añadir email';
+
+    @override
+  String get blockedUsersScreenTitle => 'Usuarios bloqueados';
+
+  @override
+  String get noBlockedUsersYet => 'No has bloqueado a nadie';
+
+  @override
+  String get blockUserTitle => 'Bloquear usuario';
+
+  @override
+  String get blockUserAction => 'Bloquear usuario';
+
+  @override
+  String blockUserConfirm(Object username) {
+    return '¿Seguro que quieres bloquear a "$username"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.';
+  }
+
+  @override
+  String userBlockedSnackbar(Object username) {
+    return 'Has bloqueado a "$username"';
+  }
+
+  @override
+  String blockUserError(Object error) {
+    return 'Error al bloquear: $error';
+  }
+
+  @override
+  String get unblockUserAction => 'Desbloquear';
+
+  @override
+  String userUnblockedSnackbar(Object username) {
+    return 'Has desbloqueado a "$username"';
+  }
+
+  @override
+  String unblockUserError(Object error) {
+    return 'Error al desbloquear: $error';
+  }
 }

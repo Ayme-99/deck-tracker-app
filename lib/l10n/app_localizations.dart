@@ -2824,6 +2824,66 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Añadir email'**
   String get addEmailLabel;
+
+  /// Titulo de la pantalla de usuarios bloqueados, y tooltip de su icono en Amigos
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios bloqueados'**
+  String get blockedUsersScreenTitle;
+
+  /// Estado vacio de la lista de usuarios bloqueados
+  ///
+  /// In es, this message translates to:
+  /// **'No has bloqueado a nadie'**
+  String get noBlockedUsersYet;
+
+  /// Titulo del dialogo de confirmacion para bloquear a alguien
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear usuario'**
+  String get blockUserTitle;
+
+  /// Accion de bloquear un usuario, en menus y botones de confirmacion
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear usuario'**
+  String get blockUserAction;
+
+  /// Confirmacion de bloqueo de un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'¿Seguro que quieres bloquear a "{username}"? Ya no podrá enviarte solicitudes de amistad ni tú a él/ella.'**
+  String blockUserConfirm(Object username);
+
+  /// Confirmacion tras bloquear a un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Has bloqueado a "{username}"'**
+  String userBlockedSnackbar(Object username);
+
+  /// Error al bloquear un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Error al bloquear: {error}'**
+  String blockUserError(Object error);
+
+  /// Boton para desbloquear un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquear'**
+  String get unblockUserAction;
+
+  /// Confirmacion tras desbloquear a un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Has desbloqueado a "{username}"'**
+  String userUnblockedSnackbar(Object username);
+
+  /// Error al desbloquear un usuario
+  ///
+  /// In es, this message translates to:
+  /// **'Error al desbloquear: {error}'**
+  String unblockUserError(Object error);
 }
 
 class _AppLocalizationsDelegate

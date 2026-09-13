@@ -3,10 +3,7 @@ import '../models/friend_request.dart';
 import 'api_service.dart';
 
 /// Cliente del backend de amistad (issue #92): busqueda de usuarios,
-/// solicitudes, lista de amigos. Alcance de la #229: no incluye
-/// bloquear/desbloquear (no forma parte de lo pedido en esa issue, y el
-/// backend tampoco expone un listado de bloqueados con el que construir esa
-/// UI todavia).
+/// solicitudes, lista de amigos, y bloqueo de usuarios (issue #281).
 class FriendService {
   final _api = ApiService();
 
@@ -39,5 +36,21 @@ class FriendService {
 
   Future<void> removeFriend(String friendId) async {
     await _api.delete('/friends/$friendId');
+  }
+
+  // Issue #281: bloquear impide nuevas solicitudes en cualquier direccion.
+  // Si el usuario ya era amigo, el server convierte esa relacion aceptada
+  // directamente en bloqueada -- no hace falta llamar antes a removeFriend.
+  Future<void> blockUser(String userId) async {
+    await _api.post('/friends/$userId/block', {});
+  }
+
+  Future<void> unblockUser(String userId) async {
+    await _api.delete('/friends/$userId/block');
+  }
+
+  Future<List<Friend>> listBlocked() async {
+    final response = await _api.get('/friends/blocked');
+    return (response as List).map((u) => Friend.fromJson(u as Map<String, dynamic>)).toList();
   }
 }

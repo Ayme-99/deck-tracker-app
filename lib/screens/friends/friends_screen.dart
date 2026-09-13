@@ -5,9 +5,11 @@ import '../../models/friend_request.dart';
 import '../../services/friend_service.dart';
 import '../../widgets/slow_loading_indicator.dart';
 import '../../l10n/app_localizations.dart';
+import 'blocked_users_screen.dart';
 
 /// Gestion de amigos (issue #229): lista de amigos, solicitudes
-/// entrantes/salientes, y busqueda para enviar una nueva solicitud.
+/// entrantes/salientes, busqueda para enviar una nueva solicitud, y bloqueo
+/// de usuarios (issue #281).
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
 
@@ -164,6 +166,43 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     }
   }
 
+  // Issue #281: bloquear desde la lista de amigos o desde busqueda. Si la
+  // persona ya era amiga, el server convierte esa relacion aceptada
+  // directamente a bloqueada -- basta con recargar _loadData despues.
+  Future<void> _confirmBlockUser(String userId, String username) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.blockUserTitle),
+        content: Text(l10n.blockUserConfirm(username)),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancelAction)),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.blockUserAction, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _friendService.blockUser(userId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.userBlockedSnackbar(username))),
+      );
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.blockUserError(e.toString().replaceFirst('Exception: ', '')))),
+      );
+    }
+  }
+
   Widget _buildFriendsTab(AppLocalizations l10n) {
     if (_friends.isEmpty) {
       return Center(
@@ -182,10 +221,15 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(friend.username),
-              trailing: IconButton(
-                icon: Icon(Icons.person_remove_outlined, color: Theme.of(context).colorScheme.error),
-                tooltip: l10n.removeFriendshipTooltip,
-                onPressed: () => _confirmRemoveFriend(friend),
+              trailing: PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'block') _confirmBlockUser(friend.id, friend.username);
+                  if (value == 'remove') _confirmRemoveFriend(friend);
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'block', child: Text(l10n.blockUserAction)),
+                  PopupMenuItem(value: 'remove', child: Text(l10n.removeFriendshipTitle)),
+                ],
               ),
             ),
           );
@@ -298,12 +342,22 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                         child: ListTile(
                           leading: const CircleAvatar(child: Icon(Icons.person)),
                           title: Text(user.username),
-                          trailing: alreadySent
-                              ? Text(l10n.requestSentStatus, style: const TextStyle(color: AppColors.muted))
-                              : TextButton(
-                                  onPressed: () => _sendRequest(user),
-                                  child: Text(l10n.addAction),
-                                ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              alreadySent
+                                  ? Text(l10n.requestSentStatus, style: const TextStyle(color: AppColors.muted))
+                                  : TextButton(
+                                      onPressed: () => _sendRequest(user),
+                                      child: Text(l10n.addAction),
+                                    ),
+                              IconButton(
+                                icon: const Icon(Icons.block_outlined),
+                                tooltip: l10n.blockUserAction,
+                                onPressed: () => _confirmBlockUser(user.id, user.username),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -320,6 +374,18 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.friendsScreenTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.block_outlined),
+            tooltip: l10n.blockedUsersScreenTitle,
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BlockedUsersScreen()),
+              );
+              _loadData();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: [
