@@ -6,8 +6,10 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ve
 
 ## Descargas
 
-- 📱 [Descargar APK (Android)](https://github.com/Ayme-99/deck-tracker-app/releases/download/v1.5.0%2B1/DeckTrackerApp-1.5.2+1.apk)
-- 💻 [Descargar instalador (Windows)](https://github.com/Ayme-99/deck-tracker-app/releases/download/v1.5.0%2B1/DeckTrackerSetup-1.5.2+1.exe)
+- 📱 [Descargar APK (Android)](https://github.com/Ayme-99/deck-tracker-app/releases/latest/download/DeckTrackerApp-1.5.2+1.apk)
+- 💻 [Descargar instalador (Windows)](https://github.com/Ayme-99/deck-tracker-app/releases/latest/download/DeckTrackerSetup-1.5.2+1.exe)
+
+> Los binarios de cada release (APK + instalador Windows) se generan automáticamente con GitHub Actions (`.github/workflows/build-android-apk.yml` y `build-windows-installer.yml`) al crear un tag `v*`, o a mano desde la pestaña Actions.
 
 ## Stack
 
@@ -18,8 +20,9 @@ Aplicación Flutter para gestionar mazos de Pokémon TCG, registrar partidas, ve
 ## Funcionalidades
 
 - **Auth**: registro, login y auto-login con sesión persistente; redirección a Login si el token deja de ser válido (incluye aviso de sesión caducada). Manejo de sesión robusto frente al cold start del backend: los 401 de peticiones lanzadas antes de un logout (sin token) no expulsan la sesión ni borran el token actual. Verificación de email tras el registro, con reenvío del correo desde el perfil. Enter funciona como "Aceptar" en los formularios principales (login, registro, mazos, partidas, torneos, jugadores).
-- **Perfil de usuario**: nombre de usuario, fecha de alta ("Miembro desde..."), resumen rápido de actividad (mazos, partidas, win rate global), cambio de contraseña, ajustes (copia de seguridad, color de acento, tema, cerrar sesión) y reporte de bugs directo a GitHub (issue form estructurado, sin necesidad de saber Markdown).
-- **Amigos**: solicitudes (enviar/aceptar/rechazar), listado de amigos, búsqueda de usuarios por username, badge de solicitudes pendientes en el perfil.
+- **Perfil de usuario**: nombre de usuario, foto de perfil, fecha de alta ("Miembro desde..."), resumen rápido de actividad (mazos, partidas, win rate global), cambio de contraseña, ajustes (copia de seguridad, color de acento, tema, cerrar sesión) y reporte de bugs directo a GitHub (issue form estructurado, sin necesidad de saber Markdown).
+- **Editar perfil**: pantalla única para cambiar nombre de usuario, foto de perfil (galería, con recorte/compresión en nativo) y añadir o cambiar el email de la cuenta (mismo flujo sirve para cuentas antiguas sin email, con reenvío de verificación). Incluye el acceso a eliminar la cuenta, con borrado en cascada (mazos, partidas, torneos propios) y confirmación con contraseña como paso de fricción deliberado.
+- **Amigos**: solicitudes (enviar/aceptar/rechazar), listado de amigos, búsqueda de usuarios por username, badge de solicitudes pendientes en el perfil, bloquear/desbloquear usuarios (impide solicitudes en ambas direcciones) con listado propio de usuarios bloqueados.
 - **Mazos**: CRUD completo, vista en grid adaptable con buscador, récord de partidas y orden por actividad reciente. Al eliminar un mazo se borran también sus partidas (cascada en backend); el diálogo de confirmación avisa del nº de partidas afectadas. Al añadir cartas al mazo, autocompletado contra el catálogo real de [TCGdex](https://tcgdex.dev) (issue #12): si se elige una sugerencia se guarda el `cardId` oficial; si no hay coincidencia, se conserva el slug generado a mano como hasta ahora.
 - **Partidas**: registro, edición y borrado, con autocompletado de rivales ya jugados.
 - **Estadísticas**: win-rate, matchups y premios por mazo; stats globales y ranking ordenable (win rate, nº de partidas, nombre) con mínimo de partidas ajustable; win-rate contra cada arquetipo rival agregado a lo largo de todos los mazos propios.
@@ -51,12 +54,14 @@ lib/
 │ # stats, pokemon, tournaments (tracked + hosted),
 │ # friends, actualizaciones (check + descarga)
 ├── widgets/ # SpritePicker, SpriteAvatarGroup, SubmitOnEnter,
-│ # TournamentBracket, UpdateDialog
+│ # TournamentBracket, UpdateDialog, UserAvatar
 └── screens/
 ├── auth/ # splash, login, registro
 ├── home/ # shell de navegación: Mazos / Stats / Torneos
-├── profile/ # perfil, ajustes, cambio de contraseña
-├── friends/ # lista, solicitudes, búsqueda de usuarios
+├── profile/ # perfil, ajustes, cambio de contraseña,
+│ # editar perfil (username/foto/email), eliminar cuenta
+├── friends/ # lista, solicitudes, búsqueda de usuarios,
+│ # usuarios bloqueados
 ├── decks/ # lista, detalle, formulario (crear/editar)
 ├── matches/ # registrar, editar
 ├── stats/
@@ -123,3 +128,5 @@ Si un valor se repite en varias pantallas, añadirlo como token. Para variacione
 - **Peticiones y ciclo de vida**: tras cada `await` en cargas de pantalla, comprobar `mounted` antes de continuar o hacer `setState` — evita cadenas de peticiones zombis tras logout/navegación (ver issue #32).
 - **Bracket de eliminatoria**: los conectores entre fases se calculan comparando `winnerId` de cada partida contra `player1Id`/`player2Id` de la siguiente, no por posición visual — necesario porque el orden de llegada de los datos no garantiza que los rivales de un mismo enfrentamiento estén ya adyacentes.
 - **Navegación en web (`go_router`)**: solo las pantallas de nivel superior (Mazos/Stats/Torneos vía `StatefulShellRoute`, y Perfil como ruta independiente) tienen URL propia. El resto sigue con `Navigator.push` imperativo sobre el mismo Navigator raíz. Usar `context.go()` en vez de `context.push()` para que la URL se sincronice de forma fiable (ver issue #300).
+- **`image_picker` en web**: `image_picker_for_web` tiene un bug conocido al redimensionar con `maxWidth`/`maxHeight`/`imageQuality` (el blob URL de la imagen puede fallar a cargar durante el resize en `<canvas>`). En web se pide la imagen sin redimensionar y se confía en la validación de tamaño del servidor; en nativo (donde el resize sí es fiable) se mantiene el redimensionado en origen (ver issue #269).
+- **Releases**: subir la versión en `pubspec.yaml` (y en `windows_installer/deck_tracker.iss`) y crear un tag `v*` dispara los workflows de build de APK e instalador Windows (ver Descargas arriba); el `README.md` de este repo no se actualiza solo, hay que subir a mano los enlaces de descarga con el nombre de archivo de la nueva versión.
