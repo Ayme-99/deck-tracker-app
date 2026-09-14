@@ -6,114 +6,145 @@ import '../../l10n/app_localizations.dart';
 
 /// Dialogo para cambiar la contraseña desde el perfil (issue #273).
 /// Pide la contraseña actual (la valida el server) y la nueva dos veces.
-Future<void> showChangePasswordDialog(BuildContext context) async {
-  final formKey = GlobalKey<FormState>();
-  final currentController = TextEditingController();
-  final newController = TextEditingController();
-  final confirmController = TextEditingController();
-  final authService = AuthService();
-  final l10n = AppLocalizations.of(context);
-
-  bool isLoading = false;
-  String? errorMessage;
-
-  await showDialog<void>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setDialogState) {
-        Future<void> handleSubmit() async {
-          if (!formKey.currentState!.validate()) return;
-          setDialogState(() {
-            isLoading = true;
-            errorMessage = null;
-          });
-          try {
-            await authService.changePassword(currentController.text, newController.text);
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.passwordChangedSuccess)),
-            );
-          } catch (e) {
-            setDialogState(() {
-              errorMessage = e.toString().replaceFirst('Exception: ', '');
-              isLoading = false;
-            });
-          }
-        }
-
-        return AlertDialog(
-          title: Text(l10n.changePasswordTitle),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PasswordFormField(
-                    controller: currentController,
-                    labelText: l10n.currentPasswordLabel,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return l10n.currentPasswordRequired;
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
-                  PasswordFormField(
-                    controller: newController,
-                    labelText: l10n.newPasswordLabel,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) {
-                      if (value == null || value.length < 6) return l10n.registerPasswordMinLength;
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spacingM),
-                  PasswordFormField(
-                    controller: confirmController,
-                    labelText: l10n.registerConfirmPasswordLabel,
-                    textInputAction: TextInputAction.done,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return l10n.registerConfirmPasswordRequired;
-                      if (value != newController.text) return l10n.registerPasswordsDontMatch;
-                      return null;
-                    },
-                  ),
-                  if (errorMessage != null) ...[
-                    const SizedBox(height: AppSizes.spacingM),
-                    Text(
-                      errorMessage!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-              child: Text(l10n.cancelAction),
-            ),
-            FilledButton(
-              onPressed: isLoading ? null : handleSubmit,
-              child: isLoading
-                  ? const SizedBox(
-                      height: AppSizes.spinnerSmall,
-                      width: AppSizes.spinnerSmall,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.saveAction),
-            ),
-          ],
-        );
-      },
-    ),
+///
+/// Es un StatefulWidget de verdad (no una funcion con StatefulBuilder +
+/// TextEditingController creados/destruidos a mano): al hacer dispose()
+/// manual de los controllers justo despues del await de showDialog(), la
+/// animacion de cierre del dialogo todavia no habia terminado de desmontar
+/// el arbol -- Flutter intentaba seguir pintando los TextFormField con
+/// controllers ya destruidos ("A TextEditingController was used after
+/// being disposed"), lo que en cascada disparaba un assertion failure del
+/// framework. Con un StatefulWidget, dispose() lo llama Flutter en el
+/// momento correcto (cuando el Element se desmonta de verdad).
+Future<void> showChangePasswordDialog(BuildContext parentContext) async {
+  final l10n = AppLocalizations.of(parentContext);
+  final success = await showDialog<bool>(
+    context: parentContext,
+    builder: (context) => const _ChangePasswordDialog(),
   );
 
-  currentController.dispose();
-  newController.dispose();
-  confirmController.dispose();
+  if (success == true && parentContext.mounted) {
+    ScaffoldMessenger.of(parentContext).showSnackBar(
+      SnackBar(content: Text(l10n.passwordChangedSuccess)),
+    );
+  }
+}
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _currentController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+  final _authService = AuthService();
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    final l10n = AppLocalizations.of(context);
+    final current = _currentController.text;
+    final newPassword = _newController.text;
+    final confirm = _confirmController.text;
+
+    String? validationError;
+    if (current.isEmpty) {
+      validationError = l10n.currentPasswordRequired;
+    } else if (newPassword.length < 6) {
+      validationError = l10n.registerPasswordMinLength;
+    } else if (confirm.isEmpty) {
+      validationError = l10n.registerConfirmPasswordRequired;
+    } else if (confirm != newPassword) {
+      validationError = l10n.registerPasswordsDontMatch;
+    }
+    if (validationError != null) {
+      setState(() => _errorMessage = validationError);
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await _authService.changePassword(current, newPassword);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.changePasswordTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            PasswordFormField(
+              controller: _currentController,
+              labelText: l10n.currentPasswordLabel,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            PasswordFormField(
+              controller: _newController,
+              labelText: l10n.newPasswordLabel,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: AppSizes.spacingM),
+            PasswordFormField(
+              controller: _confirmController,
+              labelText: l10n.registerConfirmPasswordLabel,
+              textInputAction: TextInputAction.done,
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: AppSizes.spacingM),
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
+          child: Text(l10n.cancelAction),
+        ),
+        FilledButton(
+          onPressed: _isLoading ? null : _handleSubmit,
+          child: _isLoading
+              ? const SizedBox(
+                  height: AppSizes.spinnerSmall,
+                  width: AppSizes.spinnerSmall,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.saveAction),
+        ),
+      ],
+    );
+  }
 }
